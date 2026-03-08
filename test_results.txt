@@ -1,0 +1,185 @@
+﻿python : Creating test database for alias 'default' 
+('file:memorydb_default?mode=memory&cache=shared')..
+.
+At line:1 char:32
++ ... v\Scripts\Activate.ps1; python manage.py test 
+tests -v 2 2>&1 | Out-F ...
++                             
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Creati 
+   ng test d...che=shared')...:String) [], RemoteE  
+  xception
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+Found 34 test(s).
+Operations to perform:
+  Synchronize unmigrated apps: messages, staticfiles
+  Apply all migrations: admin, auth, contenttypes, patients, sessions, vaccines
+Synchronizing apps without migrations:
+  Creating tables...
+    Running deferred SQL...
+Running migrations:
+  Applying contenttypes.0001_initial... OK
+  Applying auth.0001_initial... OK
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying contenttypes.0002_remove_content_type_name... OK
+  Applying auth.0002_alter_permission_name_max_length... OK
+  Applying auth.0003_alter_user_email_max_length... OK
+  Applying auth.0004_alter_user_username_opts... OK
+  Applying auth.0005_alter_user_last_login_null... OK
+  Applying auth.0006_require_contenttypes_0002... OK
+  Applying auth.0007_alter_validators_add_error_messages... OK
+  Applying auth.0008_alter_user_username_max_length... OK
+  Applying auth.0009_alter_user_last_name_max_length... OK
+  Applying auth.0010_alter_group_name_max_length... OK
+  Applying auth.0011_update_proxy_permissions... OK
+  Applying auth.0012_alter_user_first_name_max_length... OK
+  Applying vaccines.0001_initial... OK
+  Applying patients.0001_initial... OK
+  Applying sessions.0001_initial... OK
+test_fully_vaccinated_nothing_due (tests.test_dtp_gr
+oup_rules.TestDTPFiveDoses.test_fully_vaccinated_not
+hing_due) ... ok
+test_over_7y_gets_td (tests.test_dtp_group_rules.Tes
+tDTPFourDoses.test_over_7y_gets_td) ... ok
+test_under_5y_upcoming (tests.test_dtp_group_rules.T
+estDTPFourDoses.test_under_5y_upcoming)
+4 doses at 3 years \u2192 B2 not due yet, upcoming 
+at 5y. ... ok
+test_baby_gets_penta_after_4w (tests.test_dtp_group_
+rules.TestDTPOneDose.test_baby_gets_penta_after_4w) 
+... ok
+test_baby_wait_if_too_soon (tests.test_dtp_group_rul
+es.TestDTPOneDose.test_baby_wait_if_too_soon)
+Dose given 14 days ago (< 28 days) \u2192 upcoming, 
+not due. ... ok
+test_over_7y_gets_td (tests.test_dtp_group_rules.Tes
+tDTPOneDose.test_over_7y_gets_td) ... ok
+test_17mo_waits_for_18mo (tests.test_dtp_group_rules
+.TestDTPThreeDoses.test_17mo_waits_for_18mo)
+3 doses at 17 months \u2192 DTC NOT due today, in 
+upcoming. ... ok
+test_19mo_dtc_due (tests.test_dtp_group_rules.TestDT
+PThreeDoses.test_19mo_dtc_due)
+3 doses at 19 months (>6mo since dose 3) \u2192 DTC 
+due. ... ok
+test_over_7y_gets_td (tests.test_dtp_group_rules.Tes
+tDTPThreeDoses.test_over_7y_gets_td) ... ok
+test_3y_to_7y_gets_dtc (tests.test_dtp_group_rules.T
+estDTPTwoDoses.test_3y_to_7y_gets_dtc) ... ok
+test_baby_gets_penta_dose3 (tests.test_dtp_group_rul
+es.TestDTPTwoDoses.test_baby_gets_penta_dose3) ... 
+ok
+test_over_7y_gets_td (tests.test_dtp_group_rules.Tes
+tDTPTwoDoses.test_over_7y_gets_td) ... ok
+test_baby_under_12mo_gets_penta (tests.test_dtp_grou
+p_rules.TestDTPZeroDoses.test_baby_under_12mo_gets_p
+enta) ... ok
+test_child_3y_to_7y_gets_dtc (tests.test_dtp_group_r
+ules.TestDTPZeroDoses.test_child_3y_to_7y_gets_dtc) 
+... ok
+test_child_over_7y_gets_td (tests.test_dtp_group_rul
+es.TestDTPZeroDoses.test_child_over_7y_gets_td) ... 
+ok
+test_toddler_12mo_to_3y_gets_penta (tests.test_dtp_g
+roup_rules.TestDTPZeroDoses.test_toddler_12mo_to_3y_
+gets_penta) ... ok
+test_mixed_penta_dtc_counted_together (tests.test_ed
+ge_cases.TestMixedVaccineHistory.test_mixed_penta_dt
+c_counted_together)
+2 Penta + 1 DTC = 3 total DTP doses (primary 
+complete). ... ok
+test_penta_and_td_counted_together (tests.test_edge_
+cases.TestMixedVaccineHistory.test_penta_and_td_coun
+ted_together)
+3 Penta + 1 Td = 4 total DTP doses. ... ok
+test_late_dose_continues_not_restarts (tests.test_ed
+ge_cases.TestNeverRestartSeries.test_late_dose_conti
+nues_not_restarts)
+1 dose given years ago \u2192 continues from dose 
+2, doesn't restart. ... ok
+test_dtp_and_rr_same_day (tests.test_edge_cases.Test
+SimultaneousVaccination.test_dtp_and_rr_same_day)
+Both DTP and RR can be due on the same day. ... ok
+test_unknown_status_treated_as_unvaccinated (tests.t
+est_edge_cases.TestUnknownVaccinationStatus.test_unk
+nown_status_treated_as_unvaccinated)
+unknown_status=True, no records \u2192 same as 0 
+doses. ... ok
+test_both_doses_done_nothing_due (tests.test_standar
+d_schedule.TestRRRoutineSchedule.test_both_doses_don
+e_nothing_due)
+Both doses given \u2192 nothing due for RR. ... ok
+test_dose1_given_dose2_due (tests.test_standard_sche
+dule.TestRRRoutineSchedule.test_dose1_given_dose2_du
+e)
+Dose 1 given, child old enough and interval met 
+\u2192 dose 2 due. ... ok
+test_dose1_given_dose2_upcoming (tests.test_standard
+_schedule.TestRRRoutineSchedule.test_dose1_given_dos
+e2_upcoming)
+Dose 1 given, too early for dose 2 \u2192 upcoming. 
+... ok
+test_missed_dose1_flagged_missing (tests.test_standa
+rd_schedule.TestRRRoutineSchedule.test_missed_dose1_
+flagged_missing)
+Child > recommended age with 0 doses \u2192 flagged 
+as missing. ... ok
+test_on_time_dose1 (tests.test_standard_schedule.Tes
+tRRRoutineSchedule.test_on_time_dose1)
+Child >= 250 days, 0 doses \u2192 RR dose 1 due. 
+... ok
+test_too_young_for_dose1 (tests.test_standard_schedu
+le.TestRRRoutineSchedule.test_too_young_for_dose1)
+Child < 250 days \u2192 RR not due, appears in 
+upcoming. ... ok
+test_invalid_dose_not_counted_for_prior_doses (tests
+.test_validation.TestInvalidDoseDoesNotCountForSched
+uling.test_invalid_dose_not_counted_for_prior_doses)
+1 valid + 1 invalid = engine sees 1 prior dose, 
+recommends dose 2. ... ok
+test_schedule_consistent_after_multiple_invalid (tes
+ts.test_validation.TestInvalidDoseDoesNotCountForSch
+eduling.test_schedule_consistent_after_multiple_inva
+lid)
+Multiple invalid doses: engine still recommends 
+correctly. ... ok
+test_group_dose_under_28_days_flagged_invalid (tests
+.test_validation.TestMinIntervalValidation.test_grou
+p_dose_under_28_days_flagged_invalid)
+Two DTP doses < 28 days apart: second is invalid, 
+engine still recommends next dose. ... ok
+test_three_valid_doses_no_premature_booster (tests.t
+est_validation.TestMinIntervalValidation.test_three_
+valid_doses_no_premature_booster)
+3 valid primary doses at 17mo \u2192 no booster due 
+today, only upcoming. ... ok
+test_valid_interval_not_flagged (tests.test_validati
+on.TestMinIntervalValidation.test_valid_interval_not
+_flagged)
+Two DTP doses >= 28 days apart: neither flagged. 
+... ok
+test_penta_then_dtc_under_28_days_invalid (tests.tes
+t_validation.TestMixedVaccineValidation.test_penta_t
+hen_dtc_under_28_days_invalid)
+Penta followed by DTC < 28 days apart: DTC is 
+invalid. ... ok
+test_penta_then_dtc_valid_interval (tests.test_valid
+ation.TestMixedVaccineValidation.test_penta_then_dtc
+_valid_interval)
+Penta followed by DTC >= 28 days apart: both count. 
+... ok
+
+----------------------------------------------------
+------------------
+Ran 34 tests in 0.751s
+
+OK
+Destroying test database for alias 'default' ('file:
+memorydb_default?mode=memory&cache=shared')...
+
+  Applying vaccines.0002_vaccinegroup_grouprule... OK
+System check identified no issues (0 silenced).

@@ -64,8 +64,8 @@ class GroupRule(models.Model):
     """
     group = models.ForeignKey(VaccineGroup, on_delete=models.CASCADE, related_name='rules')
     prior_doses = models.PositiveIntegerField(help_text="Number of valid doses already received from this group")
-    min_age_days = models.PositiveIntegerField(help_text="Minimum age in days for this rule to apply")
-    max_age_days = models.PositiveIntegerField(null=True, blank=True, help_text="Maximum age in days (optional)")
+    min_age_days = models.PositiveIntegerField(help_text="Minimum age in days for this rule to apply (age-bracket selector)")
+    max_age_days = models.PositiveIntegerField(null=True, blank=True, help_text="Maximum age in days for this rule's age bracket (optional)")
     vaccine_to_give = models.ForeignKey(Vaccine, on_delete=models.CASCADE, related_name='+')
     min_interval_days = models.PositiveIntegerField(
         help_text="Minimum interval from the last dose in the group in days"

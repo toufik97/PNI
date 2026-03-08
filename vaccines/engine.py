@@ -85,28 +85,30 @@ class VaccinationEngine:
             if not rule:
                 continue # Schedule complete or no rule
 
-            if self.age_days > rule.recommended_age_days:
+            # Clinical Target Date
+            if prior_doses == 0:
+                target_date = self.child.dob + timedelta(days=rule.recommended_age_days)
+            else:
+                last_dose_date = v_history[-1].date_given
+                interval_date = last_dose_date + timedelta(days=rule.min_interval_days)
+                age_floor_date = self.child.dob + timedelta(days=rule.min_age_days)
+                target_date = max(interval_date, age_floor_date)
+
+            # 1. Missing? (Strictly greater than target date)
+            if self.evaluation_date > target_date:
                 missing_doses.append(vaccine)
             
-            # Can we give it today?
-            if self.age_days >= rule.min_age_days:
+            # 2. Due Today?
+            if self.evaluation_date >= target_date:
+                # Still respect max_age if it exists
                 if rule.max_age_days and self.age_days > rule.max_age_days:
-                    continue # Too old for this routine dose
-                
-                last_dose_date = v_history[-1].date_given if v_history else None
-                if last_dose_date:
-                    days_since_last = (self.evaluation_date - last_dose_date).days
-                    if days_since_last >= rule.min_interval_days:
-                        due_today.append(vaccine)
-                    else:
-                        next_due_date = last_dose_date + timedelta(days=rule.min_interval_days)
-                        upcoming_doses.append((vaccine, next_due_date))
-                else:
-                    due_today.append(vaccine)
+                    continue 
+                due_today.append(vaccine)
             else:
-                child_dob = self.child.dob
-                next_due_date = child_dob + timedelta(days=rule.min_age_days)
-                upcoming_doses.append((vaccine, next_due_date))
+                # 3. Upcoming
+                upcoming_doses.append((vaccine, target_date))
+
+
 
         # Check live vaccines same-day compatibility (simplified MVP: 28 days interval if not given same day)
         due_today_live = [v for v in due_today if v.live]
@@ -134,40 +136,67 @@ class VaccinationEngine:
             history.setdefault(r.vaccine.id, []).append(r)
         return history
 
+    def _flag_invalid(self, record: VaccinationRecord, reason_code: str, message: str):
+        """Consistently flag a record as invalid with a structured reason and human-readable note."""
+        record.invalid_flag = True
+        record.invalid_reason = reason_code
+        record.notes = message
+        record.save()
+
     def _validate_history(self, history_by_vaccine: Dict[str, List[VaccinationRecord]]):
+        """Strictly validates all standard (non-grouped) vaccine records against ScheduleRules."""
+        from patients.models import VaccinationRecord as VR
+        grouped_vaccine_ids = set()
+        for group in VaccineGroup.objects.prefetch_related('vaccines').all():
+            for v in group.vaccines.all():
+                grouped_vaccine_ids.add(v.id)
+
         for vaccine_id, records in history_by_vaccine.items():
-            valid_count = 0
-            for i, record in enumerate(records):
+            valid_records = []
+            for record in records:
                 if record.invalid_flag:
-                    continue # Already flagged
-                
-                # Check min age and interval based on valid count
-                rule = ScheduleRule.objects.filter(vaccine_id=vaccine_id, dose_number=valid_count + 1).first()
-                if not rule:
-                    continue # Maybe catchup or extra dose; ignore for routine strict validation currently
-                
+                    continue  # Already flagged, skip
+
                 age_at_dose = (record.date_given - self.child.dob).days
-                if age_at_dose < rule.min_age_days:
-                    record.invalid_flag = True
-                    record.notes = f"Too early: min age {rule.min_age_days} days. " + (record.notes or "")
-                    record.save()
-                    continue
-                
-                    if prev_valid:
-                        days_since_prev = (record.date_given - prev_valid[-1].date_given).days
-                        
-                        # Groups handle their own invalidation in _evaluate_vaccine_group
-                        is_grouped = VaccineGroup.objects.filter(vaccines=record.vaccine).exists()
-                        if is_grouped:
-                            valid_count += 1
+                dose_num = len(valid_records) + 1
+                rule = ScheduleRule.objects.filter(vaccine_id=vaccine_id, dose_number=dose_num).first()
+
+                if rule:
+                    # Check: too early (min age)
+                    if age_at_dose < rule.min_age_days:
+                        age_months = round(age_at_dose / 30.44, 1)
+                        min_months = round(rule.min_age_days / 30.44, 1)
+                        self._flag_invalid(
+                            record, VR.REASON_TOO_EARLY,
+                            f"Too early: {record.vaccine.name} dose {dose_num} requires min age "
+                            f"{min_months} months. Child was {age_months} months old."
+                        )
+                        continue
+
+                    # Check: too late (max age)
+                    if rule.max_age_days and age_at_dose > rule.max_age_days:
+                        age_months = round(age_at_dose / 30.44, 1)
+                        max_months = round(rule.max_age_days / 30.44, 1)
+                        self._flag_invalid(
+                            record, VR.REASON_TOO_LATE,
+                            f"Too late: {record.vaccine.name} dose {dose_num} is not valid after "
+                            f"{max_months} months. Child was {age_months} months old."
+                        )
+                        continue
+
+                    # Check: interval too short
+                    if valid_records and rule.min_interval_days:
+                        days_since = (record.date_given - valid_records[-1].date_given).days
+                        if days_since < rule.min_interval_days:
+                            self._flag_invalid(
+                                record, VR.REASON_INTERVAL,
+                                f"Too soon: {record.vaccine.name} dose {dose_num} requires "
+                                f"{rule.min_interval_days} days after previous dose. "
+                                f"Only {days_since} days elapsed."
+                            )
                             continue
-                            
-                        if days_since_prev < rule.min_interval_days:
-                            record.invalid_flag = True
-                            record.notes = f"Invalid interval: requires {rule.min_interval_days} days. " + (record.notes or "")
-                            record.save()
-                            continue
-                valid_count += 1
+
+                valid_records.append(record)
 
     def _get_vaccine_by_name(self, name: str) -> Vaccine:
         for v in self.vaccines:
@@ -189,17 +218,54 @@ class VaccinationEngine:
         
         group_records.sort(key=lambda x: x.date_given)
         
-        # 2. Invalidate doses given too early
+        # 2. Strict group validation — interval, max age, wrong vaccine type
+        from patients.models import VaccinationRecord as VR
         valid_group_records = []
         for i, record in enumerate(group_records):
-            if i > 0:
+            age_at_dose = (record.date_given - self.child.dob).days
+
+            # Check interval between consecutive group doses
+            if i > 0 and valid_group_records:
                 prev_record = valid_group_records[-1]
                 days_since = (record.date_given - prev_record.date_given).days
                 if days_since < group.min_valid_interval_days:
-                    record.invalid_flag = True
-                    record.notes = f"Dose given < {group.min_valid_interval_days} days after previous group vaccine. " + (record.notes or "")
-                    record.save()
+                    self._flag_invalid(
+                        record, VR.REASON_INTERVAL,
+                        f"Too soon: Must wait {group.min_valid_interval_days} days between "
+                        f"{group.name} doses. Only {days_since} days elapsed since last dose."
+                    )
                     continue
+
+            # Check what vaccine the rule says should have been given at this dose number & age
+            expected_rule = group.rules.filter(
+                prior_doses=len(valid_group_records),
+                min_age_days__lte=age_at_dose
+            ).order_by('-min_age_days').first()
+
+            if expected_rule:
+                # max_age check: was this dose given after it should have stopped? (Policy layer)
+                if expected_rule.max_age_days and age_at_dose > expected_rule.max_age_days:
+                    age_months = round(age_at_dose / 30.44, 1)
+                    max_months = round(expected_rule.max_age_days / 30.44, 1)
+                    self._flag_invalid(
+                        record, VR.REASON_TOO_LATE,
+                        f"Too late: {record.vaccine.name} is not valid after "
+                        f"{max_months} months for dose {len(valid_group_records)+1}. "
+                        f"Child was {age_months} months old."
+                    )
+                    continue
+
+                # Wrong vaccine type check (Policy layer)
+                if record.vaccine.id != expected_rule.vaccine_to_give.id:
+                    age_months = round(age_at_dose / 30.44, 1)
+                    self._flag_invalid(
+                        record, VR.REASON_WRONG_VACCINE,
+                        f"Wrong vaccine: {record.vaccine.name} was given at {age_months} months, "
+                        f"but {expected_rule.vaccine_to_give.name} is required at this age for dose "
+                        f"{len(valid_group_records)+1}."
+                    )
+                    continue
+
             valid_group_records.append(record)
             
         prior_doses = len(valid_group_records)
@@ -222,34 +288,51 @@ class VaccinationEngine:
             ).order_by('min_age_days')
             if future_rules.exists():
                 next_rule = future_rules.first()
-                next_eligible_date = self.child.dob + timedelta(days=next_rule.min_age_days)
-                # Also respect the interval from the last dose
+                # Target date is max of age floor and interval
+                target_date = self.child.dob + timedelta(days=next_rule.min_age_days)
                 if last_dose_date:
                     interval_date = last_dose_date + timedelta(days=next_rule.min_interval_days)
-                    next_eligible_date = max(next_eligible_date, interval_date)
-                res['upcoming'].append((next_rule.vaccine_to_give, next_eligible_date))
+                    target_date = max(target_date, interval_date)
+                
+                res['upcoming'].append((next_rule.vaccine_to_give, target_date))
             return res
+
             
         rule = valid_rules[-1] # Take the most specific one (highest min_age_days = narrowest age bracket)
         
         # 4. Schedule based on rule
         vaccine_to_give = rule.vaccine_to_give
-        min_interval_days = rule.min_interval_days
+
         
-        if last_dose_date:
-            if days_since_last >= min_interval_days:
-                res['due_today'].append(vaccine_to_give)
-                res['missing_doses'].append(vaccine_to_give)
-            else:
-                next_date = last_dose_date + timedelta(days=min_interval_days)
-                res['upcoming'].append((vaccine_to_give, next_date))
+        # Get recommended age from standard rule for Dose 1
+        standard_rule = ScheduleRule.objects.filter(
+            vaccine=vaccine_to_give, 
+            dose_number=prior_doses + 1
+        ).first()
+        
+        # Clinical Target Date
+        if prior_doses == 0 and standard_rule:
+            target_date = self.child.dob + timedelta(days=standard_rule.recommended_age_days)
+        elif last_dose_date:
+            interval_date = last_dose_date + timedelta(days=rule.min_interval_days)
+            # Use standard rule min_age_days if available for safety floor
+            age_floor = standard_rule.min_age_days if standard_rule else rule.min_age_days
+            age_floor_date = self.child.dob + timedelta(days=age_floor)
+            target_date = max(interval_date, age_floor_date)
         else:
-            # First dose (or intervals don't apply)
-            if self.age_days >= rule.min_age_days:
-                res['due_today'].append(vaccine_to_give)
-                res['missing_doses'].append(vaccine_to_give)
-            else:
-                next_date = self.child.dob + timedelta(days=rule.min_age_days)
-                res['upcoming'].append((vaccine_to_give, next_date))
+            # Fallback for catch-up rules with 0 doses
+            target_date = self.child.dob + timedelta(days=rule.min_age_days)
+
+
+        # 1. Missing? (Strictly greater than target)
+        if self.evaluation_date > target_date:
+            res['missing_doses'].append(vaccine_to_give)
+
+        # 2. Due Today?
+        if self.evaluation_date >= target_date:
+            res['due_today'].append(vaccine_to_give)
+        else:
+            # 3. Upcoming
+            res['upcoming'].append((vaccine_to_give, target_date))
                 
         return res
