@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row pt-3">
+    <!-- Child Info Sidebar -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">Child Profile</h5>
+            </div>
+            <div class="card-body">
+                <h4 class="card-title">{{ child.name }}</h4>
+                <p class="text-muted mb-3">{{ child.id }}</p>
+
+                <ul class="list-unstyled">
+                    <li><strong>Sex:</strong> {{ child.get_sex_display }}</li>
+                    <li><strong>DOB:</strong> {{ child.dob|date:"M d, Y" }} ({{ child.dob|timesince }})</li>
+                    <li><strong>Parent:</strong> {{ child.parents_name|default:"-" }}</li>
+                    <li><strong>Contact:</strong> {{ child.contact_info|default:"-" }}</li>
+                    <li><strong>Address:</strong> {{ child.address|default:"-" }}</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Record New Dose Form -->
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Record Administered Dose</h5>
+            </div>
+            <div class="card-body">
+                <form action="{% url 'patients:record_dose' child.id %}" method="POST">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Vaccine *</label>
+                        <select name="vaccine_id" class="form-select" required>
+                            <option value="">Select Vaccine...</option>
+                            {% for v in vaccines %}
+                            {% if v in eval.due_today %}
+                            <option value="{{ v.id }}" class="fw-bold text-success">
+                                {{ v.name }} (Due)
+                            </option>
+                            {% else %}
+                            <option value="{{ v.id }}">
+                                {{ v.name }}
+                            </option>
+                            {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Date Given *</label>
+                        <input type="date" name="date_given" class="form-control" value="{% now 'Y-m-d' %}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Lot Number</label>
+                        <input type="text" name="lot_number" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Site (e.g. Left Arm)</label>
+                        <input type="text" name="administer_site" class="form-control">
+                    </div>
+                    <button type="submit" class="btn btn-success w-100">Record Dose</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vaccination History & Recommendations -->
+    <div class="col-md-8">
+        <!-- Engine Recommendations -->
+        <div class="card border-primary mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Engine Recommendations</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-danger">Due Today</h6>
+                        {% if eval.due_today %}
+                        <ul class="list-group">
+                            {% for v in eval.due_today %}
+                            <li class="list-group-item list-group-item-danger">{{ v.name }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="text-success mb-0"><i class="bi bi-check-circle"></i> Complete for now</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-warning">Missing / Behind</h6>
+                        {% if eval.missing_doses %}
+                        <ul class="list-group">
+                            {% for v in eval.missing_doses %}
+                            <li class="list-group-item list-group-item-warning">{{ v.name }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="text-muted mb-0">No missed doses.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <hr>
+                <h6>Upcoming / Next Appointment</h6>
+                {% if eval.next_appointment %}
+                <p class="mb-0 fs-5"><strong>{{ eval.next_appointment|date:"F j, Y" }}</strong></p>
+                <small class="text-muted">
+                    {% for item in eval.upcoming %}
+                    {% if item.1 == eval.next_appointment %}
+                    {{ item.0.name }}{% if not forloop.last %}, {% endif %}
+                    {% endif %}
+                    {% endfor %}
+                </small>
+                {% else %}
+                <p class="text-muted mb-0">Schedule complete.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Vaccination History -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Vaccination History</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Vaccine</th>
+                                <th>Status</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in records %}
+                            <tr class="{% if r.invalid_flag %}table-danger{% endif %}">
+                                <td>{{ r.date_given|date:"M d, Y" }}</td>
+                                <td><strong>{{ r.vaccine.name }}</strong></td>
+                                <td>
+                                    {% if r.invalid_flag %}
+                                    <span class="badge bg-danger">Invalid</span>
+                                    {% else %}
+                                    <span class="badge bg-success">Valid</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if r.notes %}<small class="d-block text-danger">{{ r.notes }}</small>{% endif %}
+                                    <small class="text-muted">Site: {{ r.administer_site|default:"-" }} | Lot: {{
+                                        r.lot_number|default:"-" }}</small>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted">No vaccination records found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
