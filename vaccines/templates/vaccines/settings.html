@@ -1,0 +1,590 @@
+{% extends "base.html" %}
+
+{% block title %}Vaccine Settings{% endblock %}
+
+{% block content %}
+<style>
+    .settings-header {
+        background: linear-gradient(135deg, #4e54c8 0%, #8f94fb 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 1.5rem 2rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .settings-header h2 {
+        margin: 0;
+        font-weight: 700;
+    }
+
+    .settings-header p {
+        margin: 0.25rem 0 0;
+        opacity: 0.85;
+    }
+
+    .nav-tabs .nav-link {
+        font-weight: 600;
+        color: #555;
+        border: none;
+        border-bottom: 3px solid transparent;
+        padding: 0.75rem 1.25rem;
+        transition: all 0.2s;
+    }
+
+    .nav-tabs .nav-link:hover {
+        color: #4e54c8;
+        border-bottom-color: #ccc;
+    }
+
+    .nav-tabs .nav-link.active {
+        color: #4e54c8;
+        border-bottom-color: #4e54c8;
+        background: transparent;
+    }
+
+    .entity-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        transition: box-shadow 0.2s, transform 0.15s;
+        margin-bottom: 1rem;
+    }
+
+    .entity-card:hover {
+        box-shadow: 0 4px 15px rgba(78, 84, 200, 0.12);
+        transform: translateY(-1px);
+    }
+
+    .entity-card .card-header {
+        background: #f8f9ff;
+        border-bottom: 1px solid #e2e8f0;
+        border-radius: 10px 10px 0 0;
+        padding: 0.75rem 1.25rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .entity-card .card-header h5 {
+        margin: 0;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .entity-card .card-body {
+        padding: 1rem 1.25rem;
+    }
+
+    .badge-live {
+        background: #ff6b6b;
+    }
+
+    .badge-inactivated {
+        background: #51cf66;
+    }
+
+    .badge-doses {
+        background: #4e54c8;
+        font-size: 0.75rem;
+    }
+
+    .badge-rules {
+        background: #fd7e14;
+        font-size: 0.75rem;
+    }
+
+    .badge-group-vaccine {
+        background: #20c997;
+        font-size: 0.8rem;
+    }
+
+    .rule-table {
+        font-size: 0.85rem;
+        margin-bottom: 0;
+    }
+
+    .rule-table th {
+        background: #f1f3f5;
+        font-weight: 600;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #666;
+    }
+
+    .btn-add {
+        background: linear-gradient(135deg, #4e54c8 0%, #8f94fb 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 1.25rem;
+        font-weight: 600;
+        transition: opacity 0.2s;
+    }
+
+    .btn-add:hover {
+        opacity: 0.9;
+        color: white;
+    }
+
+    .btn-edit {
+        color: #4e54c8;
+        border: 1px solid #4e54c8;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        padding: 0.2rem 0.6rem;
+        transition: all 0.2s;
+    }
+
+    .btn-edit:hover {
+        background: #4e54c8;
+        color: white;
+    }
+
+    .btn-delete {
+        color: #dc3545;
+        border: 1px solid #dc3545;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        padding: 0.2rem 0.6rem;
+        transition: all 0.2s;
+    }
+
+    .btn-delete:hover {
+        background: #dc3545;
+        color: white;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #aaa;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        display: block;
+    }
+
+    /* Guide styles */
+    .guide-section {
+        margin-bottom: 2rem;
+    }
+
+    .guide-section h4 {
+        color: #4e54c8;
+        font-weight: 700;
+        border-left: 4px solid #4e54c8;
+        padding-left: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .guide-step {
+        background: #f8f9ff;
+        border-radius: 8px;
+        padding: 1rem 1.25rem;
+        margin-bottom: 0.75rem;
+        border-left: 3px solid #8f94fb;
+    }
+
+    .guide-step strong {
+        color: #4e54c8;
+    }
+
+    .conversion-table th {
+        background: #4e54c8;
+        color: white;
+    }
+
+    .conversion-table td {
+        font-weight: 500;
+    }
+
+    .tip-box {
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+    }
+
+    .tip-box strong {
+        color: #856404;
+    }
+
+    .info-box {
+        background: #d1ecf1;
+        border: 1px solid #17a2b8;
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+    }
+
+    .info-box strong {
+        color: #0c5460;
+    }
+</style>
+
+<div class="pt-3">
+    <!-- Header -->
+    <div class="settings-header">
+        <h2>⚙️ Vaccine Settings</h2>
+        <p>Configure vaccines, schedule rules, groups, and view the policy guide.</p>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-3" id="settingsTabs">
+        <li class="nav-item">
+            <a class="nav-link {% if active_tab == 'vaccines' %}active{% endif %}"
+                href="{% url 'vaccines:settings' %}?tab=vaccines">
+                💉 Vaccines
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if active_tab == 'groups' %}active{% endif %}"
+                href="{% url 'vaccines:settings' %}?tab=groups">
+                🔗 Groups
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if active_tab == 'guide' %}active{% endif %}"
+                href="{% url 'vaccines:settings' %}?tab=guide">
+                📖 Policy Guide
+            </a>
+        </li>
+    </ul>
+
+    <!-- ═══════════════ VACCINES TAB ═══════════════ -->
+    {% if active_tab == 'vaccines' %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0" style="font-weight:700; color:#333;">Registered Vaccines</h4>
+        <a href="{% url 'vaccines:vaccine_create' %}" class="btn btn-add">+ Add Vaccine</a>
+    </div>
+
+    {% if vaccines %}
+    {% for vaccine in vaccines %}
+    <div class="entity-card card">
+        <div class="card-header">
+            <div>
+                <h5 class="d-inline">{{ vaccine.name }}</h5>
+                {% if vaccine.live %}
+                <span class="badge badge-live ms-2">Live</span>
+                {% else %}
+                <span class="badge badge-inactivated ms-2">Inactivated</span>
+                {% endif %}
+                <span class="badge badge-doses ms-1">{{ vaccine.schedule_rules.count }} doses</span>
+                {% if vaccine.catchup_rules.count > 0 %}
+                <span class="badge badge-rules ms-1">{{ vaccine.catchup_rules.count }} catchup rules</span>
+                {% endif %}
+            </div>
+            <div>
+                <a href="{% url 'vaccines:vaccine_edit' vaccine.pk %}" class="btn btn-edit">Edit</a>
+                <a href="{% url 'vaccines:vaccine_delete' vaccine.pk %}" class="btn btn-delete ms-1">Delete</a>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if vaccine.description %}
+            <p class="text-muted mb-2" style="font-size:0.9rem;">{{ vaccine.description }}</p>
+            {% endif %}
+
+            {% if vaccine.schedule_rules.count > 0 %}
+            <table class="table table-sm rule-table">
+                <thead>
+                    <tr>
+                        <th>Dose #</th>
+                        <th>Min Age</th>
+                        <th>Recommended Age</th>
+                        <th>Max Age</th>
+                        <th>Min Interval</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rule in vaccine.schedule_rules.all %}
+                    <tr>
+                        <td>{{ rule.dose_number }}</td>
+                        <td>{{ rule.min_age_days }} days</td>
+                        <td>{{ rule.recommended_age_days }} days</td>
+                        <td>{% if rule.max_age_days %}{{ rule.max_age_days }} days{% else %}<span
+                                class="text-muted">—</span>{% endif %}</td>
+                        <td>{{ rule.min_interval_days }} days</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted mb-0" style="font-size:0.85rem;">No schedule rules defined yet. <a
+                    href="{% url 'vaccines:vaccine_edit' vaccine.pk %}">Add rules →</a></p>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="empty-state">
+        <span style="font-size:3rem;">💉</span>
+        <p>No vaccines configured yet.</p>
+        <a href="{% url 'vaccines:vaccine_create' %}" class="btn btn-add mt-2">Add Your First Vaccine</a>
+    </div>
+    {% endif %}
+
+    <!-- ═══════════════ GROUPS TAB ═══════════════ -->
+    {% elif active_tab == 'groups' %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0" style="font-weight:700; color:#333;">Vaccine Groups</h4>
+        <a href="{% url 'vaccines:group_create' %}" class="btn btn-add">+ Add Group</a>
+    </div>
+
+    <div class="info-box">
+        <strong>ℹ️ What are groups?</strong> Groups link vaccines that share antigens (e.g., Penta, DTC, and Td all
+        belong to the "DTP Family").
+        Group rules tell the engine which vaccine to give next based on the child's age and how many group doses they've
+        already received.
+    </div>
+
+    {% if groups %}
+    {% for group in groups %}
+    <div class="entity-card card">
+        <div class="card-header">
+            <div>
+                <h5 class="d-inline">{{ group.name }}</h5>
+                <span class="badge badge-doses ms-2">Interval: {{ group.min_valid_interval_days }}d</span>
+            </div>
+            <div>
+                <a href="{% url 'vaccines:group_edit' group.pk %}" class="btn btn-edit">Edit</a>
+                <a href="{% url 'vaccines:group_delete' group.pk %}" class="btn btn-delete ms-1">Delete</a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="mb-2">
+                <strong style="font-size:0.85rem; color:#666;">Vaccines:</strong>
+                {% for v in group.vaccines.all %}
+                <span class="badge badge-group-vaccine ms-1">{{ v.name }}</span>
+                {% endfor %}
+            </div>
+
+            {% if group.rules.count > 0 %}
+            <table class="table table-sm rule-table">
+                <thead>
+                    <tr>
+                        <th>Prior Doses</th>
+                        <th>Age Range</th>
+                        <th>Give</th>
+                        <th>Min Interval</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rule in group.rules.all %}
+                    <tr>
+                        <td>{{ rule.prior_doses }}</td>
+                        <td>{{ rule.min_age_days }}d {% if rule.max_age_days %} – {{ rule.max_age_days }}d{% else %} +{% endif %}</td>
+                        <td><strong>{{ rule.vaccine_to_give.name }}</strong></td>
+                        <td>{{ rule.min_interval_days }} days</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted mb-0" style="font-size:0.85rem;">No group rules defined yet. <a
+                    href="{% url 'vaccines:group_edit' group.pk %}">Add rules →</a></p>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="empty-state">
+        <span style="font-size:3rem;">🔗</span>
+        <p>No vaccine groups configured yet.</p>
+        <a href="{% url 'vaccines:group_create' %}" class="btn btn-add mt-2">Add Your First Group</a>
+    </div>
+    {% endif %}
+
+    <!-- ═══════════════ POLICY GUIDE TAB ═══════════════ -->
+    {% elif active_tab == 'guide' %}
+    <div class="guide-section">
+        <h4>📅 Age Conversion Reference</h4>
+        <p class="text-muted">All ages and intervals in the system are stored in <strong>days</strong>. Use this table
+            for quick conversions:</p>
+        <table class="table table-bordered conversion-table" style="max-width:500px;">
+            <thead>
+                <tr>
+                    <th>Human Term</th>
+                    <th>Days</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Birth</td>
+                    <td>0</td>
+                </tr>
+                <tr>
+                    <td>6 weeks</td>
+                    <td>42</td>
+                </tr>
+                <tr>
+                    <td>10 weeks</td>
+                    <td>70</td>
+                </tr>
+                <tr>
+                    <td>14 weeks</td>
+                    <td>98</td>
+                </tr>
+                <tr>
+                    <td>6 months</td>
+                    <td>180</td>
+                </tr>
+                <tr>
+                    <td>9 months</td>
+                    <td>270</td>
+                </tr>
+                <tr>
+                    <td>12 months (1 year)</td>
+                    <td>365</td>
+                </tr>
+                <tr>
+                    <td>15 months</td>
+                    <td>456</td>
+                </tr>
+                <tr>
+                    <td>18 months</td>
+                    <td>548</td>
+                </tr>
+                <tr>
+                    <td>24 months (2 years)</td>
+                    <td>730</td>
+                </tr>
+                <tr>
+                    <td>5 years</td>
+                    <td>1825</td>
+                </tr>
+                <tr>
+                    <td>6 years</td>
+                    <td>2190</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="guide-section">
+        <h4>💉 Step 1: Adding a Vaccine</h4>
+        <div class="guide-step">
+            <strong>1.</strong> Go to the <strong>Vaccines</strong> tab and click <strong>"+ Add Vaccine"</strong>.
+        </div>
+        <div class="guide-step">
+            <strong>2.</strong> Enter the vaccine name (e.g., <code>BCG</code>, <code>Penta</code>, <code>MMR</code>).
+        </div>
+        <div class="guide-step">
+            <strong>3.</strong> Check <strong>"Live Attenuated"</strong> if this is a live vaccine. Live vaccines
+            require a 28-day gap between each other.
+        </div>
+        <div class="guide-step">
+            <strong>4.</strong> Add <strong>Schedule Rules</strong> — one row per dose:
+            <ul class="mt-1 mb-0">
+                <li><strong>Dose #</strong> — 1 for first dose, 2 for second, etc.</li>
+                <li><strong>Min Age</strong> — Earliest allowed age in days (safety floor)</li>
+                <li><strong>Recommended Age</strong> — Ideal age to give the dose</li>
+                <li><strong>Max Age</strong> — Latest allowed age (leave blank if no limit)</li>
+                <li><strong>Min Interval</strong> — Minimum days from the previous dose (use 0 for the first dose)</li>
+            </ul>
+        </div>
+        <div class="tip-box">
+            <strong>💡 Tip:</strong> For first doses, set "Min Interval" to <code>0</code>. For subsequent doses, set it
+            to the minimum wait time (e.g., 28 days for a 4-week interval).
+        </div>
+    </div>
+
+    <div class="guide-section">
+        <h4>🔄 Step 2: Adding Catch-up Rules (Optional)</h4>
+        <p class="text-muted">Catch-up rules apply when a child is behind schedule. They define how many doses are still
+            needed and the interval to use.</p>
+        <div class="guide-step">
+            <strong>1.</strong> While adding or editing a vaccine, scroll to the <strong>"Catch-up Rules"</strong>
+            section.
+        </div>
+        <div class="guide-step">
+            <strong>2.</strong> Set the <strong>age band</strong> (From age / To age) for when this catchup rule
+            applies.
+        </div>
+        <div class="guide-step">
+            <strong>3.</strong> Set <strong>Prior Doses</strong> — how many doses the child has already received.
+        </div>
+        <div class="guide-step">
+            <strong>4.</strong> Set <strong>Total Doses Needed</strong> — how many they should get in total to complete
+            catch-up.
+        </div>
+        <div class="guide-step">
+            <strong>5.</strong> Set <strong>Min Interval</strong> — minimum days between catch-up doses.
+        </div>
+    </div>
+
+    <div class="guide-section">
+        <h4>🔗 Step 3: Creating Vaccine Groups</h4>
+        <p class="text-muted">Groups are for vaccine families that share the same antigen. For example, Penta (given to
+            infants), DTC, and Td all protect against Diphtheria, Tetanus, and Pertussis — so they belong to the
+            <strong>"DTP Family"</strong> group.
+        </p>
+        <div class="guide-step">
+            <strong>1.</strong> Go to the <strong>Groups</strong> tab and click <strong>"+ Add Group"</strong>.
+        </div>
+        <div class="guide-step">
+            <strong>2.</strong> Name the group (e.g., <code>DTP Family</code>).
+        </div>
+        <div class="guide-step">
+            <strong>3.</strong> Select all vaccines that belong to this group.
+        </div>
+        <div class="guide-step">
+            <strong>4.</strong> Set the <strong>Min Valid Interval</strong> — the minimum days between any two doses in
+            this group (usually 28 days).
+        </div>
+    </div>
+
+    <div class="guide-section">
+        <h4>📋 Step 4: Adding Group Rules</h4>
+        <p class="text-muted">Group rules tell the engine which vaccine to give next based on the child's age and how
+            many group doses they've had.</p>
+        <div class="guide-step">
+            <strong>Example:</strong> For DTP Family:
+            <ul class="mt-1 mb-0">
+                <li>Child is 6 weeks old with 0 doses → Give <strong>Penta</strong></li>
+                <li>Child is 18 months old with 3 doses → Give <strong>DTC</strong> (booster)</li>
+                <li>Child is 6 years old with 4 doses → Give <strong>Td</strong></li>
+            </ul>
+        </div>
+        <div class="guide-step">
+            For each rule, set:
+            <ul class="mt-1 mb-0">
+                <li><strong>Prior Doses</strong> — how many valid group doses the child has</li>
+                <li><strong>From Age / To Age</strong> — age bracket in days</li>
+                <li><strong>Vaccine to Give</strong> — which vaccine to administer</li>
+                <li><strong>Min Interval</strong> — minimum days from the last group dose</li>
+            </ul>
+        </div>
+        <div class="tip-box">
+            <strong>💡 Tip:</strong> Think of group rules as a decision table:
+            "IF the child has <em>X</em> doses AND is between age <em>A</em> and <em>B</em>, THEN give <em>Vaccine
+                Y</em> with at least <em>N</em> days since the last dose."
+        </div>
+    </div>
+
+    <div class="guide-section">
+        <h4>⚠️ Common Mistakes to Avoid</h4>
+        <div class="guide-step">
+            <strong>1.</strong> <strong>Forgetting to add vaccines to a group</strong> before creating group rules — add
+            the vaccine first, then create the group.
+        </div>
+        <div class="guide-step">
+            <strong>2.</strong> <strong>Overlapping age ranges in group rules</strong> — make sure each age bracket is
+            distinct for the same number of prior doses.
+        </div>
+        <div class="guide-step">
+            <strong>3.</strong> <strong>Setting Min Interval to 0 for non-first doses</strong> — always set a valid
+            interval (e.g., 28 days) for doses after the first.
+        </div>
+        <div class="guide-step">
+            <strong>4.</strong> <strong>Not creating both schedule rules AND group rules</strong> — grouped vaccines
+            still need schedule rules for the engine to calculate target dates.
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -11,10 +11,10 @@ class Vaccine(models.Model):
 class ScheduleRule(models.Model):
     vaccine = models.ForeignKey(Vaccine, on_delete=models.CASCADE, related_name='schedule_rules')
     dose_number = models.PositiveIntegerField(help_text="1 for first dose, 2 for second, etc.")
-    min_age_days = models.PositiveIntegerField(help_text="Minimum age in days to receive this dose")
-    recommended_age_days = models.PositiveIntegerField(help_text="Recommended age in days")
-    max_age_days = models.PositiveIntegerField(null=True, blank=True, help_text="Maximum age in days (optional)")
-    min_interval_days = models.PositiveIntegerField(default=0, help_text="Minimum interval from previous dose in days. 0 for first dose.")
+    min_age_days = models.PositiveIntegerField(help_text="Minimum age in days (e.g., 6 weeks = 42 days, 9 months = 270 days)")
+    recommended_age_days = models.PositiveIntegerField(help_text="Ideal age in days to receive this dose")
+    max_age_days = models.PositiveIntegerField(null=True, blank=True, help_text="Latest allowed age in days (optional)")
+    min_interval_days = models.PositiveIntegerField(default=0, help_text="Min days since previous dose. Use 0 for first dose.")
 
     class Meta:
         unique_together = ('vaccine', 'dose_number')
@@ -25,11 +25,11 @@ class ScheduleRule(models.Model):
 
 class CatchupRule(models.Model):
     vaccine = models.ForeignKey(Vaccine, on_delete=models.CASCADE, related_name='catchup_rules')
-    min_age_days = models.PositiveIntegerField(help_text="Start of age band for this rule in days")
-    max_age_days = models.PositiveIntegerField(help_text="End of age band for this rule in days")
-    prior_doses = models.PositiveIntegerField(help_text="Number of doses received so far")
-    doses_required = models.PositiveIntegerField(help_text="Total doses required to complete schedule in this catchup scenario")
-    min_interval_days = models.PositiveIntegerField(help_text="Minimum interval from previous dose in days")
+    min_age_days = models.PositiveIntegerField(help_text="Start of age band in days (e.g., 1 year = 365 days)")
+    max_age_days = models.PositiveIntegerField(help_text="End of age band in days (e.g., 5 years = 1825 days)")
+    prior_doses = models.PositiveIntegerField(help_text="Number of valid doses received so far")
+    doses_required = models.PositiveIntegerField(help_text="Total doses needed to complete catch-up")
+    min_interval_days = models.PositiveIntegerField(help_text="Minimum days between catch-up doses")
 
     def __str__(self):
         return f"{self.vaccine.name} Catchup: {self.min_age_days}-{self.max_age_days}d, {self.prior_doses} prior doses"
@@ -63,12 +63,12 @@ class GroupRule(models.Model):
     Specifies what to give based on age and prior doses received across the entire group.
     """
     group = models.ForeignKey(VaccineGroup, on_delete=models.CASCADE, related_name='rules')
-    prior_doses = models.PositiveIntegerField(help_text="Number of valid doses already received from this group")
-    min_age_days = models.PositiveIntegerField(help_text="Minimum age in days for this rule to apply (age-bracket selector)")
-    max_age_days = models.PositiveIntegerField(null=True, blank=True, help_text="Maximum age in days for this rule's age bracket (optional)")
+    prior_doses = models.PositiveIntegerField(help_text="Number of valid group doses already received")
+    min_age_days = models.PositiveIntegerField(help_text="Minimum age in days for this rule to apply")
+    max_age_days = models.PositiveIntegerField(null=True, blank=True, help_text="Maximum age in days (optional)")
     vaccine_to_give = models.ForeignKey(Vaccine, on_delete=models.CASCADE, related_name='+')
     min_interval_days = models.PositiveIntegerField(
-        help_text="Minimum interval from the last dose in the group in days"
+        help_text="Minimum days from the last dose in the group"
     )
 
     class Meta:

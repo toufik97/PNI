@@ -13,6 +13,12 @@ class CatchupRuleInline(admin.TabularInline):
 class VaccineAdmin(admin.ModelAdmin):
     list_display = ('name', 'live')
     inlines = [ScheduleRuleInline, CatchupRuleInline]
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('name', 'live', 'description'),
+            'description': 'Core vaccine identifiers and properties.'
+        }),
+    )
 
 @admin.register(ScheduleRule)
 class ScheduleRuleAdmin(admin.ModelAdmin):
@@ -37,3 +43,9 @@ class VaccineGroupAdmin(admin.ModelAdmin):
     list_display = ('name', 'min_valid_interval_days')
     filter_horizontal = ('vaccines',)
     inlines = [GroupRuleInline]
+    fieldsets = (
+        ('Group Information', {
+            'fields': ('name', 'vaccines', 'min_valid_interval_days'),
+            'description': 'Configure the group name, included vaccines, and safety intervals.'
+        }),
+    )

@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<style>
+    .form-header {
+        background: linear-gradient(135deg, #4e54c8 0%, #8f94fb 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 1.5rem 2rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .form-header h2 {
+        margin: 0;
+        font-weight: 700;
+    }
+
+    .form-section {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .form-section h5 {
+        font-weight: 700;
+        color: #4e54c8;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #eee;
+    }
+
+    .formset-row {
+        background: #f8f9ff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .formset-row label {
+        font-weight: 600;
+        font-size: 0.8rem;
+        color: #555;
+    }
+
+    .help-inline {
+        font-size: 0.75rem;
+        color: #888;
+        margin-top: 0.15rem;
+    }
+
+    .btn-save {
+        background: linear-gradient(135deg, #4e54c8 0%, #8f94fb 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.6rem 2rem;
+        font-weight: 600;
+    }
+
+    .btn-save:hover {
+        opacity: 0.9;
+        color: white;
+    }
+
+    .btn-back {
+        color: #666;
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    .btn-back:hover {
+        color: #333;
+    }
+
+    .errorlist {
+        color: #dc3545;
+        font-size: 0.85rem;
+        list-style: none;
+        padding: 0;
+        margin: 0.25rem 0 0;
+    }
+
+    .vaccine-checkbox-list .form-check {
+        margin-bottom: 0.25rem;
+    }
+</style>
+
+<div class="pt-3">
+    <div class="form-header">
+        <h2>{{ title }}</h2>
+    </div>
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+
+        <!-- Group Basic Info -->
+        <div class="form-section">
+            <h5>🔗 Group Information</h5>
+            {% for field in form %}
+            <div class="mb-3">
+                <label for="{{ field.id_for_label }}" class="form-label fw-semibold">{{ field.label }}</label>
+                {% if field.name == 'vaccines' %}
+                <div class="vaccine-checkbox-list">
+                    {{ field }}
+                </div>
+                {% if field.help_text %}
+                <div class="help-inline">{{ field.help_text }}</div>
+                {% endif %}
+                {% else %}
+                {{ field }}
+                {% if field.help_text %}
+                <div class="help-inline">{{ field.help_text }}</div>
+                {% endif %}
+                {% endif %}
+                {% if field.errors %}
+                <ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Group Rules -->
+        <div class="form-section">
+            <h5>📋 Group Rules</h5>
+            <p class="text-muted" style="font-size:0.85rem;">
+                Each rule tells the engine: "If the child has <em>X</em> prior doses and is between age <em>A</em> and
+                <em>B</em>, give <em>Vaccine Y</em>."
+                <br><strong>Quick reference:</strong> 6wk=42d, 10wk=70d, 14wk=98d, 6mo=180d, 9mo=270d, 12mo=365d,
+                18mo=548d
+            </p>
+            {{ rule_formset.management_form }}
+            {% for rform in rule_formset %}
+            <div class="formset-row">
+                {% if rform.instance.pk %}{{ rform.DELETE }}{% endif %}
+                <div class="row g-2">
+                    {% for field in rform.visible_fields %}
+                    {% if field.name != 'DELETE' %}
+                    <div class="col-md">
+                        <label class="form-label">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}
+                        <div class="help-inline">{{ field.help_text }}</div>
+                        {% endif %}
+                        {% if field.errors %}
+                        <ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% for hidden in rform.hidden_fields %}{{ hidden }}{% endfor %}
+            </div>
+            {% endfor %}
+            {% if rule_formset.non_form_errors %}
+            <ul class="errorlist">{% for e in rule_formset.non_form_errors %}<li>{{ e }}</li>{% endfor %}</ul>
+            {% endif %}
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center">
+            <a href="{% url 'vaccines:settings' %}?tab=groups" class="btn-back">← Back to Settings</a>
+            <button type="submit" class="btn btn-save">{{ submit_label }}</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
