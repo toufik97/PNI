@@ -133,24 +133,62 @@
             {{ schedule_formset.management_form }}
             {% for sform in schedule_formset %}
             <div class="formset-row">
-                {% if sform.instance.pk %}{{ sform.DELETE }}{% endif %}
-                <div class="row g-2">
-                    {% for field in sform.visible_fields %}
-                    {% if field.name != 'DELETE' %}
-                    <div class="col-md{% if field.name == 'dose_number' %}-2{% else %}{% endif %}">
-                        <label class="form-label">{{ field.label }}</label>
-                        {{ field }}
-                        {% if field.help_text %}
-                        <div class="help-inline">{{ field.help_text }}</div>
-                        {% endif %}
-                        {% if field.errors %}
-                        <ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>
-                        {% endif %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="badge bg-primary">Dose Details</span>
+                    {% if sform.instance.pk %}
+                    <div class="form-check">
+                        {{ sform.DELETE }}
+                        <label class="form-check-label text-danger fw-bold" style="font-size:0.8rem;">Delete
+                            Dose</label>
                     </div>
                     {% endif %}
+                </div>
+
+                <!-- Timing & Dosage Row -->
+                <div class="row g-2 mb-3">
+                    <div class="col-6 col-md-2">
+                        <label class="form-label">{{ sform.dose_number.label }}</label>
+                        {{ sform.dose_number }}
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="form-label">{{ sform.min_age_days.label }}</label>
+                        {{ sform.min_age_days }}
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="form-label">{{ sform.recommended_age_days.label }}</label>
+                        {{ sform.recommended_age_days }}
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="form-label">{{ sform.overdue_age_days.label }}</label>
+                        {{ sform.overdue_age_days }}
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="form-label">{{ sform.min_interval_days.label }}</label>
+                        {{ sform.min_interval_days }}
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="form-label">{{ sform.dose_amount.label }}</label>
+                        {{ sform.dose_amount }}
+                    </div>
+                </div>
+
+                <!-- Max Age (separate to keep row clean) -->
+                <div class="row g-2">
+                    <div class="col-12 col-md-4">
+                        <label class="form-label">{{ sform.max_age_days.label }}</label>
+                        {{ sform.max_age_days }}
+                    </div>
+                </div>
+
+                {% for hidden in sform.hidden_fields %}{{ hidden }}{% endfor %}
+
+                {% if sform.errors %}
+                <div class="mt-2 p-2 border border-danger rounded bg-light">
+                    {% for field, errors in sform.errors.items %}
+                    <div class="text-danger small"><strong>{{ field|title }}:</strong> {{ errors|join:", " }}</div>
                     {% endfor %}
                 </div>
-                {% for hidden in sform.hidden_fields %}{{ hidden }}{% endfor %}
+                {% endif %}
             </div>
             {% endfor %}
             {% if schedule_formset.non_form_errors %}

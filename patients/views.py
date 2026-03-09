@@ -15,7 +15,9 @@ def dashboard(request):
         engine = VaccinationEngine(child)
         eval_result = engine.evaluate()
         if eval_result['due_today']:
-            due_today_list.append((child, eval_result['due_today']))
+            # Store just the IDs of due vaccines for easier template checks
+            due_ids = [d['vaccine'].id for d in eval_result['due_today']]
+            due_today_list.append((child, eval_result['due_today'], due_ids))
         elif eval_result['next_appointment']:
             upcoming_list.append((child, eval_result['next_appointment']))
             
@@ -65,7 +67,8 @@ def profile(request, child_id):
         'child': child,
         'records': records,
         'eval': eval_result,
-        'vaccines': all_vaccines
+        'vaccines': all_vaccines,
+        'due_ids': [d['vaccine'].id for d in eval_result['due_today']]
     }
     return render(request, 'patients/profile.html', context)
 

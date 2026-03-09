@@ -14,8 +14,10 @@ class ScheduleRule(models.Model):
     dose_number = models.PositiveIntegerField(help_text="1 for first dose, 2 for second, etc.")
     min_age_days = models.PositiveIntegerField(help_text="Minimum age in days (e.g., 6 weeks = 42 days, 9 months = 270 days)")
     recommended_age_days = models.PositiveIntegerField(help_text="Ideal age in days to receive this dose")
+    overdue_age_days = models.PositiveIntegerField(null=True, blank=True, help_text="Age in days after which the dose is considered overdue/missing")
     max_age_days = models.PositiveIntegerField(null=True, blank=True, help_text="Latest allowed age in days (optional)")
     min_interval_days = models.PositiveIntegerField(default=0, help_text="Min days since previous dose. Use 0 for first dose.")
+    dose_amount = models.CharField(max_length=50, blank=True, null=True, help_text="e.g., 0.05ml")
 
     class Meta:
         unique_together = ('vaccine', 'dose_number')
@@ -45,6 +47,7 @@ class CatchupRule(models.Model):
     prior_doses = models.PositiveIntegerField(help_text="Number of valid doses received so far")
     doses_required = models.PositiveIntegerField(help_text="Total doses needed to complete catch-up")
     min_interval_days = models.PositiveIntegerField(help_text="Minimum days between catch-up doses")
+    dose_amount = models.CharField(max_length=50, blank=True, null=True, help_text="Override dose amount for this catch-up rule")
 
     def __str__(self):
         return f"{self.vaccine.name} Catchup: {self.min_age_days}-{self.max_age_days}d, {self.prior_doses} prior doses"
@@ -85,6 +88,7 @@ class GroupRule(models.Model):
     min_interval_days = models.PositiveIntegerField(
         help_text="Minimum days from the last dose in the group"
     )
+    dose_amount = models.CharField(max_length=50, blank=True, null=True, help_text="Dose amount for this specific group rule")
 
     class Meta:
         ordering = ['group', 'prior_doses', 'min_age_days']

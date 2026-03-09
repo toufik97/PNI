@@ -66,16 +66,21 @@ class VaccinationEngine:
                 if prior_doses < applicable_catchup.doses_required:
                     # Due for catchup dose
                     last_dose_date = v_history[-1].date_given if v_history else None
+                    
+                    # Dose amount from catchup rule, fallback to standard rule if catchup doesn't specify
+                    standard_rule = ScheduleRule.objects.filter(vaccine=vaccine, dose_number=prior_doses + 1).first()
+                    dose_val = applicable_catchup.dose_amount or (standard_rule.dose_amount if standard_rule else None)
+
                     if last_dose_date:
                         days_since_last = (self.evaluation_date - last_dose_date).days
                         if days_since_last >= applicable_catchup.min_interval_days:
-                            due_today.append(vaccine)
+                            due_today.append({'vaccine': vaccine, 'dose_amount': dose_val})
                             missing_doses.append(vaccine)
                         else:
                             next_due_date = last_dose_date + timedelta(days=applicable_catchup.min_interval_days)
                             upcoming_doses.append((vaccine, next_due_date))
                     else:
-                        due_today.append(vaccine)
+                        due_today.append({'vaccine': vaccine, 'dose_amount': dose_val})
                         missing_doses.append(vaccine)
                 continue
 
@@ -94,8 +99,15 @@ class VaccinationEngine:
                 age_floor_date = self.child.dob + timedelta(days=rule.min_age_days)
                 target_date = max(interval_date, age_floor_date)
 
-            # 1. Missing? (Strictly greater than target date)
-            if self.evaluation_date > target_date:
+            # Overdue logic
+            overdue_child_age = rule.overdue_age_days if rule.overdue_age_days is not None else rule.recommended_age_days
+            overdue_date = self.child.dob + timedelta(days=overdue_child_age)
+            
+            # Calculation of Dose Amount
+            dose_val = rule.dose_amount
+            
+            # 1. Missing? (Strictly greater than overdue date)
+            if self.evaluation_date > overdue_date:
                 missing_doses.append(vaccine)
             
             # 2. Due Today?
@@ -103,7 +115,7 @@ class VaccinationEngine:
                 # Still respect max_age if it exists
                 if rule.max_age_days and self.age_days > rule.max_age_days:
                     continue 
-                due_today.append(vaccine)
+                due_today.append({'vaccine': vaccine, 'dose_amount': dose_val})
             else:
                 # 3. Upcoming
                 upcoming_doses.append((vaccine, target_date))
@@ -111,7 +123,7 @@ class VaccinationEngine:
 
 
         # Check live vaccines same-day compatibility (simplified MVP: 28 days interval if not given same day)
-        due_today_live = [v for v in due_today if v.live]
+        due_today_live = [d['vaccine'] for d in due_today if d['vaccine'].live]
         recent_live_doses = [
             r for r in self.records 
             if r.vaccine.live and not r.invalid_flag and (self.evaluation_date - r.date_given).days < 28
@@ -119,12 +131,21 @@ class VaccinationEngine:
         
         # If a live vaccine was given recently (< 28 days) and not today, we cannot give another live vaccine today
         if recent_live_doses:
-            due_today = [v for v in due_today if not (v.live and v in due_today_live)]
+            due_today = [d for d in due_today if not (d['vaccine'].live and d['vaccine'] in due_today_live)]
         
+        # Convert due_today items to a consistent set of results for evaluation return
+        final_due = []
+        for d in due_today:
+            if isinstance(d, dict):
+                final_due.append(d)
+            else:
+                # Fallback for group logic which might still append just vaccines
+                final_due.append({'vaccine': d, 'dose_amount': None})
+
         next_appointment = min([d[1] for d in upcoming_doses]) if upcoming_doses else None
 
         return {
-            'due_today': list(set(due_today)),
+            'due_today': final_due,
             'missing_doses': list(set(missing_doses)),
             'next_appointment': next_appointment,
             'upcoming': upcoming_doses
@@ -324,13 +345,24 @@ class VaccinationEngine:
             target_date = self.child.dob + timedelta(days=rule.min_age_days)
 
 
-        # 1. Missing? (Strictly greater than target)
-        if self.evaluation_date > target_date:
+        # Calculation of Dose Amount
+        # Priority: GroupRule's dose_amount -> StandardRule's dose_amount
+        dose_val = rule.dose_amount or (standard_rule.dose_amount if standard_rule else None)
+
+        # Overdue logic
+        overdue_age = rule.max_age_days # Default for group rules if no specific overdue exists
+        if standard_rule:
+            overdue_age = standard_rule.overdue_age_days if standard_rule.overdue_age_days is not None else standard_rule.recommended_age_days
+        
+        overdue_date = self.child.dob + timedelta(days=overdue_age) if overdue_age is not None else target_date
+
+        # 1. Missing? (Strictly greater than overdue)
+        if self.evaluation_date > overdue_date:
             res['missing_doses'].append(vaccine_to_give)
 
         # 2. Due Today?
         if self.evaluation_date >= target_date:
-            res['due_today'].append(vaccine_to_give)
+            res['due_today'].append({'vaccine': vaccine_to_give, 'dose_amount': dose_val})
         else:
             # 3. Upcoming
             res['upcoming'].append((vaccine_to_give, target_date))

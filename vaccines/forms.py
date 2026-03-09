@@ -31,13 +31,19 @@ class VaccineForm(forms.ModelForm):
 class ScheduleRuleForm(forms.ModelForm):
     class Meta:
         model = ScheduleRule
-        fields = ['dose_number', 'min_age_days', 'recommended_age_days', 'max_age_days', 'min_interval_days']
+        fields = [
+            'dose_number', 'min_age_days', 'recommended_age_days', 
+            'overdue_age_days', 'max_age_days', 'min_interval_days',
+            'dose_amount'
+        ]
         widgets = {
             'dose_number': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
             'min_age_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'e.g., 42'}),
             'recommended_age_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'e.g., 42'}),
             'max_age_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'Optional'}),
             'min_interval_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'e.g., 28'}),
+            'overdue_age_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'Optional'}),
+            'dose_amount': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., 0.05ml'}),
         }
         labels = {
             'dose_number': 'Dose #',
@@ -45,12 +51,16 @@ class ScheduleRuleForm(forms.ModelForm):
             'recommended_age_days': 'Recommended Age (days)',
             'max_age_days': 'Max Age (days)',
             'min_interval_days': 'Min Interval (days)',
+            'overdue_age_days': 'Overdue Age (days)',
+            'dose_amount': 'Dose Amount',
         }
         help_texts = {
             'min_age_days': '6wk=42, 10wk=70, 14wk=98, 6mo=180, 9mo=270, 12mo=365, 18mo=548',
             'recommended_age_days': 'The ideal age to give this dose',
             'max_age_days': 'Leave blank if no upper age limit',
             'min_interval_days': 'Minimum days since previous dose. Use 0 for first dose.',
+            'overdue_age_days': 'Age (days) when marked MISSING (e.g., 30 for BCG)',
+            'dose_amount': 'e.g., 0.05ml',
         }
 
 
@@ -66,13 +76,14 @@ ScheduleRuleFormSet = forms.inlineformset_factory(
 class CatchupRuleForm(forms.ModelForm):
     class Meta:
         model = CatchupRule
-        fields = ['min_age_days', 'max_age_days', 'prior_doses', 'doses_required', 'min_interval_days']
+        fields = ['min_age_days', 'max_age_days', 'prior_doses', 'doses_required', 'min_interval_days', 'dose_amount']
         widgets = {
             'min_age_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'e.g., 365'}),
             'max_age_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'e.g., 1825'}),
             'prior_doses': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
             'doses_required': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
             'min_interval_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'e.g., 28'}),
+            'dose_amount': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., 0.1ml'}),
         }
         labels = {
             'min_age_days': 'From Age (days)',
@@ -80,11 +91,13 @@ class CatchupRuleForm(forms.ModelForm):
             'prior_doses': 'Prior Doses',
             'doses_required': 'Total Doses Needed',
             'min_interval_days': 'Min Interval (days)',
+            'dose_amount': 'Dose Amount',
         }
         help_texts = {
             'min_age_days': '6wk=42, 6mo=180, 12mo=365, 5yr=1825',
             'prior_doses': 'How many doses the child already has',
             'doses_required': 'Total doses needed to complete catch-up',
+            'dose_amount': 'Optional override for catch-up (e.g., 0.1ml)',
         }
 
 
@@ -127,13 +140,14 @@ class VaccineGroupForm(forms.ModelForm):
 class GroupRuleForm(forms.ModelForm):
     class Meta:
         model = GroupRule
-        fields = ['prior_doses', 'min_age_days', 'max_age_days', 'vaccine_to_give', 'min_interval_days']
+        fields = ['prior_doses', 'min_age_days', 'max_age_days', 'vaccine_to_give', 'min_interval_days', 'dose_amount']
         widgets = {
             'prior_doses': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
             'min_age_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'e.g., 42'}),
             'max_age_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'Optional'}),
             'vaccine_to_give': forms.Select(attrs={'class': 'form-select'}),
             'min_interval_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'e.g., 28'}),
+            'dose_amount': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., 0.1ml'}),
         }
         labels = {
             'prior_doses': 'Prior Doses in Group',
@@ -141,12 +155,14 @@ class GroupRuleForm(forms.ModelForm):
             'max_age_days': 'To Age (days)',
             'vaccine_to_give': 'Vaccine to Give',
             'min_interval_days': 'Min Interval (days)',
+            'dose_amount': 'Dose Amount',
         }
         help_texts = {
             'prior_doses': 'Number of valid doses already received from this group',
             'min_age_days': '6wk=42, 10wk=70, 14wk=98, 6mo=180, 9mo=270, 12mo=365',
             'max_age_days': 'Leave blank if no upper age limit for this rule',
             'min_interval_days': 'Minimum days from the last dose in the group',
+            'dose_amount': 'Specific dose for this rule',
         }
 
 

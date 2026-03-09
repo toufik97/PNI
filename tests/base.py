@@ -11,7 +11,7 @@ across test methods within the same class.
 from datetime import date, timedelta
 from django.test import TestCase
 from patients.models import Child, VaccinationRecord
-from vaccines.models import Vaccine, ScheduleRule, VaccineGroup, GroupRule
+from vaccines.models import Vaccine, ScheduleRule, CatchupRule, VaccineGroup, GroupRule
 
 
 class BaseVaccinationTestCase(TestCase):
@@ -27,101 +27,55 @@ class BaseVaccinationTestCase(TestCase):
         super().setUp()
         self._child_counter = 0
 
+        import json
+        import os
+        from django.conf import settings
+
+        policy_path = os.path.join(settings.BASE_DIR, 'vaccines', 'policy_reference.json')
+        with open(policy_path, 'r') as f:
+            policy = json.load(f)
+
         # --- Vaccines ---
-        self.penta = Vaccine.objects.create(name='Penta', live=False)
-        self.dtc = Vaccine.objects.create(name='DTC', live=False)
-        self.td = Vaccine.objects.create(name='Td', live=False)
-        self.rr = Vaccine.objects.create(name='RR', live=True)
+        self.vaccine_map = {}
+        for v_data in policy['vaccines']:
+            v = Vaccine.objects.create(name=v_data['name'], live=v_data['live'])
+            self.vaccine_map[v_data['name']] = v
+        
+        # Shortcuts for existing tests
+        self.penta = self.vaccine_map.get('Penta')
+        self.dtc = self.vaccine_map.get('DTC')
+        self.td = self.vaccine_map.get('Td')
+        self.rr = self.vaccine_map.get('RR')
+        self.bcg = self.vaccine_map.get('BCG')
 
-        # --- Standard ScheduleRules for RR ---
-        ScheduleRule.objects.create(
-            vaccine=self.rr, dose_number=1,
-            min_age_days=250, recommended_age_days=270, min_interval_days=0
-        )
-        ScheduleRule.objects.create(
-            vaccine=self.rr, dose_number=2,
-            min_age_days=500, recommended_age_days=540, min_interval_days=28
-        )
+        # --- Schedule Rules ---
+        for sr_data in policy['schedule_rules']:
+            vaccine = self.vaccine_map[sr_data['vaccine']]
+            for rule in sr_data['rules']:
+                ScheduleRule.objects.create(vaccine=vaccine, **rule)
 
-        # --- Standard ScheduleRules for DTP family (Safety Floors vs Recommendations) ---
-        # Penta 1: Safety floor 42d, Recommended 60d (2mo)
-        ScheduleRule.objects.create(
-            vaccine=self.penta, dose_number=1, 
-            min_age_days=42, recommended_age_days=60
-        )
-        # Penta 2: Safety floor 70d, Recommended 90d (3mo)
-        ScheduleRule.objects.create(
-            vaccine=self.penta, dose_number=2, 
-            min_age_days=70, recommended_age_days=90
-        )
-        # Penta 3: Safety floor 98d, Recommended 120d (4mo)
-        ScheduleRule.objects.create(
-            vaccine=self.penta, dose_number=3, 
-            min_age_days=98, recommended_age_days=120
-        )
-        # DTC (Booster 1 at 18m, Booster 2 at 5y)
-        ScheduleRule.objects.create(
-            vaccine=self.dtc, dose_number=1, 
-            min_age_days=18*30, recommended_age_days=18*30
-        )
-        ScheduleRule.objects.create(
-            vaccine=self.dtc, dose_number=2, 
-            min_age_days=5*365, recommended_age_days=5*365
-        )
-        # Td (Catchup/Booster > 7y)
-        ScheduleRule.objects.create(
-            vaccine=self.td, dose_number=1, 
-            min_age_days=7*365, recommended_age_days=7*365
-        )
+        # --- Catch-up Rules ---
+        for cr_data in policy['catchup_rules']:
+            vaccine = self.vaccine_map[cr_data['vaccine']]
+            for rule in cr_data['rules']:
+                CatchupRule.objects.create(vaccine=vaccine, **rule)
 
-
-
-        # --- DTP Family Group ---
-        self.dtp_group = VaccineGroup.objects.create(
-            name='DTP Family', min_valid_interval_days=28
-        )
-        self.dtp_group.vaccines.set([self.penta, self.dtc, self.td])
-
-        # Age constants (days)
-        MO_12 = 365
-        MO_18 = 18 * 30
-        YR_3 = 3 * 365
-        YR_5 = 5 * 365
-        YR_7 = 7 * 365
-
-        # --- GroupRules for DTP Family ---
-        group_rules = [
-            # 0 prior doses
-            (0, 0, MO_12 - 1, self.penta, 0),
-            (0, MO_12, YR_3 - 1, self.penta, 0),
-            (0, YR_3, YR_7 - 1, self.dtc, 0),
-            (0, YR_7, None, self.td, 0),
-            # 1 prior dose
-            (1, 0, MO_18 - 1, self.penta, 28),
-            (1, MO_18, YR_3 - 1, self.penta, 28),
-            (1, YR_3, YR_7 - 1, self.dtc, 28),
-            (1, YR_7, None, self.td, 28),
-            # 2 prior doses
-            (2, 0, MO_18 - 1, self.penta, 28),
-            (2, MO_18, YR_3 - 1, self.penta, 28),
-            (2, YR_3, YR_7 - 1, self.dtc, 28),
-            (2, YR_7, None, self.td, 28),
-            # 3 prior doses (primary complete, boosters)
-            (3, MO_18, None, self.dtc, 180),
-            (3, YR_7, None, self.td, 180),
-            # 4 prior doses (B1 complete)
-            (4, YR_5, None, self.dtc, 4 * 365),
-            (4, YR_7, None, self.td, 365),
-        ]
-        for prior, min_age, max_age, vaccine, interval in group_rules:
-            GroupRule.objects.create(
-                group=self.dtp_group,
-                prior_doses=prior,
-                min_age_days=min_age,
-                max_age_days=max_age,
-                vaccine_to_give=vaccine,
-                min_interval_days=interval,
+        # --- Vaccine Groups ---
+        for g_data in policy['groups']:
+            group = VaccineGroup.objects.create(
+                name=g_data['name'], 
+                min_valid_interval_days=g_data['min_valid_interval_days']
             )
+            g_vaccines = [self.vaccine_map[name] for name in g_data['vaccines']]
+            group.vaccines.set(g_vaccines)
+            
+            for r_data in g_data['rules']:
+                v_name = r_data.pop('vaccine_to_give')
+                v_to_give = self.vaccine_map[v_name]
+                GroupRule.objects.create(group=group, vaccine_to_give=v_to_give, **r_data)
+            
+            if g_data['name'] == 'DTP Family':
+                self.dtp_group = group
 
 
 
@@ -147,7 +101,7 @@ class BaseVaccinationTestCase(TestCase):
 
     def due_names(self, result):
         """Helper: get sorted list of vaccine names due today."""
-        return sorted([v.name for v in result['due_today']])
+        return sorted([d['vaccine'].name for d in result['due_today']])
 
     def missing_names(self, result):
         """Helper: get sorted list of missing vaccine names."""

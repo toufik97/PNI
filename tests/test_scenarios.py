@@ -46,15 +46,25 @@ class TestDynamicScenarios(BaseVaccinationTestCase):
                     
                     # 3. Assert Expected Due
                     expected_due = s.get('expected_due', [])
-                    actual_due = self.due_names(result)
+                    actual_due_info = result['due_today']
+                    actual_due_names = [d['vaccine'].name for d in actual_due_info]
+                    
                     for expected in expected_due:
-                        self.assertIn(expected, actual_due, f"Fail: {expected} expected to be DUE in '{s['name']}'")
+                        self.assertIn(expected, actual_due_names, f"Fail: {expected} expected to be DUE in '{s['name']}'")
+                    
+                    # Optional: Check dose amount if specified in scenario
+                    if 'expected_dose_amount' in s:
+                        # Find the relevant vaccine in due_today
+                        for due_item in actual_due_info:
+                            if due_item['vaccine'].name == "BCG": # Specifically checking BCG for now as per request
+                                self.assertEqual(due_item['dose_amount'], s['expected_dose_amount'], 
+                                                 f"Fail: Wrong dose amount for BCG in '{s['name']}'. Expected {s['expected_dose_amount']}, got {due_item['dose_amount']}")
                     
                     # 4. Assert Expected Upcoming
                     expected_upcoming = s.get('expected_upcoming', [])
-                    actual_upcoming = self.upcoming_names(result)
+                    actual_upcoming_names = self.upcoming_names(result)
                     for expected in expected_upcoming:
-                        self.assertIn(expected, actual_upcoming, f"Fail: {expected} expected to be UPCOMING in '{s['name']}'")
+                        self.assertIn(expected, actual_upcoming_names, f"Fail: {expected} expected to be UPCOMING in '{s['name']}'")
 
                     # 5. Assert Expected Missing
                     expected_missing = s.get('expected_missing', [])

@@ -206,5 +206,58 @@
         "reason": "short_interval"
       }
     ]
+  },
+  {
+    "name": "BCG: Newborn (0 days) gets BCG",
+    "age_days": 0,
+    "history": [],
+    "expected_due": [
+      "BCG"
+    ],
+    "expected_missing": []
+  },
+  {
+    "name": "BCG: 15 day old baby still within recommended time",
+    "age_days": 15,
+    "history": [],
+    "expected_due": [
+      "BCG"
+    ],
+    "expected_missing": []
+  },
+  {
+    "name": "BCG: 31 day old baby is now MISSING",
+    "age_days": 31,
+    "history": [],
+    "expected_due": [
+      "BCG"
+    ],
+    "expected_missing": [
+      "BCG"
+    ]
+  },
+  {
+    "name": "BCG: 400 day old child gets 0.1ml dose",
+    "age_days": 400,
+    "history": [],
+    "expected_due": [
+      "BCG"
+    ],
+    "expected_missing": [
+      "BCG"
+    ],
+    "expected_dose_amount": "0.1ml"
+  },
+  {
+    "name": "BCG: Completed at birth",
+    "age_days": 60,
+    "history": [
+      {
+        "vax": "BCG",
+        "days_ago": 60
+      }
+    ],
+    "expected_due": [],
+    "expected_upcoming": []
   }
 ]

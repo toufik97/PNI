@@ -35,7 +35,7 @@
                         <select name="vaccine_id" class="form-select" required>
                             <option value="">Select Vaccine...</option>
                             {% for v in vaccines %}
-                            {% if v in eval.due_today %}
+                            {% if v.id in due_ids %}
                             <option value="{{ v.id }}" class="fw-bold text-success">
                                 {{ v.name }} (Due)
                             </option>
@@ -78,8 +78,14 @@
                         <h6 class="text-danger">Due Today</h6>
                         {% if eval.due_today %}
                         <ul class="list-group">
-                            {% for v in eval.due_today %}
-                            <li class="list-group-item list-group-item-danger">{{ v.name }}</li>
+                            {% for item in eval.due_today %}
+                            <li
+                                class="list-group-item list-group-item-danger d-flex justify-content-between align-items-center">
+                                {{ item.vaccine.name }}
+                                {% if item.dose_amount %}
+                                <span class="badge bg-light text-danger">{{ item.dose_amount }}</span>
+                                {% endif %}
+                            </li>
                             {% endfor %}
                         </ul>
                         {% else %}
