@@ -1,0 +1,210 @@
+[
+  {
+    "name": "DTP: Baby under 12mo gets Penta (0 doses)",
+    "age_days": 90,
+    "history": [],
+    "expected_due": [
+      "Penta"
+    ]
+  },
+  {
+    "name": "DTP: Toddler 12mo-3y gets Penta (0 doses)",
+    "age_days": 540,
+    "history": [],
+    "expected_due": [
+      "Penta"
+    ]
+  },
+  {
+    "name": "DTP: Child 3y-7y gets DTC (0 doses)",
+    "age_days": 1825,
+    "history": [],
+    "expected_due": [
+      "DTC"
+    ]
+  },
+  {
+    "name": "DTP: Child over 7y gets Td (0 doses)",
+    "age_days": 2920,
+    "history": [],
+    "expected_due": [
+      "Td"
+    ]
+  },
+  {
+    "name": "DTP: Baby wait for 28d interval (1 dose Penta at 60d, now 90d)",
+    "age_days": 90,
+    "history": [
+      {
+        "vax": "Penta",
+        "days_ago": 14
+      }
+    ],
+    "expected_due": [],
+    "expected_upcoming": [
+      "Penta"
+    ]
+  },
+  {
+    "name": "DTP: Baby gets Penta 2 (1 dose Penta at 60d, now 120d)",
+    "age_days": 120,
+    "history": [
+      {
+        "vax": "Penta",
+        "days_ago": 60
+      }
+    ],
+    "expected_due": [
+      "Penta"
+    ]
+  },
+  {
+    "name": "DTP: Child 4 doses, wait for Booster 2 at 5y",
+    "age_days": 1095,
+    "history": [
+      {
+        "vax": "Penta",
+        "days_ago": 1000
+      },
+      {
+        "vax": "Penta",
+        "days_ago": 960
+      },
+      {
+        "vax": "Penta",
+        "days_ago": 920
+      },
+      {
+        "vax": "DTC",
+        "days_ago": 365
+      }
+    ],
+    "expected_due": [],
+    "expected_upcoming": [
+      "DTC"
+    ]
+  },
+  {
+    "name": "RR: Routine Dose 1 (9mo)",
+    "age_days": 270,
+    "history": [],
+    "expected_due": [
+      "RR"
+    ]
+  },
+  {
+    "name": "RR: Missing Dose 1 (over recommended age)",
+    "age_days": 400,
+    "history": [],
+    "expected_due": [
+      "RR"
+    ],
+    "expected_missing": [
+      "RR"
+    ]
+  },
+  {
+    "name": "RR: Complete (2 doses done)",
+    "age_days": 600,
+    "history": [
+      {
+        "vax": "RR",
+        "days_ago": 330
+      },
+      {
+        "vax": "RR",
+        "days_ago": 60
+      }
+    ],
+    "expected_due": [],
+    "expected_upcoming": []
+  },
+  {
+    "name": "Validation: Short Interval Flagged (Penta d2 at 20d)",
+    "age_days": 120,
+    "history": [
+      {
+        "vax": "Penta",
+        "days_ago": 60
+      },
+      {
+        "vax": "Penta",
+        "days_ago": 40
+      }
+    ],
+    "expected_due": [
+      "Penta"
+    ],
+    "expected_invalid": [
+      {
+        "vax": "Penta",
+        "index": 1,
+        "reason": "short_interval"
+      }
+    ]
+  },
+  {
+    "name": "Validation: Too Early Flagged (Penta at 7 days)",
+    "age_days": 90,
+    "history": [
+      {
+        "vax": "Penta",
+        "days_ago": 83
+      }
+    ],
+    "expected_due": [
+      "Penta"
+    ],
+    "expected_invalid": [
+      {
+        "vax": "Penta",
+        "index": 0,
+        "reason": "too_early"
+      }
+    ]
+  },
+  {
+    "name": "Validation: Wrong Vaccine Flagged (Penta at 8y)",
+    "age_days": 2920,
+    "history": [
+      {
+        "vax": "Penta",
+        "days_ago": 0
+      }
+    ],
+    "expected_due": [
+      "Td"
+    ],
+    "expected_invalid": [
+      {
+        "vax": "Penta",
+        "index": 0,
+        "reason": "wrong_vaccine"
+      }
+    ]
+  },
+  {
+    "name": "Validation: Mixed DTP Group Interval (Penta then DTC at 15d)",
+    "age_days": 730,
+    "history": [
+      {
+        "vax": "Penta",
+        "days_ago": 60
+      },
+      {
+        "vax": "DTC",
+        "days_ago": 45
+      }
+    ],
+    "expected_due": [
+      "Penta"
+    ],
+    "expected_invalid": [
+      {
+        "vax": "DTC",
+        "index": 1,
+        "reason": "short_interval"
+      }
+    ]
+  }
+]

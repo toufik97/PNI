@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 
 class Vaccine(models.Model):
     name = models.CharField(max_length=100, unique=True, help_text="e.g., Penta, BCG, MMR")
@@ -22,6 +23,20 @@ class ScheduleRule(models.Model):
 
     def __str__(self):
         return f"{self.vaccine.name} - Dose {self.dose_number}"
+
+    def clean(self):
+        """Proactive validation for standard schedule rules."""
+        if self.min_age_days > self.recommended_age_days:
+            raise ValidationError(
+                f"Invalid age logic: Minimum age ({self.min_age_days}d) "
+                f"cannot be greater than recommended age ({self.recommended_age_days}d)."
+            )
+        
+        if self.max_age_days and self.max_age_days < self.recommended_age_days:
+            raise ValidationError(
+                f"Invalid age logic: Maximum age ({self.max_age_days}d) "
+                f"cannot be less than recommended age ({self.recommended_age_days}d)."
+            )
 
 class CatchupRule(models.Model):
     vaccine = models.ForeignKey(Vaccine, on_delete=models.CASCADE, related_name='catchup_rules')
@@ -76,3 +91,32 @@ class GroupRule(models.Model):
 
     def __str__(self):
         return f"{self.group.name} - {self.prior_doses} doses, Age {self.min_age_days}-{self.max_age_days}d -> {self.vaccine_to_give.name}"
+
+    def clean(self):
+        """Proactive validation for vaccine group rules."""
+        # 1. Basic range check
+        if self.max_age_days and self.max_age_days < self.min_age_days:
+            raise ValidationError(
+                f"Invalid age range: Min age ({self.min_age_days}d) "
+                f"is greater than Max age ({self.max_age_days}d)."
+            )
+
+        # 2. Overlap check within the same group and prior_dose count
+        # We check existing rules that are NOT this instance (self.pk)
+        overlapping_rules = GroupRule.objects.filter(
+            group=self.group,
+            prior_doses=self.prior_doses
+        ).exclude(pk=self.pk)
+
+        for rule in overlapping_rules:
+            # Logic: (StartA <= EndB) and (EndA >= StartB)
+            # Handle None as infinity for Max Age
+            other_max = rule.max_age_days if rule.max_age_days is not None else 99999
+            this_max = self.max_age_days if self.max_age_days is not None else 99999
+
+            if self.min_age_days <= other_max and this_max >= rule.min_age_days:
+                raise ValidationError(
+                    f"Configuration Error: This rule overlaps with an existing rule "
+                    f"({rule.vaccine_to_give.name}, Age {rule.min_age_days}-{rule.max_age_days}d) "
+                    f"for {self.prior_doses} prior doses."
+                )
