@@ -151,11 +151,33 @@ class VaccinationEngine:
             for d in due_today:
                 vax = d['vaccine'] if isinstance(d, dict) else d
                 if vax.live:
-                    # Move to upcoming
-                    dose_num = d.get('dose_number') if isinstance(d, dict) else None
-                    upcoming_doses.append((vax, safe_date, dose_num))
-                else:
-                    non_deferred_due.append(d)
+                    # Check compatibility with ALL recent live doses
+                    is_compatible = True
+                    for r in recent_live_doses:
+                        # If gap is 0 (same day), and not compatible, it's blocked.
+                        # If gap > 0 but < 28, it's blocked unless compatible.
+                        # But here we are checking if we can give it TODAY. 
+                        # So gap = (today - r.date_given)
+                        gap = (self.evaluation_date - r.date_given).days
+                        if gap == 0:
+                            if not vax.compatible_live_vaccines.filter(id=r.vaccine.id).exists():
+                                is_compatible = False
+                        else:
+                            # gap > 0 but < 28 (because it's in recent_live_doses)
+                            # Most policies require 28 days even if given at different times same day?
+                            # User said: "only exception is vpo... defined in the rules"
+                            if not vax.compatible_live_vaccines.filter(id=r.vaccine.id).exists():
+                                is_compatible = False
+                        
+                        if not is_compatible: break
+
+                    if not is_compatible:
+                        # Move to upcoming
+                        dose_num = d.get('dose_number') if isinstance(d, dict) else None
+                        upcoming_doses.append((vax, safe_date, dose_num))
+                        continue
+                
+                non_deferred_due.append(d)
             due_today = non_deferred_due
         
         # Convert due_today items to a consistent set of results for evaluation return
@@ -240,9 +262,33 @@ class VaccinationEngine:
                                 f"{rule.min_interval_days} days after previous dose. "
                                 f"Only {days_since} days elapsed."
                             )
-                            continue
-
                 valid_records.append(record)
+
+        # 3. Global Live-to-Live Check (Non-compatible live vaccines must be 28 days apart or same-day if compatible)
+        # Note: We use self.records directly to ensure state consistency across the engine.
+        valid_live = []
+        for r in self.records:
+            if not r.vaccine.live or r.invalid_flag:
+                continue
+            
+            if valid_live:
+                prev = valid_live[-1]
+                gap = (r.date_given - prev.date_given).days
+                if gap < 28:
+                    # Check compatibility rule
+                    # Note: We use .filter().exists() which is safe on a persistent instance
+                    is_compatible = r.vaccine.compatible_live_vaccines.filter(id=prev.vaccine.id).exists()
+                    if gap == 0 and is_compatible:
+                        pass # Valid exception
+                    else:
+                        self._flag_invalid(
+                            r, VR.REASON_INTERVAL,
+                            f"Live vax conflict: {r.vaccine.name} given {gap} days after live {prev.vaccine.name}. "
+                            f"Standard protocol requires 28-day gap."
+                        )
+                        continue # Don't add to valid_live
+            
+            valid_live.append(r)
 
     def _get_vaccine_by_name(self, name: str) -> Vaccine:
         for v in self.vaccines:

@@ -259,5 +259,82 @@
     ],
     "expected_due": [],
     "expected_upcoming": []
+  },
+  {
+    "name": "Live Check: Same-Day Strict (Invalid/Upcoming)",
+    "age_days": 300,
+    "history": [
+      {
+        "vax": "BCG",
+        "days_ago": 0
+      },
+      {
+        "vax": "RR",
+        "days_ago": 0
+      }
+    ],
+    "expected_due": [],
+    "expected_upcoming": [
+      "RR"
+    ],
+    "expected_missing": [
+      "RR"
+    ],
+    "expected_invalid": [
+      {
+        "vax": "RR",
+        "index": 1,
+        "reason": "short_interval"
+      }
+    ],
+    "comment": "Both given today at 10mo. RR is invalid (same day as BCG). RR should show as Upcoming (28d from now)."
+  },
+  {
+    "name": "Live Check: Day-1 Violation (Invalid/Upcoming)",
+    "age_days": 300,
+    "history": [
+      {
+        "vax": "BCG",
+        "days_ago": 2
+      },
+      {
+        "vax": "RR",
+        "days_ago": 1
+      }
+    ],
+    "expected_due": [],
+    "expected_upcoming": [
+      "RR"
+    ],
+    "expected_missing": [
+      "RR"
+    ],
+    "expected_invalid": [
+      {
+        "vax": "RR",
+        "index": 1,
+        "reason": "short_interval"
+      }
+    ],
+    "comment": "BCG at 298d, RR at 299d. RR is invalid. At 300d, RR is Upcoming (needs 26 more days)."
+  },
+  {
+    "name": "Live Check: 28-day Gap Met (Valid/Due)",
+    "age_days": 600,
+    "history": [
+      {
+        "vax": "BCG",
+        "days_ago": 300
+      },
+      {
+        "vax": "RR",
+        "days_ago": 272
+      }
+    ],
+    "expected_due": [
+      "RR"
+    ],
+    "expected_invalid": [],
+    "comment": "Gap of 28 days met. RR Dose 1 valid. Child at 600d is overdue for RR Dose 2 (540d)."
   }
 ]

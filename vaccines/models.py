@@ -4,6 +4,12 @@ from django.core.exceptions import ValidationError
 class Vaccine(models.Model):
     name = models.CharField(max_length=100, unique=True, help_text="e.g., Penta, BCG, MMR")
     live = models.BooleanField(default=False, help_text="Is this a live attenuated vaccine?")
+    compatible_live_vaccines = models.ManyToManyField(
+        'self', 
+        blank=True, 
+        symmetrical=False, 
+        help_text="Other live vaccines that can be given safely within 28 days (e.g. OPV)"
+    )
     description = models.TextField(blank=True, null=True)
 
     def __str__(self):

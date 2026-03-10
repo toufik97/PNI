@@ -57,8 +57,10 @@ All analytics and "Completion" badges in the UI must be calculated at the **Grou
  - **Patient Safety:** Clinical records incorrectly show a valid dose when its efficacy is compromised by a recent live vaccine.
  - **Compliance:** System is not fully enforcing the global live vaccine policy.
  
- ### Recommended Fix
+ ### Recommended Fix (Resolved)
  Implement a global validation pass in `_validate_history` that extracts all live vaccine records and ensures that any two such records are either given on the **same day** or at least **28 days apart**. Any record violating this must be flagged with `REASON_INTERVAL`.
+ 
+ **Status**: ✅ Resolved (2026-03-10). Implementation added to `engine.py` with support for rule-based compatibility exceptions (e.g., OPV).
  
  ---
  
