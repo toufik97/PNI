@@ -27,13 +27,13 @@
             "rules": [
                 {
                     "dose_number": 1,
-                    "min_age_days": 250,
+                    "min_age_days": 270,
                     "recommended_age_days": 270,
                     "min_interval_days": 0
                 },
                 {
                     "dose_number": 2,
-                    "min_age_days": 500,
+                    "min_age_days": 540,
                     "recommended_age_days": 540,
                     "min_interval_days": 28
                 }
@@ -44,19 +44,19 @@
             "rules": [
                 {
                     "dose_number": 1,
-                    "min_age_days": 42,
+                    "min_age_days": 53,
                     "recommended_age_days": 60,
                     "min_interval_days": 0
                 },
                 {
                     "dose_number": 2,
-                    "min_age_days": 70,
+                    "min_age_days": 83,
                     "recommended_age_days": 90,
                     "min_interval_days": 28
                 },
                 {
                     "dose_number": 3,
-                    "min_age_days": 98,
+                    "min_age_days": 113,
                     "recommended_age_days": 120,
                     "min_interval_days": 28
                 }
@@ -75,7 +75,7 @@
                     "dose_number": 2,
                     "min_age_days": 1825,
                     "recommended_age_days": 1825,
-                    "min_interval_days": 365
+                    "min_interval_days": 1285
                 }
             ]
         },
@@ -115,6 +115,19 @@
                     "doses_required": 1,
                     "min_interval_days": 0,
                     "dose_amount": "0.1ml"
+                }
+            ]
+        },
+        {
+            "vaccine": "Penta",
+            "rules": [
+                {
+                    "min_age_days": 365,
+                    "max_age_days": 1096,
+                    "prior_doses": 0,
+                    "doses_required": 2,
+                    "min_interval_days": 28,
+                    "dose_amount": "0.5ml"
                 }
             ]
         }
@@ -232,7 +245,7 @@
                     "min_age_days": 1825,
                     "max_age_days": null,
                     "vaccine_to_give": "DTC",
-                    "min_interval_days": 1460
+                    "min_interval_days": 1285
                 },
                 {
                     "prior_doses": 4,

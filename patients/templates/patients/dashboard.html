@@ -20,19 +20,20 @@
             <div class="card-body">
                 {% if due_today %}
                 <ul class="list-group list-group-flush">
-                    {% for item in due_today %}
+                    {% for entry in due_today %}
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         <div>
-                            <a href="{% url 'patients:profile' item.0.id %}" class="fw-bold text-decoration-none">{{
-                                item.0.name }}</a>
+                            <a href="{% url 'patients:profile' entry.child.id %}"
+                                class="fw-bold text-decoration-none">{{ entry.child.name }}</a>
                             <br>
-                            <small class="text-muted">ID: {{ item.0.id }} | Age: {{ item.0.dob|timesince }}</small>
+                            <small class="text-muted">ID: {{ entry.child.id }} | Age: {{ entry.child.dob|timesince
+                                }}</small>
                         </div>
                         <div>
-                            {% for item in item.1 %}
+                            {% for v_info in entry.due_vaccines %}
                             <span class="badge bg-danger rounded-pill">
-                                {{ item.vaccine.name }}
-                                {% if item.dose_amount %}({{ item.dose_amount }}){% endif %}
+                                {{ v_info.vaccine.name }}
+                                {% if v_info.dose_amount %}({{ v_info.dose_amount }}){% endif %}
                             </span>
                             {% endfor %}
                         </div>
@@ -54,16 +55,16 @@
             <div class="card-body">
                 {% if upcoming %}
                 <ul class="list-group list-group-flush">
-                    {% for item in upcoming %}
+                    {% for app in upcoming %}
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         <div>
-                            <a href="{% url 'patients:profile' item.0.id %}" class="fw-bold text-decoration-none">{{
-                                item.0.name }}</a>
+                            <a href="{% url 'patients:profile' app.child.id %}" class="fw-bold text-decoration-none">{{
+                                app.child.name }}</a>
                             <br>
-                            <small class="text-muted">ID: {{ item.0.id }}</small>
+                            <small class="text-muted">ID: {{ app.child.id }}</small>
                         </div>
                         <div class="text-end">
-                            <span class="badge bg-secondary">{{ item.1|date:"M d, Y" }}</span>
+                            <span class="badge bg-secondary">{{ app.date|date:"M d, Y" }}</span>
                         </div>
                     </li>
                     {% endfor %}

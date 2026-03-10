@@ -78,12 +78,12 @@
                         <h6 class="text-danger">Due Today</h6>
                         {% if eval.due_today %}
                         <ul class="list-group">
-                            {% for item in eval.due_today %}
+                            {% for due_info in eval.due_today %}
                             <li
                                 class="list-group-item list-group-item-danger d-flex justify-content-between align-items-center">
-                                {{ item.vaccine.name }}
-                                {% if item.dose_amount %}
-                                <span class="badge bg-light text-danger">{{ item.dose_amount }}</span>
+                                {{ due_info.vaccine.name }}
+                                {% if due_info.dose_amount %}
+                                <span class="badge bg-light text-danger">{{ due_info.dose_amount }}</span>
                                 {% endif %}
                             </li>
                             {% endfor %}
@@ -111,9 +111,9 @@
                 {% if eval.next_appointment %}
                 <p class="mb-0 fs-5"><strong>{{ eval.next_appointment|date:"F j, Y" }}</strong></p>
                 <small class="text-muted">
-                    {% for item in eval.upcoming %}
-                    {% if item.1 == eval.next_appointment %}
-                    {{ item.0.name }}{% if not forloop.last %}, {% endif %}
+                    {% for up_info in eval.upcoming %}
+                    {% if up_info.1 == eval.next_appointment %}
+                    {{ up_info.0.name }}{% if not forloop.last %}, {% endif %}
                     {% endif %}
                     {% endfor %}
                 </small>

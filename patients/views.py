@@ -15,14 +15,20 @@ def dashboard(request):
         engine = VaccinationEngine(child)
         eval_result = engine.evaluate()
         if eval_result['due_today']:
-            # Store just the IDs of due vaccines for easier template checks
-            due_ids = [d['vaccine'].id for d in eval_result['due_today']]
-            due_today_list.append((child, eval_result['due_today'], due_ids))
+            # Store structured data for the template
+            due_today_list.append({
+                'child': child,
+                'due_vaccines': eval_result['due_today'],
+                'due_ids': [d['vaccine'].id for d in eval_result['due_today']]
+            })
         elif eval_result['next_appointment']:
-            upcoming_list.append((child, eval_result['next_appointment']))
+            upcoming_list.append({
+                'child': child,
+                'date': eval_result['next_appointment']
+            })
             
     # sort upcoming
-    upcoming_list.sort(key=lambda x: x[1] if x[1] else date.max)
+    upcoming_list.sort(key=lambda x: x['date'] if x['date'] else date.max)
     
     context = {
         'due_today': due_today_list,
