@@ -5,13 +5,16 @@ import django
 from datetime import timedelta
 
 # Set up Django environment
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'vaxapp.settings')
 django.setup()
 
 from vaccines.models import Vaccine, ScheduleRule, CatchupRule, VaccineGroup, GroupRule
 
 def audit_policy(sync=False):
-    policy_path = os.path.join(os.path.dirname(__file__), 'vaccines', 'policy_reference.json')
+    # Absolute path to policy file relative to this script
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    policy_path = os.path.join(os.path.dirname(script_dir), 'vaccines', 'policy_reference.json')
     if not os.path.exists(policy_path):
         print(f"Error: Policy file not found at {policy_path}")
         return

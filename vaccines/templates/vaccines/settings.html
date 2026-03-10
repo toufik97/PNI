@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load vaccine_tags %}
 
 {% block title %}Vaccine Settings{% endblock %}
 
@@ -304,11 +305,16 @@
                     {% for rule in vaccine.schedule_rules.all %}
                     <tr>
                         <td>{{ rule.dose_number }}</td>
-                        <td>{{ rule.min_age_days }} days</td>
-                        <td>{{ rule.recommended_age_days }} days</td>
-                        <td>{% if rule.max_age_days %}{{ rule.max_age_days }} days{% else %}<span
-                                class="text-muted">—</span>{% endif %}</td>
-                        <td>{{ rule.min_interval_days }} days</td>
+                        <td>{{ rule.min_age_days|humanize_days }} <small class="text-muted">({{ rule.min_age_days }}d)</small></td>
+                        <td>{{ rule.recommended_age_days|humanize_days }} <small class="text-muted">({{ rule.recommended_age_days }}d)</small></td>
+                        <td>
+                            {% if rule.max_age_days %}
+                            {{ rule.max_age_days|humanize_days }} <small class="text-muted">({{ rule.max_age_days }}d)</small>
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ rule.min_interval_days|humanize_days }} <small class="text-muted">({{ rule.min_interval_days }}d)</small></td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -377,9 +383,12 @@
                     {% for rule in group.rules.all %}
                     <tr>
                         <td>{{ rule.prior_doses }}</td>
-                        <td>{{ rule.min_age_days }}d {% if rule.max_age_days %} – {{ rule.max_age_days }}d{% else %} +{% endif %}</td>
+                        <td>
+                            {{ rule.min_age_days|humanize_days }} <small class="text-muted">({{ rule.min_age_days }}d)</small>
+                            {% if rule.max_age_days %} – {{ rule.max_age_days|humanize_days }} <small class="text-muted">({{ rule.max_age_days }}d)</small>{% else %} +{% endif %}
+                        </td>
                         <td><strong>{{ rule.vaccine_to_give.name }}</strong></td>
-                        <td>{{ rule.min_interval_days }} days</td>
+                        <td>{{ rule.min_interval_days|humanize_days }} <small class="text-muted">({{ rule.min_interval_days }}d)</small></td>
                     </tr>
                     {% endfor %}
                 </tbody>

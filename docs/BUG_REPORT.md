@@ -42,4 +42,24 @@ All analytics and "Completion" badges in the UI must be calculated at the **Grou
 
 ---
 
-*(Add new bugs below this line)*
+---
+ 
+ ## [BUG-002] Missing Cross-Vaccine Live Interval Validation
+ **Date Identified:** 2026-03-10
+ **Component:** `vaccines/engine.py` -> `_validate_history()`
+ 
+ ### Description
+ The engine correctly prevents **recommending** a live vaccine if another was given recently (< 28 days). However, it fails to **invalidate** a dose if it is manually recorded during that forbidden window. 
+ 
+ For example: A child receiving **BCG** (live) on Monday and **RR** (live) on Tuesday should have the second dose flagged as **Invalid** due to the 28-day live-to-live requirement. Currently, the engine accepts both as valid because they belong to different groups and have no direct interval rules between them.
+ 
+ ### Impact
+ - **Patient Safety:** Clinical records incorrectly show a valid dose when its efficacy is compromised by a recent live vaccine.
+ - **Compliance:** System is not fully enforcing the global live vaccine policy.
+ 
+ ### Recommended Fix
+ Implement a global validation pass in `_validate_history` that extracts all live vaccine records and ensures that any two such records are either given on the **same day** or at least **28 days apart**. Any record violating this must be flagged with `REASON_INTERVAL`.
+ 
+ ---
+ 
+ *(Add new bugs below this line)*

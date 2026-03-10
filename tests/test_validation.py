@@ -12,7 +12,7 @@ class TestIntervalValidation(BaseVaccinationTestCase):
 
     def test_group_dose_under_28_days_flagged(self):
         """Two DTP doses < 28 days apart: second is invalid with correct reason code."""
-        child = self.make_child("Short Interval", age_days=120)
+        child = self.make_child("Short Interval", age_days=130)
         self.give_dose(child, self.penta, days_ago=60)
         d2 = self.give_dose(child, self.penta, days_ago=40)  # 20 days after first
 
@@ -53,7 +53,7 @@ class TestMinEligibleAgeValidation(BaseVaccinationTestCase):
     """Doses given before absolute minimum age floors must be flagged REASON_TOO_EARLY."""
 
     def test_penta_at_one_week_flagged_too_early(self):
-        """Penta given at 7 days old (Standard floor is 42 days): flagged too_early."""
+        """Penta given at 7 days old (Standard floor is 53 days): flagged too_early."""
         child = self.make_child("Tiny Baby", age_days=7)
         d1 = self.give_dose(child, self.penta, days_ago=0)
 
@@ -63,12 +63,12 @@ class TestMinEligibleAgeValidation(BaseVaccinationTestCase):
         self.assertTrue(d1.invalid_flag)
         self.assertEqual(d1.invalid_reason, VR.REASON_TOO_EARLY)
         # Note should mention the requirement from Layer 1 (Standard Rule)
-        # 42 days / 30.44 = 1.4 months
-        self.assertIn("1.4 months", d1.notes)
+        # 53 days / 30.44 = 1.74 months
+        self.assertIn("1.7 months", d1.notes)
 
-    def test_penta_at_six_weeks_not_flagged(self):
-        """Penta given at 42 days old (exactly the standard floor): valid."""
-        child = self.make_child("On Time Baby", age_days=42)
+    def test_penta_at_53_days_not_flagged(self):
+        """Penta given at 53 days old (exactly the standard floor): valid."""
+        child = self.make_child("On Time Baby", age_days=53)
         d1 = self.give_dose(child, self.penta, days_ago=0)
 
         self.evaluate(child)

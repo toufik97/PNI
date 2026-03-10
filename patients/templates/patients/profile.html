@@ -9,8 +9,8 @@
                 <h5 class="mb-0">Child Profile</h5>
             </div>
             <div class="card-body">
-                <h4 class="card-title">{{ child.name }}</h4>
-                <p class="text-muted mb-3">{{ child.id }}</p>
+                <h4 class="card-title">{{ child.name }} ({{ child.id }})</h4>
+                <hr>
 
                 <ul class="list-unstyled">
                     <li><strong>Sex:</strong> {{ child.get_sex_display }}</li>
@@ -81,10 +81,11 @@
                             {% for due_info in eval.due_today %}
                             <li
                                 class="list-group-item list-group-item-danger d-flex justify-content-between align-items-center">
-                                {{ due_info.vaccine.name }}
-                                {% if due_info.dose_amount %}
-                                <span class="badge bg-light text-danger">{{ due_info.dose_amount }}</span>
-                                {% endif %}
+                                 {{ due_info.vaccine.name }}
+                                 {% if due_info.dose_number %}(Dose {{ due_info.dose_number }}){% endif %}
+                                 {% if due_info.dose_amount %}
+                                 <span class="badge bg-light text-danger">{{ due_info.dose_amount }}</span>
+                                 {% endif %}
                             </li>
                             {% endfor %}
                         </ul>
@@ -96,8 +97,11 @@
                         <h6 class="text-warning">Missing / Behind</h6>
                         {% if eval.missing_doses %}
                         <ul class="list-group">
-                            {% for v in eval.missing_doses %}
-                            <li class="list-group-item list-group-item-warning">{{ v.name }}</li>
+                            {% for m_info in eval.missing_doses %}
+                            <li class="list-group-item list-group-item-warning">
+                                {{ m_info.vaccine.name }}
+                                {% if m_info.dose_number %}(Dose {{ m_info.dose_number }}){% endif %}
+                            </li>
                             {% endfor %}
                         </ul>
                         {% else %}
@@ -113,7 +117,7 @@
                 <small class="text-muted">
                     {% for up_info in eval.upcoming %}
                     {% if up_info.1 == eval.next_appointment %}
-                    {{ up_info.0.name }}{% if not forloop.last %}, {% endif %}
+                     {{ up_info.0.name }}{% if up_info.2 %} (Dose {{ up_info.2 }}){% endif %}{% if not forloop.last %}, {% endif %}
                     {% endif %}
                     {% endfor %}
                 </small>

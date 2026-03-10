@@ -142,7 +142,7 @@ class TestDTPFiveDoses(BaseVaccinationTestCase):
         for i in range(3):
             self.give_dose(child, self.penta, days_ago=6 * 365 - (60 + i * 30))
         self.give_dose(child, self.dtc, days_ago=4 * 365)
-        self.give_dose(child, self.dtc, days_ago=365)
+        self.give_dose(child, self.dtc, days_ago=0) # Age 6y, interval 4y since dose 4
         result = self.evaluate(child)
         dtp_names = {'Penta', 'DTC', 'Td'}
         due_dtp = [n for n in self.due_names(result) if n in dtp_names]

@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block title %}{{ title }}{% endblock %}
 
@@ -100,7 +100,7 @@
 
         <!-- Vaccine Basic Info -->
         <div class="form-section">
-            <h5>💉 Basic Information</h5>
+            <h5>ðŸ’‰ Basic Information</h5>
             {% for field in form %}
             <div class="mb-3">
                 <label for="{{ field.id_for_label }}" class="form-label fw-semibold">{{ field.label }}</label>
@@ -124,7 +124,7 @@
 
         <!-- Schedule Rules -->
         <div class="form-section">
-            <h5>📅 Schedule Rules (Doses)</h5>
+            <h5>ðŸ“… Schedule Rules (Doses)</h5>
             <p class="text-muted" style="font-size:0.85rem;">
                 Define each dose in the standard vaccination schedule. One row per dose.
                 <br><strong>Quick reference:</strong> 6wk=42d, 10wk=70d, 14wk=98d, 6mo=180d, 9mo=270d, 12mo=365d,
@@ -198,7 +198,7 @@
 
         <!-- Catch-up Rules -->
         <div class="form-section">
-            <h5>🔄 Catch-up Rules <span class="text-muted" style="font-weight:400; font-size:0.85rem;">(Optional)</span>
+            <h5>ðŸ”„ Catch-up Rules <span class="text-muted" style="font-weight:400; font-size:0.85rem;">(Optional)</span>
             </h5>
             <p class="text-muted" style="font-size:0.85rem;">
                 Define catch-up rules for children who missed their scheduled doses. Each rule specifies what to do for
@@ -232,10 +232,62 @@
             {% endif %}
         </div>
 
-        <div class="d-flex justify-content-between align-items-center">
-            <a href="{% url 'vaccines:settings' %}" class="btn-back">← Back to Settings</a>
+                <div class="d-flex justify-content-between align-items-center">
+            <a href="{% url 'vaccines:settings' %}" class="btn-back"> Back to Settings</a>
             <button type="submit" class="btn btn-save">{{ submit_label }}</button>
         </div>
     </form>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        function humanizeDays(days) {
+            days = parseInt(days);
+            if (isNaN(days)) return '';
+            if (days === 0) return 'Birth';
+            if (days < 0) return days + ' days';
+            
+            if (days < 30) {
+                if (days % 7 === 0) {
+                    const weeks = days / 7;
+                    return ` ${weeks} week${weeks > 1 ? 's' : ''}`;
+                }
+                return ` ${days} day${days > 1 ? 's' : ''}`;
+            }
+            
+            if (days < 365) {
+                const months = Math.round(days / 30.44 * 10) / 10;
+                let text = ` ${months} month${months > 1 ? 's' : ''}`;
+                if ([42, 70, 98].includes(days)) {
+                    text = ` ${days/7} weeks (${months}m)`;
+                }
+                return text;
+            }
+            
+            const years = Math.round(days / 365.25 * 10) / 10;
+            return ` ${years} year${years > 1 ? 's' : ''}`;
+        }
+
+        function updateBadge(input) {
+            let badge = input.parentNode.querySelector('.unit-conversion-badge');
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'badge bg-info ms-2 unit-conversion-badge';
+                badge.style.fontSize = '0.7rem';
+                input.parentNode.appendChild(badge);
+            }
+            const humanValue = humanizeDays(input.value);
+            badge.textContent = humanValue;
+            badge.style.display = humanValue ? 'inline-block' : 'none';
+        }
+
+        const dayInputs = document.querySelectorAll('input[name*="_days"]');
+        dayInputs.forEach(input => {
+            updateBadge(input);
+            input.addEventListener('input', function() {
+                updateBadge(input);
+            });
+        });
+    });
+</script>
 {% endblock %}

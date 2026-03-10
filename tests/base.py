@@ -105,8 +105,8 @@ class BaseVaccinationTestCase(TestCase):
 
     def missing_names(self, result):
         """Helper: get sorted list of missing vaccine names."""
-        return sorted([v.name for v in result['missing_doses']])
+        return sorted([d['vaccine'].name for d in result['missing_doses']])
 
     def upcoming_names(self, result):
         """Helper: get sorted list of upcoming vaccine names."""
-        return sorted([v.name for v, d in result['upcoming']])
+        return sorted([item[0].name for item in result['upcoming']])
