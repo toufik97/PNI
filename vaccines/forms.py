@@ -1,5 +1,17 @@
 from django import forms
-from .models import Vaccine, ScheduleRule, CatchupRule, VaccineGroup, GroupRule
+from django.db import transaction
+
+from .models import (
+    CatchupRule,
+    GroupRule,
+    Product,
+    ScheduleRule,
+    Series,
+    SeriesProduct,
+    SeriesRule,
+    Vaccine,
+    VaccineGroup,
+)
 
 
 class VaccineForm(forms.ModelForm):
@@ -28,11 +40,108 @@ class VaccineForm(forms.ModelForm):
         }
 
 
+class ProductForm(forms.Form):
+    name = forms.CharField(
+        max_length=100,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Prevenar13'}),
+        help_text='Concrete product or brand name used at administration time.',
+    )
+    live = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        help_text='Use for products that participate in live-vaccine spacing rules.',
+    )
+    code = forms.SlugField(
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Optional slug code'}),
+        help_text='Optional machine-readable code. Leave blank to auto-generate from the name.',
+    )
+    manufacturer = forms.CharField(
+        required=False,
+        max_length=100,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Pfizer'}),
+    )
+    description = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Optional description'}),
+    )
+    active = forms.BooleanField(
+        required=False,
+        initial=True,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        help_text='Inactive products stay in history but are hidden from new policy choices.',
+    )
+
+    def __init__(self, *args, instance=None, **kwargs):
+        self.instance = instance
+        initial = kwargs.setdefault('initial', {})
+        if instance is not None:
+            initial.setdefault('name', instance.vaccine.name)
+            initial.setdefault('live', instance.vaccine.live)
+            initial.setdefault('code', instance.code)
+            initial.setdefault('manufacturer', instance.manufacturer)
+            initial.setdefault('description', instance.description or instance.vaccine.description)
+            initial.setdefault('active', instance.active)
+        super().__init__(*args, **kwargs)
+
+    def clean_name(self):
+        name = self.cleaned_data['name'].strip()
+        existing = Vaccine.objects.filter(name__iexact=name)
+        if self.instance is not None:
+            existing = existing.exclude(pk=self.instance.vaccine_id)
+        if existing.exists():
+            raise forms.ValidationError('A vaccine/product with this name already exists.')
+        return name
+
+    def clean_code(self):
+        code = self.cleaned_data.get('code', '').strip()
+        if not code:
+            return code
+        existing = Product.objects.filter(code=code)
+        if self.instance is not None:
+            existing = existing.exclude(pk=self.instance.pk)
+        if existing.exists():
+            raise forms.ValidationError('A product with this code already exists.')
+        return code
+
+    @transaction.atomic
+    def save(self):
+        data = self.cleaned_data
+        if self.instance is None:
+            vaccine = Vaccine.objects.create(
+                name=data['name'],
+                live=data['live'],
+                description=data['description'],
+            )
+            product = Product.objects.create(
+                vaccine=vaccine,
+                code=data['code'],
+                manufacturer=data['manufacturer'],
+                description=data['description'],
+                active=data['active'],
+            )
+            self.instance = product
+        else:
+            vaccine = self.instance.vaccine
+            vaccine.name = data['name']
+            vaccine.live = data['live']
+            vaccine.description = data['description']
+            vaccine.save()
+
+            self.instance.code = data['code'] or self.instance.code
+            self.instance.manufacturer = data['manufacturer']
+            self.instance.description = data['description']
+            self.instance.active = data['active']
+            self.instance.save()
+
+        return self.instance
+
+
 class ScheduleRuleForm(forms.ModelForm):
     class Meta:
         model = ScheduleRule
         fields = [
-            'dose_number', 'min_age_days', 'recommended_age_days', 
+            'dose_number', 'min_age_days', 'recommended_age_days',
             'overdue_age_days', 'max_age_days', 'min_interval_days',
             'dose_amount'
         ]
@@ -173,3 +282,93 @@ GroupRuleFormSet = forms.inlineformset_factory(
     extra=1,
     can_delete=True,
 )
+
+
+class SeriesForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['code'].required = False
+        self.fields['legacy_group'].queryset = VaccineGroup.objects.order_by('name')
+
+    class Meta:
+        model = Series
+        fields = ['name', 'code', 'description', 'active', 'mixing_policy', 'min_valid_interval_days', 'legacy_group']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Pneumo'}),
+            'code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Optional slug code'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Clinical series description'}),
+            'active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'mixing_policy': forms.Select(attrs={'class': 'form-select'}),
+            'min_valid_interval_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'e.g., 28'}),
+            'legacy_group': forms.Select(attrs={'class': 'form-select'}),
+        }
+        help_texts = {
+            'code': 'Optional machine-readable code. Leave blank to auto-generate from the name.',
+            'legacy_group': 'Optional legacy bridge while old group policies still exist.',
+            'min_valid_interval_days': 'Hard floor between any two doses in the series.',
+        }
+
+
+class SeriesProductForm(forms.ModelForm):
+    class Meta:
+        model = SeriesProduct
+        fields = ['product', 'priority']
+        widgets = {
+            'product': forms.Select(attrs={'class': 'form-select'}),
+            'priority': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
+        }
+        help_texts = {
+            'priority': 'Lower values appear first when reviewing the series.',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['product'].queryset = Product.objects.select_related('vaccine').order_by('vaccine__name')
+
+
+SeriesProductFormSet = forms.inlineformset_factory(
+    Series,
+    SeriesProduct,
+    form=SeriesProductForm,
+    extra=1,
+    can_delete=True,
+)
+
+
+class SeriesRuleForm(forms.ModelForm):
+    class Meta:
+        model = SeriesRule
+        fields = [
+            'slot_number', 'prior_valid_doses', 'product', 'min_age_days', 'recommended_age_days',
+            'overdue_age_days', 'max_age_days', 'min_interval_days', 'dose_amount', 'notes'
+        ]
+        widgets = {
+            'slot_number': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
+            'prior_valid_doses': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
+            'product': forms.Select(attrs={'class': 'form-select'}),
+            'min_age_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'e.g., 60'}),
+            'recommended_age_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'e.g., 75'}),
+            'overdue_age_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'Optional'}),
+            'max_age_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'Optional'}),
+            'min_interval_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'e.g., 28'}),
+            'dose_amount': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Optional dose amount'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Optional notes'}),
+        }
+        help_texts = {
+            'prior_valid_doses': 'If the child already has this many valid series doses, this rule becomes the next slot candidate.',
+            'product': 'Concrete product allowed for this slot rule.',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['product'].queryset = Product.objects.select_related('vaccine').order_by('vaccine__name')
+
+
+SeriesRuleFormSet = forms.inlineformset_factory(
+    Series,
+    SeriesRule,
+    form=SeriesRuleForm,
+    extra=1,
+    can_delete=True,
+)
+

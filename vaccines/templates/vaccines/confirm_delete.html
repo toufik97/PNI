@@ -60,7 +60,7 @@
 <div class="pt-3">
     <div class="delete-card card">
         <div class="card-header">
-            <h4>⚠️ Delete {{ object_type }}</h4>
+            <h4>Delete {{ object_type }}</h4>
         </div>
         <div class="card-body">
             <p class="mb-3" style="font-size:1.1rem;">
@@ -71,7 +71,7 @@
             </p>
             <form method="post" class="d-inline">
                 {% csrf_token %}
-                <a href="{% url cancel_url %}" class="btn btn-cancel me-2">Cancel</a>
+                <a href="{{ cancel_href }}" class="btn btn-cancel me-2">Cancel</a>
                 <button type="submit" class="btn btn-confirm-delete">Yes, Delete</button>
             </form>
         </div>

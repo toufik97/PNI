@@ -1,25 +1,173 @@
-from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from .models import Vaccine, ScheduleRule, CatchupRule, VaccineGroup, GroupRule
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+
 from .forms import (
-    VaccineForm, ScheduleRuleFormSet, CatchupRuleFormSet,
-    VaccineGroupForm, GroupRuleFormSet,
+    CatchupRuleFormSet,
+    GroupRuleFormSet,
+    ProductForm,
+    ScheduleRuleFormSet,
+    SeriesForm,
+    SeriesProductFormSet,
+    SeriesRuleFormSet,
+    VaccineForm,
+    VaccineGroupForm,
 )
+from .models import Product, Series, Vaccine, VaccineGroup
+
+
+LEGACY_TABS = {'vaccines', 'groups'}
+NEW_TABS = {'products', 'series', 'guide'}
+ALL_TABS = LEGACY_TABS.union(NEW_TABS)
 
 
 def vaccine_settings(request, tab=None):
-    """Main settings page with tabbed view: Vaccines, Groups, Policy Guide."""
+    active_tab = tab or request.GET.get('tab', 'products')
+    if active_tab not in ALL_TABS:
+        active_tab = 'products'
+
     vaccines = Vaccine.objects.prefetch_related('schedule_rules', 'catchup_rules').all()
     groups = VaccineGroup.objects.prefetch_related('vaccines', 'rules').all()
+    products = Product.objects.select_related('vaccine').prefetch_related('series_memberships').all()
+    series = Series.objects.prefetch_related('series_products__product__vaccine', 'rules__product__vaccine').all()
+
     context = {
         'vaccines': vaccines,
         'groups': groups,
-        'active_tab': tab or request.GET.get('tab', 'vaccines'),
+        'products': products,
+        'series_list': series,
+        'active_tab': active_tab,
     }
     return render(request, 'vaccines/settings.html', context)
 
 
-# ─── Vaccine CRUD ────────────────────────────────────────────────────────────
+def product_create(request):
+    if request.method == 'POST':
+        form = ProductForm(request.POST)
+        if form.is_valid():
+            product = form.save()
+            messages.success(request, f'Product "{product.vaccine.name}" created successfully.')
+            return redirect('vaccines:settings_tab', tab='products')
+        messages.error(request, 'Please correct the errors below.')
+    else:
+        form = ProductForm()
+
+    return render(request, 'vaccines/product_form.html', {
+        'form': form,
+        'title': 'Add New Product',
+        'submit_label': 'Create Product',
+    })
+
+
+def product_edit(request, pk):
+    product = get_object_or_404(Product, pk=pk)
+    if request.method == 'POST':
+        form = ProductForm(request.POST, instance=product)
+        if form.is_valid():
+            product = form.save()
+            messages.success(request, f'Product "{product.vaccine.name}" updated successfully.')
+            return redirect('vaccines:settings_tab', tab='products')
+        messages.error(request, 'Please correct the errors below.')
+    else:
+        form = ProductForm(instance=product)
+
+    return render(request, 'vaccines/product_form.html', {
+        'form': form,
+        'title': f'Edit Product: {product.vaccine.name}',
+        'submit_label': 'Save Changes',
+        'product': product,
+    })
+
+
+def product_delete(request, pk):
+    product = get_object_or_404(Product.objects.select_related('vaccine'), pk=pk)
+    if request.method == 'POST':
+        name = product.vaccine.name
+        product.delete()
+        messages.success(request, f'Product profile "{name}" deleted.')
+        return redirect('vaccines:settings_tab', tab='products')
+    return render(request, 'vaccines/confirm_delete.html', {
+        'object': product,
+        'object_type': 'Product Profile',
+        'cancel_href': reverse('vaccines:settings_tab', kwargs={'tab': 'products'}),
+    })
+
+
+def series_create(request):
+    if request.method == 'POST':
+        form = SeriesForm(request.POST)
+        product_formset = SeriesProductFormSet(request.POST, prefix='products')
+        rule_formset = SeriesRuleFormSet(request.POST, prefix='rules')
+        if form.is_valid():
+            series = form.save()
+            product_formset = SeriesProductFormSet(request.POST, instance=series, prefix='products')
+            rule_formset = SeriesRuleFormSet(request.POST, instance=series, prefix='rules')
+            if product_formset.is_valid() and rule_formset.is_valid():
+                product_formset.save()
+                rule_formset.save()
+                messages.success(request, f'Series "{series.name}" created successfully.')
+                return redirect('vaccines:settings_tab', tab='series')
+            series.delete()
+            messages.error(request, 'Error in series products or series rules. Please check the forms.')
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = SeriesForm()
+        product_formset = SeriesProductFormSet(prefix='products')
+        rule_formset = SeriesRuleFormSet(prefix='rules')
+
+    return render(request, 'vaccines/series_form.html', {
+        'form': form,
+        'product_formset': product_formset,
+        'rule_formset': rule_formset,
+        'title': 'Add New Series',
+        'submit_label': 'Create Series',
+    })
+
+
+def series_edit(request, pk):
+    series = get_object_or_404(Series, pk=pk)
+    if request.method == 'POST':
+        form = SeriesForm(request.POST, instance=series)
+        product_formset = SeriesProductFormSet(request.POST, instance=series, prefix='products')
+        rule_formset = SeriesRuleFormSet(request.POST, instance=series, prefix='rules')
+        if form.is_valid() and product_formset.is_valid() and rule_formset.is_valid():
+            form.save()
+            product_formset.save()
+            rule_formset.save()
+            messages.success(request, f'Series "{series.name}" updated successfully.')
+            return redirect('vaccines:settings_tab', tab='series')
+        messages.error(request, 'Please correct the errors below.')
+    else:
+        form = SeriesForm(instance=series)
+        product_formset = SeriesProductFormSet(instance=series, prefix='products')
+        rule_formset = SeriesRuleFormSet(instance=series, prefix='rules')
+
+    return render(request, 'vaccines/series_form.html', {
+        'form': form,
+        'product_formset': product_formset,
+        'rule_formset': rule_formset,
+        'title': f'Edit Series: {series.name}',
+        'submit_label': 'Save Changes',
+        'series': series,
+    })
+
+
+def series_delete(request, pk):
+    series = get_object_or_404(Series, pk=pk)
+    if request.method == 'POST':
+        name = series.name
+        series.delete()
+        messages.success(request, f'Series "{name}" deleted.')
+        return redirect('vaccines:settings_tab', tab='series')
+    return render(request, 'vaccines/confirm_delete.html', {
+        'object': series,
+        'object_type': 'Series',
+        'cancel_href': reverse('vaccines:settings_tab', kwargs={'tab': 'series'}),
+    })
+
+
+# Legacy Vaccine CRUD
 
 def vaccine_create(request):
     if request.method == 'POST':
@@ -34,10 +182,9 @@ def vaccine_create(request):
                 schedule_formset.save()
                 catchup_formset.save()
                 messages.success(request, f'Vaccine "{vaccine.name}" created successfully.')
-                return redirect('vaccines:settings')
-            else:
-                vaccine.delete()  # Rollback if formsets fail
-                messages.error(request, 'Error in schedule or catchup rules. Please check the forms.')
+                return redirect('vaccines:settings_tab', tab='vaccines')
+            vaccine.delete()
+            messages.error(request, 'Error in schedule or catchup rules. Please check the forms.')
     else:
         form = VaccineForm()
         schedule_formset = ScheduleRuleFormSet(prefix='schedule')
@@ -63,9 +210,8 @@ def vaccine_edit(request, pk):
             schedule_formset.save()
             catchup_formset.save()
             messages.success(request, f'Vaccine "{vaccine.name}" updated successfully.')
-            return redirect('vaccines:settings')
-        else:
-            messages.error(request, 'Please correct the errors below.')
+            return redirect('vaccines:settings_tab', tab='vaccines')
+        messages.error(request, 'Please correct the errors below.')
     else:
         form = VaccineForm(instance=vaccine)
         schedule_formset = ScheduleRuleFormSet(instance=vaccine, prefix='schedule')
@@ -87,15 +233,15 @@ def vaccine_delete(request, pk):
         name = vaccine.name
         vaccine.delete()
         messages.success(request, f'Vaccine "{name}" deleted.')
-        return redirect('vaccines:settings')
+        return redirect('vaccines:settings_tab', tab='vaccines')
     return render(request, 'vaccines/confirm_delete.html', {
         'object': vaccine,
         'object_type': 'Vaccine',
-        'cancel_url': 'vaccines:settings',
+        'cancel_href': reverse('vaccines:settings_tab', kwargs={'tab': 'vaccines'}),
     })
 
 
-# ─── Vaccine Group CRUD ─────────────────────────────────────────────────────
+# Legacy Group CRUD
 
 def group_create(request):
     if request.method == 'POST':
@@ -108,9 +254,8 @@ def group_create(request):
                 rule_formset.save()
                 messages.success(request, f'Group "{group.name}" created successfully.')
                 return redirect('vaccines:settings_tab', tab='groups')
-            else:
-                group.delete()
-                messages.error(request, 'Error in group rules. Please check the forms.')
+            group.delete()
+            messages.error(request, 'Error in group rules. Please check the forms.')
     else:
         form = VaccineGroupForm()
         rule_formset = GroupRuleFormSet(prefix='rules')
@@ -133,8 +278,7 @@ def group_edit(request, pk):
             rule_formset.save()
             messages.success(request, f'Group "{group.name}" updated successfully.')
             return redirect('vaccines:settings_tab', tab='groups')
-        else:
-            messages.error(request, 'Please correct the errors below.')
+        messages.error(request, 'Please correct the errors below.')
     else:
         form = VaccineGroupForm(instance=group)
         rule_formset = GroupRuleFormSet(instance=group, prefix='rules')
@@ -158,5 +302,5 @@ def group_delete(request, pk):
     return render(request, 'vaccines/confirm_delete.html', {
         'object': group,
         'object_type': 'Vaccine Group',
-        'cancel_url': 'vaccines:settings',
+        'cancel_href': reverse('vaccines:settings_tab', kwargs={'tab': 'groups'}),
     })
