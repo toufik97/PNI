@@ -4,6 +4,7 @@ from django.urls import reverse
 
 from .forms import (
     CatchupRuleFormSet,
+    DependencyRuleForm,
     GroupRuleFormSet,
     ProductForm,
     ScheduleRuleFormSet,
@@ -13,11 +14,11 @@ from .forms import (
     VaccineForm,
     VaccineGroupForm,
 )
-from .models import Product, Series, Vaccine, VaccineGroup
+from .models import DependencyRule, Product, Series, Vaccine, VaccineGroup
 
 
 LEGACY_TABS = {'vaccines', 'groups'}
-NEW_TABS = {'products', 'series', 'guide'}
+NEW_TABS = {'products', 'series', 'dependencies', 'guide'}
 ALL_TABS = LEGACY_TABS.union(NEW_TABS)
 
 
@@ -30,12 +31,14 @@ def vaccine_settings(request, tab=None):
     groups = VaccineGroup.objects.prefetch_related('vaccines', 'rules').all()
     products = Product.objects.select_related('vaccine').prefetch_related('series_memberships').all()
     series = Series.objects.prefetch_related('series_products__product__vaccine', 'rules__product__vaccine').all()
+    dependencies = DependencyRule.objects.select_related('dependent_series', 'anchor_series').all()
 
     context = {
         'vaccines': vaccines,
         'groups': groups,
         'products': products,
         'series_list': series,
+        'dependencies': dependencies,
         'active_tab': active_tab,
     }
     return render(request, 'vaccines/settings.html', context)
@@ -52,11 +55,7 @@ def product_create(request):
     else:
         form = ProductForm()
 
-    return render(request, 'vaccines/product_form.html', {
-        'form': form,
-        'title': 'Add New Product',
-        'submit_label': 'Create Product',
-    })
+    return render(request, 'vaccines/product_form.html', {'form': form, 'title': 'Add New Product', 'submit_label': 'Create Product'})
 
 
 def product_edit(request, pk):
@@ -71,12 +70,7 @@ def product_edit(request, pk):
     else:
         form = ProductForm(instance=product)
 
-    return render(request, 'vaccines/product_form.html', {
-        'form': form,
-        'title': f'Edit Product: {product.vaccine.name}',
-        'submit_label': 'Save Changes',
-        'product': product,
-    })
+    return render(request, 'vaccines/product_form.html', {'form': form, 'title': f'Edit Product: {product.vaccine.name}', 'submit_label': 'Save Changes', 'product': product})
 
 
 def product_delete(request, pk):
@@ -86,11 +80,7 @@ def product_delete(request, pk):
         product.delete()
         messages.success(request, f'Product profile "{name}" deleted.')
         return redirect('vaccines:settings_tab', tab='products')
-    return render(request, 'vaccines/confirm_delete.html', {
-        'object': product,
-        'object_type': 'Product Profile',
-        'cancel_href': reverse('vaccines:settings_tab', kwargs={'tab': 'products'}),
-    })
+    return render(request, 'vaccines/confirm_delete.html', {'object': product, 'object_type': 'Product Profile', 'cancel_href': reverse('vaccines:settings_tab', kwargs={'tab': 'products'})})
 
 
 def series_create(request):
@@ -116,13 +106,7 @@ def series_create(request):
         product_formset = SeriesProductFormSet(prefix='products')
         rule_formset = SeriesRuleFormSet(prefix='rules')
 
-    return render(request, 'vaccines/series_form.html', {
-        'form': form,
-        'product_formset': product_formset,
-        'rule_formset': rule_formset,
-        'title': 'Add New Series',
-        'submit_label': 'Create Series',
-    })
+    return render(request, 'vaccines/series_form.html', {'form': form, 'product_formset': product_formset, 'rule_formset': rule_formset, 'title': 'Add New Series', 'submit_label': 'Create Series'})
 
 
 def series_edit(request, pk):
@@ -143,14 +127,7 @@ def series_edit(request, pk):
         product_formset = SeriesProductFormSet(instance=series, prefix='products')
         rule_formset = SeriesRuleFormSet(instance=series, prefix='rules')
 
-    return render(request, 'vaccines/series_form.html', {
-        'form': form,
-        'product_formset': product_formset,
-        'rule_formset': rule_formset,
-        'title': f'Edit Series: {series.name}',
-        'submit_label': 'Save Changes',
-        'series': series,
-    })
+    return render(request, 'vaccines/series_form.html', {'form': form, 'product_formset': product_formset, 'rule_formset': rule_formset, 'title': f'Edit Series: {series.name}', 'submit_label': 'Save Changes', 'series': series})
 
 
 def series_delete(request, pk):
@@ -160,11 +137,46 @@ def series_delete(request, pk):
         series.delete()
         messages.success(request, f'Series "{name}" deleted.')
         return redirect('vaccines:settings_tab', tab='series')
-    return render(request, 'vaccines/confirm_delete.html', {
-        'object': series,
-        'object_type': 'Series',
-        'cancel_href': reverse('vaccines:settings_tab', kwargs={'tab': 'series'}),
-    })
+    return render(request, 'vaccines/confirm_delete.html', {'object': series, 'object_type': 'Series', 'cancel_href': reverse('vaccines:settings_tab', kwargs={'tab': 'series'})})
+
+
+def dependency_create(request):
+    if request.method == 'POST':
+        form = DependencyRuleForm(request.POST)
+        if form.is_valid():
+            dependency = form.save()
+            messages.success(request, f'Dependency rule for "{dependency.dependent_series.name}" created successfully.')
+            return redirect('vaccines:settings_tab', tab='dependencies')
+        messages.error(request, 'Please correct the errors below.')
+    else:
+        form = DependencyRuleForm()
+
+    return render(request, 'vaccines/dependency_form.html', {'form': form, 'title': 'Add Dependency Rule', 'submit_label': 'Create Rule'})
+
+
+def dependency_edit(request, pk):
+    dependency = get_object_or_404(DependencyRule, pk=pk)
+    if request.method == 'POST':
+        form = DependencyRuleForm(request.POST, instance=dependency)
+        if form.is_valid():
+            dependency = form.save()
+            messages.success(request, f'Dependency rule for "{dependency.dependent_series.name}" updated successfully.')
+            return redirect('vaccines:settings_tab', tab='dependencies')
+        messages.error(request, 'Please correct the errors below.')
+    else:
+        form = DependencyRuleForm(instance=dependency)
+
+    return render(request, 'vaccines/dependency_form.html', {'form': form, 'title': 'Edit Dependency Rule', 'submit_label': 'Save Changes', 'dependency': dependency})
+
+
+def dependency_delete(request, pk):
+    dependency = get_object_or_404(DependencyRule, pk=pk)
+    if request.method == 'POST':
+        label = str(dependency)
+        dependency.delete()
+        messages.success(request, f'Dependency rule "{label}" deleted.')
+        return redirect('vaccines:settings_tab', tab='dependencies')
+    return render(request, 'vaccines/confirm_delete.html', {'object': dependency, 'object_type': 'Dependency Rule', 'cancel_href': reverse('vaccines:settings_tab', kwargs={'tab': 'dependencies'})})
 
 
 # Legacy Vaccine CRUD
@@ -190,13 +202,7 @@ def vaccine_create(request):
         schedule_formset = ScheduleRuleFormSet(prefix='schedule')
         catchup_formset = CatchupRuleFormSet(prefix='catchup')
 
-    return render(request, 'vaccines/vaccine_form.html', {
-        'form': form,
-        'schedule_formset': schedule_formset,
-        'catchup_formset': catchup_formset,
-        'title': 'Add New Vaccine',
-        'submit_label': 'Create Vaccine',
-    })
+    return render(request, 'vaccines/vaccine_form.html', {'form': form, 'schedule_formset': schedule_formset, 'catchup_formset': catchup_formset, 'title': 'Add New Vaccine', 'submit_label': 'Create Vaccine'})
 
 
 def vaccine_edit(request, pk):
@@ -217,14 +223,7 @@ def vaccine_edit(request, pk):
         schedule_formset = ScheduleRuleFormSet(instance=vaccine, prefix='schedule')
         catchup_formset = CatchupRuleFormSet(instance=vaccine, prefix='catchup')
 
-    return render(request, 'vaccines/vaccine_form.html', {
-        'form': form,
-        'schedule_formset': schedule_formset,
-        'catchup_formset': catchup_formset,
-        'title': f'Edit Vaccine: {vaccine.name}',
-        'submit_label': 'Save Changes',
-        'vaccine': vaccine,
-    })
+    return render(request, 'vaccines/vaccine_form.html', {'form': form, 'schedule_formset': schedule_formset, 'catchup_formset': catchup_formset, 'title': f'Edit Vaccine: {vaccine.name}', 'submit_label': 'Save Changes', 'vaccine': vaccine})
 
 
 def vaccine_delete(request, pk):
@@ -234,11 +233,7 @@ def vaccine_delete(request, pk):
         vaccine.delete()
         messages.success(request, f'Vaccine "{name}" deleted.')
         return redirect('vaccines:settings_tab', tab='vaccines')
-    return render(request, 'vaccines/confirm_delete.html', {
-        'object': vaccine,
-        'object_type': 'Vaccine',
-        'cancel_href': reverse('vaccines:settings_tab', kwargs={'tab': 'vaccines'}),
-    })
+    return render(request, 'vaccines/confirm_delete.html', {'object': vaccine, 'object_type': 'Vaccine', 'cancel_href': reverse('vaccines:settings_tab', kwargs={'tab': 'vaccines'})})
 
 
 # Legacy Group CRUD
@@ -260,12 +255,7 @@ def group_create(request):
         form = VaccineGroupForm()
         rule_formset = GroupRuleFormSet(prefix='rules')
 
-    return render(request, 'vaccines/group_form.html', {
-        'form': form,
-        'rule_formset': rule_formset,
-        'title': 'Add New Vaccine Group',
-        'submit_label': 'Create Group',
-    })
+    return render(request, 'vaccines/group_form.html', {'form': form, 'rule_formset': rule_formset, 'title': 'Add New Vaccine Group', 'submit_label': 'Create Group'})
 
 
 def group_edit(request, pk):
@@ -283,13 +273,7 @@ def group_edit(request, pk):
         form = VaccineGroupForm(instance=group)
         rule_formset = GroupRuleFormSet(instance=group, prefix='rules')
 
-    return render(request, 'vaccines/group_form.html', {
-        'form': form,
-        'rule_formset': rule_formset,
-        'title': f'Edit Group: {group.name}',
-        'submit_label': 'Save Changes',
-        'group': group,
-    })
+    return render(request, 'vaccines/group_form.html', {'form': form, 'rule_formset': rule_formset, 'title': f'Edit Group: {group.name}', 'submit_label': 'Save Changes', 'group': group})
 
 
 def group_delete(request, pk):
@@ -299,8 +283,4 @@ def group_delete(request, pk):
         group.delete()
         messages.success(request, f'Group "{name}" deleted.')
         return redirect('vaccines:settings_tab', tab='groups')
-    return render(request, 'vaccines/confirm_delete.html', {
-        'object': group,
-        'object_type': 'Vaccine Group',
-        'cancel_href': reverse('vaccines:settings_tab', kwargs={'tab': 'groups'}),
-    })
+    return render(request, 'vaccines/confirm_delete.html', {'object': group, 'object_type': 'Vaccine Group', 'cancel_href': reverse('vaccines:settings_tab', kwargs={'tab': 'groups'})})

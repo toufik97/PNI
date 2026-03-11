@@ -1,18 +1,8 @@
 from datetime import date, timedelta
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from patients.models import Child, VaccinationRecord
-from vaccines.models import (
-    CatchupRule,
-    GroupRule,
-    Product,
-    ScheduleRule,
-    Series,
-    SeriesRule,
-    SubstitutionRule,
-    Vaccine,
-    VaccineGroup,
-)
+from vaccines.models import CatchupRule, Product, ScheduleRule, Series, Vaccine, VaccineGroup
 
 
 class VaccinationEngine:
@@ -24,12 +14,15 @@ class VaccinationEngine:
         self.age_years = self.age_days / 365.25
         self.records = list(self.child.vaccination_records.all().order_by('date_given'))
         self.vaccines = Vaccine.objects.all()
+        self.series_history_cache: Dict[int, List[VaccinationRecord]] = {}
 
     def evaluate(self) -> Dict[str, Any]:
         history_by_vaccine = self._group_history()
         self._validate_history(history_by_vaccine)
 
         due_today = []
+        due_but_unavailable = []
+        blocked = []
         missing_doses = []
         upcoming_doses = []
 
@@ -37,17 +30,22 @@ class VaccinationEngine:
             Series.objects.filter(active=True).prefetch_related(
                 'series_products__product__vaccine',
                 'rules__product__vaccine',
+                'dependency_rules__anchor_series',
             )
         )
         covered_group_ids = set()
         covered_vaccine_names = set()
 
         for series in active_series:
-            series_eval = self._evaluate_series(series, history_by_vaccine)
-            if series_eval:
-                due_today.extend(series_eval['due_today'])
-                missing_doses.extend(series_eval['missing_doses'])
-                upcoming_doses.extend(series_eval['upcoming'])
+            self.series_history_cache[series.id] = self._validate_series_history(series, history_by_vaccine)
+
+        for series in active_series:
+            series_eval = self._recommend_series(series)
+            due_today.extend(series_eval['due_today'])
+            due_but_unavailable.extend(series_eval['due_but_unavailable'])
+            blocked.extend(series_eval['blocked'])
+            missing_doses.extend(series_eval['missing_doses'])
+            upcoming_doses.extend(series_eval['upcoming'])
 
             if series.legacy_group_id:
                 covered_group_ids.add(series.legacy_group_id)
@@ -65,10 +63,9 @@ class VaccinationEngine:
                 continue
 
             group_eval = self._evaluate_vaccine_group(group, history_by_vaccine)
-            if group_eval:
-                due_today.extend(group_eval['due_today'])
-                missing_doses.extend(group_eval['missing_doses'])
-                upcoming_doses.extend(group_eval['upcoming'])
+            due_today.extend(group_eval['due_today'])
+            missing_doses.extend(group_eval['missing_doses'])
+            upcoming_doses.extend(group_eval['upcoming'])
             for vaccine in group.vaccines.all():
                 grouped_vaccine_names.add(vaccine.name)
 
@@ -162,15 +159,8 @@ class VaccinationEngine:
                 if vaccine.live:
                     is_compatible = True
                     for record in recent_live_doses:
-                        gap = (self.evaluation_date - record.date_given).days
-                        if gap == 0:
-                            if not vaccine.compatible_live_vaccines.filter(id=record.vaccine.id).exists():
-                                is_compatible = False
-                        else:
-                            if not vaccine.compatible_live_vaccines.filter(id=record.vaccine.id).exists():
-                                is_compatible = False
-
-                        if not is_compatible:
+                        if not vaccine.compatible_live_vaccines.filter(id=record.vaccine.id).exists():
+                            is_compatible = False
                             break
 
                     if not is_compatible:
@@ -181,21 +171,25 @@ class VaccinationEngine:
                 non_deferred_due.append(item)
             due_today = non_deferred_due
 
-        final_due = []
-        for item in due_today:
-            if isinstance(item, dict):
-                final_due.append(item)
-            else:
-                final_due.append({'vaccine': item, 'dose_amount': None, 'dose_number': None})
-
         next_appointment = min([item[1] for item in upcoming_doses]) if upcoming_doses else None
 
         return {
-            'due_today': final_due,
+            'due_today': self._normalize_due_items(due_today),
+            'due_but_unavailable': self._normalize_due_items(due_but_unavailable),
+            'blocked': blocked,
             'missing_doses': missing_doses,
             'next_appointment': next_appointment,
             'upcoming': upcoming_doses,
         }
+
+    def _normalize_due_items(self, items):
+        normalized = []
+        for item in items:
+            if isinstance(item, dict):
+                normalized.append(item)
+            else:
+                normalized.append({'vaccine': item, 'dose_amount': None, 'dose_number': None})
+        return normalized
 
     def _group_history(self) -> Dict[str, List[VaccinationRecord]]:
         history = {}
@@ -215,9 +209,7 @@ class VaccinationEngine:
         series_vaccine_ids = set(
             Product.objects.filter(series_memberships__active=True).values_list('vaccine_id', flat=True)
         )
-        grouped_vaccine_ids = set(
-            VaccineGroup.objects.values_list('vaccines__id', flat=True)
-        )
+        grouped_vaccine_ids = set(VaccineGroup.objects.values_list('vaccines__id', flat=True))
         skip_vaccine_ids = {vaccine_id for vaccine_id in series_vaccine_ids.union(grouped_vaccine_ids) if vaccine_id}
 
         for vaccine_id, records in history_by_vaccine.items():
@@ -293,15 +285,12 @@ class VaccinationEngine:
 
             valid_live.append(record)
 
-    def _evaluate_series(self, series: Series, history_by_vaccine: Dict[str, List[VaccinationRecord]]) -> Dict[str, Any]:
+    def _validate_series_history(self, series: Series, history_by_vaccine: Dict[str, List[VaccinationRecord]]) -> List[VaccinationRecord]:
         from patients.models import VaccinationRecord as VR
 
-        result = {'due_today': [], 'missing_doses': [], 'upcoming': []}
-        series_vaccine_ids = {
-            link.product.vaccine_id for link in series.series_products.all()
-        }
+        series_vaccine_ids = {link.product.vaccine_id for link in series.series_products.all()}
         if not series_vaccine_ids:
-            return result
+            return []
 
         series_records = []
         for vaccine_id in series_vaccine_ids:
@@ -328,38 +317,23 @@ class VaccinationEngine:
                     )
                     continue
 
-            expected_rule = series.rules.filter(
-                prior_valid_doses=len(valid_records),
-                min_age_days__lte=age_at_dose,
-            ).order_by('-min_age_days').first()
+            candidates = self._series_age_candidates(series, len(valid_records), age_at_dose)
+            candidates = self._filter_series_candidates(series, candidates, valid_records)
 
-            if expected_rule:
-                if expected_rule.max_age_days and age_at_dose > expected_rule.max_age_days:
+            if candidates:
+                matching_candidates = [rule for rule in candidates if rule.product.vaccine_id == record.vaccine.id]
+                if not matching_candidates:
                     age_months = round(age_at_dose / 30.44, 1)
-                    max_months = round(expected_rule.max_age_days / 30.44, 1)
-                    self._flag_invalid(
-                        record,
-                        VR.REASON_TOO_LATE,
-                        f"Too late: {record.vaccine.name} is not valid after {max_months} months "
-                        f"for slot {expected_rule.slot_number}. Child was {age_months} months old.",
-                    )
-                    continue
-
-                if record.vaccine.id != expected_rule.product.vaccine_id:
-                    age_months = round(age_at_dose / 30.44, 1)
+                    allowed = ', '.join(sorted({rule.product.vaccine.name for rule in candidates}))
                     self._flag_invalid(
                         record,
                         VR.REASON_WRONG_VACCINE,
-                        f"Wrong vaccine: {record.vaccine.name} was given at {age_months} months, "
-                        f"but {expected_rule.product.vaccine.name} is required for slot "
-                        f"{expected_rule.slot_number}.",
+                        f"Wrong vaccine: {record.vaccine.name} was given at {age_months} months, but "
+                        f"allowed products for slot {len(valid_records) + 1} are {allowed}.",
                     )
                     continue
             else:
-                future_rule = series.rules.filter(
-                    prior_valid_doses=len(valid_records),
-                    min_age_days__gt=age_at_dose,
-                ).order_by('min_age_days').first()
+                future_rule = self._first_series_future_rule(series, len(valid_records), valid_records, reference_age_days=age_at_dose)
                 if future_rule:
                     age_months = round(age_at_dose / 30.44, 1)
                     min_months = round(future_rule.min_age_days / 30.44, 1)
@@ -373,63 +347,198 @@ class VaccinationEngine:
 
             valid_records.append(record)
 
+        return valid_records
+
+    def _recommend_series(self, series: Series) -> Dict[str, Any]:
+        result = {
+            'due_today': [],
+            'due_but_unavailable': [],
+            'blocked': [],
+            'missing_doses': [],
+            'upcoming': [],
+        }
+
+        valid_records = self.series_history_cache.get(series.id, [])
         prior_doses = len(valid_records)
         last_dose_date = valid_records[-1].date_given if valid_records else None
 
-        rules = series.rules.filter(
-            prior_valid_doses=prior_doses,
-            min_age_days__lte=self.age_days,
-        ).select_related('product__vaccine')
-        valid_rules = [rule for rule in rules if rule.max_age_days is None or self.age_days <= rule.max_age_days]
+        current_candidates = self._filter_series_candidates(
+            series,
+            self._series_age_candidates(series, prior_doses, self.age_days),
+            valid_records,
+        )
+        candidate_states = [self._build_series_candidate_state(series, valid_records, last_dose_date, rule) for rule in current_candidates]
+        candidate_states = [state for state in candidate_states if state is not None]
 
-        if not valid_rules:
-            future_rules = series.rules.filter(
-                prior_valid_doses=prior_doses,
-                min_age_days__gt=self.age_days,
-            ).select_related('product__vaccine').order_by('min_age_days')
-            if future_rules.exists():
-                next_rule = future_rules.first()
-                target_age_days = next_rule.recommended_age_days if prior_doses == 0 else next_rule.min_age_days
-                target_date = self.child.dob + timedelta(days=target_age_days)
-                if last_dose_date:
-                    interval_date = last_dose_date + timedelta(days=next_rule.min_interval_days)
-                    age_floor_date = self.child.dob + timedelta(days=next_rule.min_age_days)
-                    target_date = max(target_date, interval_date, age_floor_date)
-                result['upcoming'].append((next_rule.product.vaccine, target_date, next_rule.slot_number))
-            return result
+        if candidate_states:
+            due_states = [state for state in candidate_states if not state['blocked_reasons'] and self.evaluation_date >= state['target_date']]
+            if due_states:
+                chosen_due_state = self._choose_due_state(series, valid_records, due_states)
+                if chosen_due_state['is_available']:
+                    result['due_today'].append(self._state_to_due_item(chosen_due_state))
+                else:
+                    result['due_but_unavailable'].append(self._state_to_due_item(chosen_due_state, unavailable=True))
+                if self.evaluation_date > chosen_due_state['overdue_date']:
+                    result['missing_doses'].append({
+                        'vaccine': chosen_due_state['rule'].product.vaccine,
+                        'dose_number': chosen_due_state['rule'].slot_number,
+                    })
+                return result
 
-        rule = valid_rules[-1]
-        vaccine_to_give = rule.product.vaccine
+            upcoming_states = [state for state in candidate_states if not state['blocked_reasons'] and self.evaluation_date < state['target_date']]
+            if upcoming_states:
+                chosen_upcoming = self._choose_upcoming_state(series, valid_records, upcoming_states)
+                result['upcoming'].append((
+                    chosen_upcoming['rule'].product.vaccine,
+                    chosen_upcoming['target_date'],
+                    chosen_upcoming['rule'].slot_number,
+                ))
+                return result
 
-        if prior_doses == 0:
-            target_date = self.child.dob + timedelta(days=rule.recommended_age_days)
-        elif last_dose_date:
-            interval_date = last_dose_date + timedelta(days=rule.min_interval_days)
-            age_floor_date = self.child.dob + timedelta(days=rule.min_age_days)
-            target_date = max(interval_date, age_floor_date)
-        else:
-            target_date = self.child.dob + timedelta(days=rule.min_age_days)
+            blocked_states = [state for state in candidate_states if state['blocked_reasons']]
+            if blocked_states:
+                result['blocked'].append(self._state_to_blocked_item(self._choose_preferred_state(series, valid_records, blocked_states)))
+                return result
 
-        dose_val = rule.dose_amount
-        overdue_age = rule.overdue_age_days if rule.overdue_age_days is not None else rule.recommended_age_days
-        overdue_date = self.child.dob + timedelta(days=overdue_age)
-
-        if self.evaluation_date > overdue_date:
-            result['missing_doses'].append({
-                'vaccine': vaccine_to_give,
-                'dose_number': rule.slot_number,
-            })
-
-        if self.evaluation_date >= target_date:
-            result['due_today'].append({
-                'vaccine': vaccine_to_give,
-                'dose_amount': dose_val,
-                'dose_number': rule.slot_number,
-            })
-        else:
-            result['upcoming'].append((vaccine_to_give, target_date, rule.slot_number))
+        future_rule = self._first_series_future_rule(series, prior_doses, valid_records)
+        if future_rule:
+            future_state = self._build_series_candidate_state(series, valid_records, last_dose_date, future_rule, future=True)
+            if future_state['blocked_reasons']:
+                result['blocked'].append(self._state_to_blocked_item(future_state))
+            else:
+                result['upcoming'].append((
+                    future_rule.product.vaccine,
+                    future_state['target_date'],
+                    future_rule.slot_number,
+                ))
 
         return result
+
+    def _series_age_candidates(self, series: Series, prior_doses: int, age_days: int):
+        candidates = [rule for rule in series.rules.all() if rule.prior_valid_doses == prior_doses and rule.min_age_days <= age_days]
+        return [rule for rule in candidates if rule.max_age_days is None or age_days <= rule.max_age_days]
+
+    def _first_series_future_rule(self, series: Series, prior_doses: int, valid_records: List[VaccinationRecord], reference_age_days: Optional[int] = None):
+        age_days = self.age_days if reference_age_days is None else reference_age_days
+        future_candidates = [rule for rule in series.rules.all() if rule.prior_valid_doses == prior_doses and rule.min_age_days > age_days]
+        filtered = self._filter_series_candidates(series, future_candidates, valid_records)
+        if not filtered:
+            return None
+        return sorted(filtered, key=lambda rule: (rule.min_age_days, 0 if rule.product.active and rule.product.available else 1, self._series_product_priority(series, rule.product_id), rule.product.vaccine.name))[0]
+    def _filter_series_candidates(self, series: Series, candidates, valid_records: List[VaccinationRecord]):
+        filtered = list(candidates)
+        if valid_records and series.mixing_policy == Series.MIXING_STRICT:
+            last_vaccine_id = valid_records[-1].vaccine_id
+            filtered = [rule for rule in filtered if rule.product.vaccine_id == last_vaccine_id]
+        return filtered
+
+    def _series_product_priority(self, series: Series, product_id: int) -> int:
+        for link in series.series_products.all():
+            if link.product_id == product_id:
+                return link.priority
+        return 9999
+
+    def _build_series_candidate_state(self, series: Series, valid_records: List[VaccinationRecord], last_dose_date: Optional[date], rule, future: bool = False):
+        if future:
+            target_date = self.child.dob + timedelta(days=(rule.recommended_age_days if rule.prior_valid_doses == 0 else rule.min_age_days))
+            if last_dose_date:
+                interval_date = last_dose_date + timedelta(days=rule.min_interval_days)
+                age_floor_date = self.child.dob + timedelta(days=rule.min_age_days)
+                target_date = max(target_date, interval_date, age_floor_date)
+        else:
+            if rule.prior_valid_doses == 0:
+                target_date = self.child.dob + timedelta(days=rule.recommended_age_days)
+            elif last_dose_date:
+                interval_date = last_dose_date + timedelta(days=rule.min_interval_days)
+                age_floor_date = self.child.dob + timedelta(days=rule.min_age_days)
+                target_date = max(interval_date, age_floor_date)
+            else:
+                target_date = self.child.dob + timedelta(days=rule.min_age_days)
+
+        overdue_age = rule.overdue_age_days if rule.overdue_age_days is not None else rule.recommended_age_days
+        overdue_date = self.child.dob + timedelta(days=overdue_age)
+        target_date, blocked_reasons = self._apply_dependency_rules(series, rule.slot_number, target_date)
+        if blocked_reasons:
+            overdue_date = max(overdue_date, target_date)
+
+        return {
+            'rule': rule,
+            'target_date': target_date,
+            'overdue_date': overdue_date,
+            'blocked_reasons': blocked_reasons,
+            'is_available': rule.product.active and rule.product.available,
+            'last_product_match': bool(valid_records and valid_records[-1].vaccine_id == rule.product.vaccine_id),
+            'priority': self._series_product_priority(series, rule.product_id),
+        }
+
+    def _apply_dependency_rules(self, series: Series, slot_number: int, target_date: date):
+        blocked_reasons = []
+        adjusted_target = target_date
+        for dependency in series.dependency_rules.all():
+            if not dependency.active:
+                continue
+            if dependency.dependent_slot_number and dependency.dependent_slot_number != slot_number:
+                continue
+
+            anchor_slot = dependency.anchor_slot_number or slot_number
+            anchor_history = self.series_history_cache.get(dependency.anchor_series_id, [])
+            if len(anchor_history) < anchor_slot:
+                if dependency.block_if_anchor_missing:
+                    blocked_reasons.append(
+                        f"Requires {dependency.anchor_series.name} slot {anchor_slot} before {series.name} slot {slot_number}."
+                    )
+                continue
+
+            anchor_record = anchor_history[anchor_slot - 1]
+            adjusted_target = max(adjusted_target, anchor_record.date_given + timedelta(days=dependency.min_offset_days))
+        return adjusted_target, blocked_reasons
+
+    def _choose_due_state(self, series: Series, valid_records: List[VaccinationRecord], states):
+        available_states = [state for state in states if state['is_available']]
+        if available_states:
+            return self._choose_preferred_state(series, valid_records, available_states)
+        return self._choose_preferred_state(series, valid_records, states)
+
+    def _choose_upcoming_state(self, series: Series, valid_records: List[VaccinationRecord], states):
+        return sorted(
+            states,
+            key=lambda state: (
+                state['target_date'],
+                -state['rule'].min_age_days,
+                0 if state['last_product_match'] else 1,
+                state['priority'],
+                state['rule'].product.vaccine.name,
+            ),
+        )[0]
+
+    def _choose_preferred_state(self, series: Series, valid_records: List[VaccinationRecord], states):
+        return sorted(
+            states,
+            key=lambda state: (
+                -state['rule'].min_age_days,
+                0 if state['last_product_match'] else 1,
+                state['priority'],
+                state['rule'].product.vaccine.name,
+            ),
+        )[0]
+
+    def _state_to_due_item(self, state, unavailable: bool = False):
+        item = {
+            'vaccine': state['rule'].product.vaccine,
+            'dose_amount': state['rule'].dose_amount,
+            'dose_number': state['rule'].slot_number,
+        }
+        if unavailable:
+            item['unavailable'] = True
+            item['message'] = f"{state['rule'].product.vaccine.name} is clinically due but not currently available."
+        return item
+
+    def _state_to_blocked_item(self, state):
+        return {
+            'vaccine': state['rule'].product.vaccine,
+            'dose_number': state['rule'].slot_number,
+            'reasons': state['blocked_reasons'],
+        }
 
     def _evaluate_vaccine_group(self, group: VaccineGroup, history_by_vaccine: Dict[str, List[VaccinationRecord]]) -> Dict[str, Any]:
         result = {'due_today': [], 'missing_doses': [], 'upcoming': []}
@@ -535,18 +644,12 @@ class VaccinationEngine:
         dose_val = rule.dose_amount or (standard_rule.dose_amount if standard_rule else None)
         overdue_age = rule.max_age_days
         if standard_rule:
-            overdue_age = (
-                standard_rule.overdue_age_days
-                if standard_rule.overdue_age_days is not None else standard_rule.recommended_age_days
-            )
+            overdue_age = standard_rule.overdue_age_days if standard_rule.overdue_age_days is not None else standard_rule.recommended_age_days
 
         overdue_date = self.child.dob + timedelta(days=overdue_age) if overdue_age is not None else target_date
 
         if self.evaluation_date > overdue_date:
-            result['missing_doses'].append({
-                'vaccine': vaccine_to_give,
-                'dose_number': prior_doses + 1,
-            })
+            result['missing_doses'].append({'vaccine': vaccine_to_give, 'dose_number': prior_doses + 1})
 
         if self.evaluation_date >= target_date:
             result['due_today'].append({
@@ -558,4 +661,5 @@ class VaccinationEngine:
             result['upcoming'].append((vaccine_to_give, target_date, prior_doses + 1))
 
         return result
+
 

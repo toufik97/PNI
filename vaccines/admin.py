@@ -2,6 +2,7 @@ from django.contrib import admin
 
 from .models import (
     CatchupRule,
+    DependencyRule,
     GroupRule,
     Product,
     ScheduleRule,
@@ -28,12 +29,6 @@ class CatchupRuleInline(admin.TabularInline):
 class VaccineAdmin(admin.ModelAdmin):
     list_display = ('name', 'live')
     inlines = [ScheduleRuleInline, CatchupRuleInline]
-    fieldsets = (
-        ('Basic Information', {
-            'fields': ('name', 'live', 'description'),
-            'description': 'Core vaccine identifiers and properties.'
-        }),
-    )
 
 
 @admin.register(ScheduleRule)
@@ -63,18 +58,12 @@ class VaccineGroupAdmin(admin.ModelAdmin):
     list_display = ('name', 'min_valid_interval_days')
     filter_horizontal = ('vaccines',)
     inlines = [GroupRuleInline]
-    fieldsets = (
-        ('Group Information', {
-            'fields': ('name', 'vaccines', 'min_valid_interval_days'),
-            'description': 'Configure the group name, included vaccines, and safety intervals.'
-        }),
-    )
 
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ('vaccine', 'code', 'manufacturer', 'active')
-    list_filter = ('active', 'manufacturer')
+    list_display = ('vaccine', 'code', 'manufacturer', 'active', 'available')
+    list_filter = ('active', 'available', 'manufacturer')
     search_fields = ('vaccine__name', 'code', 'manufacturer')
 
 
@@ -98,13 +87,11 @@ class SeriesAdmin(admin.ModelAdmin):
 
 @admin.register(SeriesRule)
 class SeriesRuleAdmin(admin.ModelAdmin):
-    list_display = (
-        'series',
-        'slot_number',
-        'prior_valid_doses',
-        'product',
-        'min_age_days',
-        'recommended_age_days',
-        'min_interval_days',
-    )
+    list_display = ('series', 'slot_number', 'prior_valid_doses', 'product', 'min_age_days', 'recommended_age_days', 'min_interval_days')
     list_filter = ('series', 'product')
+
+
+@admin.register(DependencyRule)
+class DependencyRuleAdmin(admin.ModelAdmin):
+    list_display = ('dependent_series', 'dependent_slot_number', 'anchor_series', 'anchor_slot_number', 'min_offset_days', 'active')
+    list_filter = ('active', 'dependent_series', 'anchor_series')

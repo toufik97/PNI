@@ -5,209 +5,48 @@
 
 {% block content %}
 <style>
-    .settings-header {
-        background: linear-gradient(135deg, #204a87 0%, #2f855a 100%);
-        color: white;
-        border-radius: 12px;
-        padding: 1.5rem 2rem;
-        margin-bottom: 1.5rem;
-    }
-
-    .settings-header h2 {
-        margin: 0;
-        font-weight: 700;
-    }
-
-    .settings-header p {
-        margin: 0.25rem 0 0;
-        opacity: 0.9;
-    }
-
-    .nav-tabs .nav-link {
-        font-weight: 600;
-        color: #555;
-        border: none;
-        border-bottom: 3px solid transparent;
-        padding: 0.75rem 1.25rem;
-        transition: all 0.2s;
-    }
-
-    .nav-tabs .nav-link:hover {
-        color: #204a87;
-        border-bottom-color: #b7c3d0;
-    }
-
-    .nav-tabs .nav-link.active {
-        color: #204a87;
-        border-bottom-color: #204a87;
-        background: transparent;
-    }
-
-    .entity-card {
-        border: 1px solid #dbe4ee;
-        border-radius: 12px;
-        margin-bottom: 1rem;
-        overflow: hidden;
-    }
-
-    .entity-card .card-header {
-        background: #f6f8fb;
-        border-bottom: 1px solid #dbe4ee;
-        padding: 0.85rem 1.25rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 1rem;
-    }
-
-    .entity-card .card-header h5 {
-        margin: 0;
-        font-weight: 700;
-        color: #22303c;
-    }
-
-    .entity-card .card-body {
-        padding: 1rem 1.25rem;
-    }
-
-    .badge-chip {
-        background: #204a87;
-        color: white;
-        font-size: 0.75rem;
-    }
-
-    .badge-soft {
-        background: #e8f1fb;
-        color: #204a87;
-        font-size: 0.75rem;
-    }
-
-    .badge-live {
-        background: #b83280;
-        color: white;
-    }
-
-    .badge-inactive {
-        background: #718096;
-        color: white;
-    }
-
-    .badge-legacy {
-        background: #dd6b20;
-        color: white;
-    }
-
-    .rule-table {
-        font-size: 0.85rem;
-        margin-bottom: 0;
-    }
-
-    .rule-table th {
-        background: #eef3f8;
-        font-weight: 700;
-        font-size: 0.74rem;
-        text-transform: uppercase;
-        letter-spacing: 0.4px;
-        color: #4a5568;
-    }
-
-    .btn-add {
-        background: linear-gradient(135deg, #204a87 0%, #2f855a 100%);
-        color: white;
-        border: none;
-        border-radius: 8px;
-        padding: 0.55rem 1.25rem;
-        font-weight: 600;
-    }
-
-    .btn-add:hover {
-        opacity: 0.92;
-        color: white;
-    }
-
-    .btn-edit {
-        color: #204a87;
-        border: 1px solid #204a87;
-        border-radius: 6px;
-        font-size: 0.8rem;
-        padding: 0.2rem 0.6rem;
-    }
-
-    .btn-edit:hover {
-        background: #204a87;
-        color: white;
-    }
-
-    .btn-delete {
-        color: #c53030;
-        border: 1px solid #c53030;
-        border-radius: 6px;
-        font-size: 0.8rem;
-        padding: 0.2rem 0.6rem;
-    }
-
-    .btn-delete:hover {
-        background: #c53030;
-        color: white;
-    }
-
-    .empty-state {
-        text-align: center;
-        padding: 3rem;
-        color: #7a8794;
-        border: 1px dashed #cbd5e0;
-        border-radius: 12px;
-        background: #fbfdff;
-    }
-
-    .info-box {
-        background: #edf7f2;
-        border: 1px solid #9ed8bf;
-        border-radius: 10px;
-        padding: 0.85rem 1rem;
-        margin-bottom: 1rem;
-        font-size: 0.92rem;
-        color: #234e52;
-    }
-
-    .warn-box {
-        background: #fff7e6;
-        border: 1px solid #f6c56f;
-        border-radius: 10px;
-        padding: 0.85rem 1rem;
-        margin-bottom: 1rem;
-        font-size: 0.92rem;
-        color: #7b341e;
-    }
-
-    .guide-step {
-        background: #f7fafc;
-        border-left: 4px solid #204a87;
-        border-radius: 8px;
-        padding: 0.9rem 1rem;
-        margin-bottom: 0.75rem;
-    }
-
-    .guide-step strong {
-        color: #204a87;
-    }
-
-    .inline-chips span {
-        margin-right: 0.35rem;
-        margin-bottom: 0.35rem;
-        display: inline-block;
-    }
+    .settings-header { background: linear-gradient(135deg, #204a87 0%, #2f855a 100%); color: white; border-radius: 12px; padding: 1.5rem 2rem; margin-bottom: 1.5rem; }
+    .settings-header h2 { margin: 0; font-weight: 700; }
+    .settings-header p { margin: 0.25rem 0 0; opacity: 0.9; }
+    .nav-tabs .nav-link { font-weight: 600; color: #555; border: none; border-bottom: 3px solid transparent; padding: 0.75rem 1.25rem; transition: all 0.2s; }
+    .nav-tabs .nav-link:hover { color: #204a87; border-bottom-color: #b7c3d0; }
+    .nav-tabs .nav-link.active { color: #204a87; border-bottom-color: #204a87; background: transparent; }
+    .entity-card { border: 1px solid #dbe4ee; border-radius: 12px; margin-bottom: 1rem; overflow: hidden; }
+    .entity-card .card-header { background: #f6f8fb; border-bottom: 1px solid #dbe4ee; padding: 0.85rem 1.25rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+    .entity-card .card-header h5 { margin: 0; font-weight: 700; color: #22303c; }
+    .entity-card .card-body { padding: 1rem 1.25rem; }
+    .badge-chip { background: #204a87; color: white; font-size: 0.75rem; }
+    .badge-soft { background: #e8f1fb; color: #204a87; font-size: 0.75rem; }
+    .badge-live { background: #b83280; color: white; }
+    .badge-inactive { background: #718096; color: white; }
+    .badge-unavailable { background: #c05621; color: white; }
+    .badge-legacy { background: #dd6b20; color: white; }
+    .rule-table { font-size: 0.85rem; margin-bottom: 0; }
+    .rule-table th { background: #eef3f8; font-weight: 700; font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.4px; color: #4a5568; }
+    .btn-add { background: linear-gradient(135deg, #204a87 0%, #2f855a 100%); color: white; border: none; border-radius: 8px; padding: 0.55rem 1.25rem; font-weight: 600; }
+    .btn-add:hover { opacity: 0.92; color: white; }
+    .btn-edit { color: #204a87; border: 1px solid #204a87; border-radius: 6px; font-size: 0.8rem; padding: 0.2rem 0.6rem; }
+    .btn-edit:hover { background: #204a87; color: white; }
+    .btn-delete { color: #c53030; border: 1px solid #c53030; border-radius: 6px; font-size: 0.8rem; padding: 0.2rem 0.6rem; }
+    .btn-delete:hover { background: #c53030; color: white; }
+    .empty-state { text-align: center; padding: 3rem; color: #7a8794; border: 1px dashed #cbd5e0; border-radius: 12px; background: #fbfdff; }
+    .info-box { background: #edf7f2; border: 1px solid #9ed8bf; border-radius: 10px; padding: 0.85rem 1rem; margin-bottom: 1rem; font-size: 0.92rem; color: #234e52; }
+    .warn-box { background: #fff7e6; border: 1px solid #f6c56f; border-radius: 10px; padding: 0.85rem 1rem; margin-bottom: 1rem; font-size: 0.92rem; color: #7b341e; }
+    .guide-step { background: #f7fafc; border-left: 4px solid #204a87; border-radius: 8px; padding: 0.9rem 1rem; margin-bottom: 0.75rem; }
+    .guide-step strong { color: #204a87; }
+    .inline-chips span { margin-right: 0.35rem; margin-bottom: 0.35rem; display: inline-block; }
 </style>
 
 <div class="pt-3">
     <div class="settings-header">
         <h2>Vaccine Policy Settings</h2>
-        <p>Manage concrete products, clinical series, legacy policies, and the transition to the new scheduling model.</p>
+        <p>Manage concrete products, clinical series, slot dependencies, legacy policies, and the transition to the new scheduling model.</p>
     </div>
 
     <ul class="nav nav-tabs mb-3" id="settingsTabs">
         <li class="nav-item"><a class="nav-link {% if active_tab == 'products' %}active{% endif %}" href="{% url 'vaccines:settings_tab' 'products' %}">Products</a></li>
         <li class="nav-item"><a class="nav-link {% if active_tab == 'series' %}active{% endif %}" href="{% url 'vaccines:settings_tab' 'series' %}">Series</a></li>
+        <li class="nav-item"><a class="nav-link {% if active_tab == 'dependencies' %}active{% endif %}" href="{% url 'vaccines:settings_tab' 'dependencies' %}">Dependencies</a></li>
         <li class="nav-item"><a class="nav-link {% if active_tab == 'vaccines' %}active{% endif %}" href="{% url 'vaccines:settings_tab' 'vaccines' %}">Legacy Vaccines</a></li>
         <li class="nav-item"><a class="nav-link {% if active_tab == 'groups' %}active{% endif %}" href="{% url 'vaccines:settings_tab' 'groups' %}">Legacy Groups</a></li>
         <li class="nav-item"><a class="nav-link {% if active_tab == 'guide' %}active{% endif %}" href="{% url 'vaccines:settings_tab' 'guide' %}">Guide</a></li>
@@ -223,7 +62,7 @@
     </div>
 
     <div class="info-box">
-        Products are the actual items given to a child, such as <strong>Penta</strong>, <strong>DTC</strong>, <strong>Prevenar13</strong>, or <strong>Primovax</strong>. They can now participate in one or more clinical series.
+        Products now carry both policy activation and current availability. Availability is used when multiple clinically valid products exist for the same series slot.
     </div>
 
     {% if products %}
@@ -233,12 +72,9 @@
             <div>
                 <h5 class="d-inline">{{ product.vaccine.name }}</h5>
                 <span class="badge badge-soft ms-2">{{ product.code }}</span>
-                {% if product.vaccine.live %}
-                <span class="badge badge-live ms-1">Live</span>
-                {% endif %}
-                {% if not product.active %}
-                <span class="badge badge-inactive ms-1">Inactive</span>
-                {% endif %}
+                {% if product.vaccine.live %}<span class="badge badge-live ms-1">Live</span>{% endif %}
+                {% if not product.active %}<span class="badge badge-inactive ms-1">Inactive</span>{% endif %}
+                {% if product.available %}<span class="badge badge-chip ms-1">Available</span>{% else %}<span class="badge badge-unavailable ms-1">Unavailable</span>{% endif %}
             </div>
             <div>
                 <a href="{% url 'vaccines:product_edit' product.pk %}" class="btn btn-edit">Edit</a>
@@ -247,49 +83,29 @@
         </div>
         <div class="card-body">
             <div class="row g-3">
-                <div class="col-md-4">
-                    <div class="text-muted small text-uppercase fw-bold mb-1">Manufacturer</div>
-                    <div>{{ product.manufacturer|default:"-" }}</div>
-                </div>
-                <div class="col-md-4">
-                    <div class="text-muted small text-uppercase fw-bold mb-1">Linked Series</div>
-                    <div class="inline-chips">
-                        {% for series in product.series_memberships.all %}
-                        <span class="badge badge-chip">{{ series.name }}</span>
-                        {% empty %}
-                        <span class="text-muted">Not linked yet</span>
-                        {% endfor %}
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="text-muted small text-uppercase fw-bold mb-1">Legacy Vaccine</div>
-                    <div>{{ product.vaccine.name }}</div>
-                </div>
+                <div class="col-md-4"><div class="text-muted small text-uppercase fw-bold mb-1">Manufacturer</div><div>{{ product.manufacturer|default:"-" }}</div></div>
+                <div class="col-md-4"><div class="text-muted small text-uppercase fw-bold mb-1">Linked Series</div><div class="inline-chips">{% for series in product.series_memberships.all %}<span class="badge badge-chip">{{ series.name }}</span>{% empty %}<span class="text-muted">Not linked yet</span>{% endfor %}</div></div>
+                <div class="col-md-4"><div class="text-muted small text-uppercase fw-bold mb-1">Legacy Vaccine</div><div>{{ product.vaccine.name }}</div></div>
             </div>
-            {% if product.description %}
-            <p class="text-muted mb-0 mt-3">{{ product.description }}</p>
-            {% endif %}
+            {% if product.description %}<p class="text-muted mb-0 mt-3">{{ product.description }}</p>{% endif %}
         </div>
     </div>
     {% endfor %}
     {% else %}
-    <div class="empty-state">
-        <p class="mb-2">No products configured yet.</p>
-        <a href="{% url 'vaccines:product_create' %}" class="btn btn-add">Add Your First Product</a>
-    </div>
+    <div class="empty-state"><p class="mb-2">No products configured yet.</p><a href="{% url 'vaccines:product_create' %}" class="btn btn-add">Add Your First Product</a></div>
     {% endif %}
 
     {% elif active_tab == 'series' %}
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
             <h4 class="mb-1" style="font-weight:700; color:#22303c;">Clinical Series</h4>
-            <p class="text-muted mb-0">Series define the protection track, slot rules, and product choices that the engine now evaluates first.</p>
+            <p class="text-muted mb-0">Series define the protection track, slot rules, and product choices that the engine evaluates first.</p>
         </div>
         <a href="{% url 'vaccines:series_create' %}" class="btn btn-add">+ Add Series</a>
     </div>
 
     <div class="info-box">
-        A series is the new policy source of truth for grouped protection logic. DTP Family is already flowing through this layer while legacy group records remain available for transition.
+        The series layer now supports overlapping candidate products per slot and leaves final selection to availability plus mixing policy.
     </div>
 
     {% if series_list %}
@@ -300,9 +116,7 @@
                 <h5 class="d-inline">{{ series.name }}</h5>
                 <span class="badge badge-soft ms-2">{{ series.code }}</span>
                 <span class="badge badge-chip ms-1">{{ series.get_mixing_policy_display }}</span>
-                {% if series.legacy_group %}
-                <span class="badge badge-legacy ms-1">Legacy bridge</span>
-                {% endif %}
+                {% if series.legacy_group %}<span class="badge badge-legacy ms-1">Legacy bridge</span>{% endif %}
             </div>
             <div>
                 <a href="{% url 'vaccines:series_edit' series.pk %}" class="btn btn-edit">Edit</a>
@@ -311,50 +125,20 @@
         </div>
         <div class="card-body">
             <div class="row g-3 mb-3">
-                <div class="col-md-4">
-                    <div class="text-muted small text-uppercase fw-bold mb-1">Series Interval Floor</div>
-                    <div>{{ series.min_valid_interval_days|humanize_days }} <small class="text-muted">({{ series.min_valid_interval_days }}d)</small></div>
-                </div>
-                <div class="col-md-4">
-                    <div class="text-muted small text-uppercase fw-bold mb-1">Products</div>
-                    <div class="inline-chips">
-                        {% for link in series.series_products.all %}
-                        <span class="badge badge-chip">{{ link.product.vaccine.name }}</span>
-                        {% empty %}
-                        <span class="text-muted">No products linked</span>
-                        {% endfor %}
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="text-muted small text-uppercase fw-bold mb-1">Rules</div>
-                    <div>{{ series.rules.count }} slot rule{{ series.rules.count|pluralize }}</div>
-                </div>
+                <div class="col-md-4"><div class="text-muted small text-uppercase fw-bold mb-1">Series Interval Floor</div><div>{{ series.min_valid_interval_days|humanize_days }} <small class="text-muted">({{ series.min_valid_interval_days }}d)</small></div></div>
+                <div class="col-md-4"><div class="text-muted small text-uppercase fw-bold mb-1">Products</div><div class="inline-chips">{% for link in series.series_products.all %}<span class="badge badge-chip">{{ link.product.vaccine.name }}</span>{% empty %}<span class="text-muted">No products linked</span>{% endfor %}</div></div>
+                <div class="col-md-4"><div class="text-muted small text-uppercase fw-bold mb-1">Rules</div><div>{{ series.rules.count }} slot rule{{ series.rules.count|pluralize }}</div></div>
             </div>
-            {% if series.description %}
-            <p class="text-muted">{{ series.description }}</p>
-            {% endif %}
             {% if series.rules.count > 0 %}
             <table class="table table-sm rule-table">
-                <thead>
-                    <tr>
-                        <th>Slot</th>
-                        <th>Prior Doses</th>
-                        <th>Product</th>
-                        <th>Age Window</th>
-                        <th>Recommended</th>
-                        <th>Interval</th>
-                    </tr>
-                </thead>
+                <thead><tr><th>Slot</th><th>Prior Doses</th><th>Product</th><th>Age Window</th><th>Recommended</th><th>Interval</th></tr></thead>
                 <tbody>
                     {% for rule in series.rules.all %}
                     <tr>
                         <td>{{ rule.slot_number }}</td>
                         <td>{{ rule.prior_valid_doses }}</td>
                         <td><strong>{{ rule.product.vaccine.name }}</strong></td>
-                        <td>
-                            {{ rule.min_age_days|humanize_days }} <small class="text-muted">({{ rule.min_age_days }}d)</small>
-                            {% if rule.max_age_days %} - {{ rule.max_age_days|humanize_days }} <small class="text-muted">({{ rule.max_age_days }}d)</small>{% else %} +{% endif %}
-                        </td>
+                        <td>{{ rule.min_age_days|humanize_days }} <small class="text-muted">({{ rule.min_age_days }}d)</small>{% if rule.max_age_days %} - {{ rule.max_age_days|humanize_days }} <small class="text-muted">({{ rule.max_age_days }}d)</small>{% else %} +{% endif %}</td>
                         <td>{{ rule.recommended_age_days|humanize_days }} <small class="text-muted">({{ rule.recommended_age_days }}d)</small></td>
                         <td>{{ rule.min_interval_days|humanize_days }} <small class="text-muted">({{ rule.min_interval_days }}d)</small></td>
                     </tr>
@@ -368,152 +152,90 @@
     </div>
     {% endfor %}
     {% else %}
-    <div class="empty-state">
-        <p class="mb-2">No clinical series configured yet.</p>
-        <a href="{% url 'vaccines:series_create' %}" class="btn btn-add">Add Your First Series</a>
+    <div class="empty-state"><p class="mb-2">No clinical series configured yet.</p><a href="{% url 'vaccines:series_create' %}" class="btn btn-add">Add Your First Series</a></div>
+    {% endif %}
+
+    {% elif active_tab == 'dependencies' %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="mb-1" style="font-weight:700; color:#22303c;">Series Dependencies</h4>
+            <p class="text-muted mb-0">Cross-series timing rules such as "Pneumo after DTP + 15 days".</p>
+        </div>
+        <a href="{% url 'vaccines:dependency_create' %}" class="btn btn-add">+ Add Dependency</a>
     </div>
+
+    <div class="info-box">
+        Dependencies shift the earliest eligible date for a slot, and can fully block that slot until the anchor series exists.
+    </div>
+
+    {% if dependencies %}
+    {% for dependency in dependencies %}
+    <div class="entity-card card">
+        <div class="card-header">
+            <div>
+                <h5 class="d-inline">{{ dependency.dependent_series.name }}</h5>
+                {% if dependency.active %}<span class="badge badge-chip ms-2">Active</span>{% else %}<span class="badge badge-inactive ms-2">Inactive</span>{% endif %}
+            </div>
+            <div>
+                <a href="{% url 'vaccines:dependency_edit' dependency.pk %}" class="btn btn-edit">Edit</a>
+                <a href="{% url 'vaccines:dependency_delete' dependency.pk %}" class="btn btn-delete ms-1">Delete</a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4"><div class="text-muted small text-uppercase fw-bold mb-1">Dependent Slot</div><div>{{ dependency.dependent_slot_number|default:"All slots" }}</div></div>
+                <div class="col-md-4"><div class="text-muted small text-uppercase fw-bold mb-1">Anchor</div><div>{{ dependency.anchor_series.name }} / {{ dependency.anchor_slot_number|default:"Matching slot" }}</div></div>
+                <div class="col-md-4"><div class="text-muted small text-uppercase fw-bold mb-1">Offset</div><div>{{ dependency.min_offset_days|humanize_days }} <small class="text-muted">({{ dependency.min_offset_days }}d)</small></div></div>
+            </div>
+            <div class="mt-3 text-muted small">{% if dependency.block_if_anchor_missing %}Blocked until anchor exists.{% else %}Anchor can be missing without blocking the slot.{% endif %}</div>
+            {% if dependency.notes %}<p class="text-muted mb-0 mt-2">{{ dependency.notes }}</p>{% endif %}
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="empty-state"><p class="mb-2">No dependency rules configured yet.</p><a href="{% url 'vaccines:dependency_create' %}" class="btn btn-add">Add Your First Dependency</a></div>
     {% endif %}
 
     {% elif active_tab == 'vaccines' %}
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <div>
-            <h4 class="mb-1" style="font-weight:700; color:#22303c;">Legacy Vaccine Schedules</h4>
-            <p class="text-muted mb-0">These screens still manage the old per-vaccine schedule model while the transition remains in progress.</p>
-        </div>
-        <a href="{% url 'vaccines:vaccine_create' %}" class="btn btn-add">+ Add Vaccine</a>
-    </div>
-
-    <div class="warn-box">
-        Legacy vaccines remain editable for backwards compatibility, but new grouped policy work should move into the <strong>Series</strong> tab.
-    </div>
-
+    <div class="d-flex justify-content-between align-items-center mb-3"><div><h4 class="mb-1" style="font-weight:700; color:#22303c;">Legacy Vaccine Schedules</h4><p class="text-muted mb-0">These screens still manage the old per-vaccine schedule model while the transition remains in progress.</p></div><a href="{% url 'vaccines:vaccine_create' %}" class="btn btn-add">+ Add Vaccine</a></div>
+    <div class="warn-box">Legacy vaccines remain editable for backwards compatibility, but new grouped policy work should move into the <strong>Series</strong> and <strong>Dependencies</strong> tabs.</div>
     {% if vaccines %}
     {% for vaccine in vaccines %}
     <div class="entity-card card">
-        <div class="card-header">
-            <div>
-                <h5 class="d-inline">{{ vaccine.name }}</h5>
-                {% if vaccine.live %}
-                <span class="badge badge-live ms-2">Live</span>
-                {% endif %}
-                <span class="badge badge-soft ms-1">{{ vaccine.schedule_rules.count }} dose{{ vaccine.schedule_rules.count|pluralize }}</span>
-                {% if vaccine.catchup_rules.count > 0 %}
-                <span class="badge badge-legacy ms-1">{{ vaccine.catchup_rules.count }} catchup</span>
-                {% endif %}
-            </div>
-            <div>
-                <a href="{% url 'vaccines:vaccine_edit' vaccine.pk %}" class="btn btn-edit">Edit</a>
-                <a href="{% url 'vaccines:vaccine_delete' vaccine.pk %}" class="btn btn-delete ms-1">Delete</a>
-            </div>
-        </div>
+        <div class="card-header"><div><h5 class="d-inline">{{ vaccine.name }}</h5>{% if vaccine.live %}<span class="badge badge-live ms-2">Live</span>{% endif %}<span class="badge badge-soft ms-1">{{ vaccine.schedule_rules.count }} dose{{ vaccine.schedule_rules.count|pluralize }}</span>{% if vaccine.catchup_rules.count > 0 %}<span class="badge badge-legacy ms-1">{{ vaccine.catchup_rules.count }} catchup</span>{% endif %}</div><div><a href="{% url 'vaccines:vaccine_edit' vaccine.pk %}" class="btn btn-edit">Edit</a><a href="{% url 'vaccines:vaccine_delete' vaccine.pk %}" class="btn btn-delete ms-1">Delete</a></div></div>
         <div class="card-body">
             {% if vaccine.schedule_rules.count > 0 %}
-            <table class="table table-sm rule-table">
-                <thead>
-                    <tr>
-                        <th>Dose #</th>
-                        <th>Min Age</th>
-                        <th>Recommended</th>
-                        <th>Max Age</th>
-                        <th>Min Interval</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for rule in vaccine.schedule_rules.all %}
-                    <tr>
-                        <td>{{ rule.dose_number }}</td>
-                        <td>{{ rule.min_age_days|humanize_days }} <small class="text-muted">({{ rule.min_age_days }}d)</small></td>
-                        <td>{{ rule.recommended_age_days|humanize_days }} <small class="text-muted">({{ rule.recommended_age_days }}d)</small></td>
-                        <td>{% if rule.max_age_days %}{{ rule.max_age_days|humanize_days }} <small class="text-muted">({{ rule.max_age_days }}d)</small>{% else %}<span class="text-muted">-</span>{% endif %}</td>
-                        <td>{{ rule.min_interval_days|humanize_days }} <small class="text-muted">({{ rule.min_interval_days }}d)</small></td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <p class="text-muted mb-0">No schedule rules defined yet.</p>
-            {% endif %}
+            <table class="table table-sm rule-table"><thead><tr><th>Dose #</th><th>Min Age</th><th>Recommended</th><th>Max Age</th><th>Min Interval</th></tr></thead><tbody>{% for rule in vaccine.schedule_rules.all %}<tr><td>{{ rule.dose_number }}</td><td>{{ rule.min_age_days|humanize_days }} <small class="text-muted">({{ rule.min_age_days }}d)</small></td><td>{{ rule.recommended_age_days|humanize_days }} <small class="text-muted">({{ rule.recommended_age_days }}d)</small></td><td>{% if rule.max_age_days %}{{ rule.max_age_days|humanize_days }} <small class="text-muted">({{ rule.max_age_days }}d)</small>{% else %}<span class="text-muted">-</span>{% endif %}</td><td>{{ rule.min_interval_days|humanize_days }} <small class="text-muted">({{ rule.min_interval_days }}d)</small></td></tr>{% endfor %}</tbody></table>
+            {% else %}<p class="text-muted mb-0">No schedule rules defined yet.</p>{% endif %}
         </div>
     </div>
     {% endfor %}
-    {% else %}
-    <div class="empty-state"><p>No legacy vaccines configured yet.</p></div>
-    {% endif %}
+    {% else %}<div class="empty-state"><p>No legacy vaccines configured yet.</p></div>{% endif %}
 
     {% elif active_tab == 'groups' %}
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <div>
-            <h4 class="mb-1" style="font-weight:700; color:#22303c;">Legacy Vaccine Groups</h4>
-            <p class="text-muted mb-0">These remain visible while their policies are mirrored into the new series model.</p>
-        </div>
-        <a href="{% url 'vaccines:group_create' %}" class="btn btn-add">+ Add Group</a>
-    </div>
-
-    <div class="warn-box">
-        Group rules are now a migration bridge. New grouped scheduling logic should be authored in <strong>Series</strong> instead.
-    </div>
-
+    <div class="d-flex justify-content-between align-items-center mb-3"><div><h4 class="mb-1" style="font-weight:700; color:#22303c;">Legacy Vaccine Groups</h4><p class="text-muted mb-0">These remain visible while their policies are mirrored into the new series model.</p></div><a href="{% url 'vaccines:group_create' %}" class="btn btn-add">+ Add Group</a></div>
+    <div class="warn-box">Group rules are now a migration bridge. New grouped scheduling logic should be authored in <strong>Series</strong> and <strong>Dependencies</strong> instead.</div>
     {% if groups %}
     {% for group in groups %}
     <div class="entity-card card">
-        <div class="card-header">
-            <div>
-                <h5 class="d-inline">{{ group.name }}</h5>
-                <span class="badge badge-soft ms-2">Interval {{ group.min_valid_interval_days }}d</span>
-            </div>
-            <div>
-                <a href="{% url 'vaccines:group_edit' group.pk %}" class="btn btn-edit">Edit</a>
-                <a href="{% url 'vaccines:group_delete' group.pk %}" class="btn btn-delete ms-1">Delete</a>
-            </div>
-        </div>
+        <div class="card-header"><div><h5 class="d-inline">{{ group.name }}</h5><span class="badge badge-soft ms-2">Interval {{ group.min_valid_interval_days }}d</span></div><div><a href="{% url 'vaccines:group_edit' group.pk %}" class="btn btn-edit">Edit</a><a href="{% url 'vaccines:group_delete' group.pk %}" class="btn btn-delete ms-1">Delete</a></div></div>
         <div class="card-body">
-            <div class="inline-chips mb-3">
-                {% for vaccine in group.vaccines.all %}
-                <span class="badge badge-chip">{{ vaccine.name }}</span>
-                {% endfor %}
-            </div>
+            <div class="inline-chips mb-3">{% for vaccine in group.vaccines.all %}<span class="badge badge-chip">{{ vaccine.name }}</span>{% endfor %}</div>
             {% if group.rules.count > 0 %}
-            <table class="table table-sm rule-table">
-                <thead>
-                    <tr>
-                        <th>Prior Doses</th>
-                        <th>Age Range</th>
-                        <th>Give</th>
-                        <th>Min Interval</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for rule in group.rules.all %}
-                    <tr>
-                        <td>{{ rule.prior_doses }}</td>
-                        <td>{{ rule.min_age_days|humanize_days }} <small class="text-muted">({{ rule.min_age_days }}d)</small>{% if rule.max_age_days %} - {{ rule.max_age_days|humanize_days }} <small class="text-muted">({{ rule.max_age_days }}d)</small>{% else %} +{% endif %}</td>
-                        <td><strong>{{ rule.vaccine_to_give.name }}</strong></td>
-                        <td>{{ rule.min_interval_days|humanize_days }} <small class="text-muted">({{ rule.min_interval_days }}d)</small></td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <p class="text-muted mb-0">No legacy group rules defined yet.</p>
-            {% endif %}
+            <table class="table table-sm rule-table"><thead><tr><th>Prior Doses</th><th>Age Range</th><th>Give</th><th>Min Interval</th></tr></thead><tbody>{% for rule in group.rules.all %}<tr><td>{{ rule.prior_doses }}</td><td>{{ rule.min_age_days|humanize_days }} <small class="text-muted">({{ rule.min_age_days }}d)</small>{% if rule.max_age_days %} - {{ rule.max_age_days|humanize_days }} <small class="text-muted">({{ rule.max_age_days }}d)</small>{% else %} +{% endif %}</td><td><strong>{{ rule.vaccine_to_give.name }}</strong></td><td>{{ rule.min_interval_days|humanize_days }} <small class="text-muted">({{ rule.min_interval_days }}d)</small></td></tr>{% endfor %}</tbody></table>
+            {% else %}<p class="text-muted mb-0">No legacy group rules defined yet.</p>{% endif %}
         </div>
     </div>
     {% endfor %}
-    {% else %}
-    <div class="empty-state"><p>No legacy groups configured yet.</p></div>
-    {% endif %}
+    {% else %}<div class="empty-state"><p>No legacy groups configured yet.</p></div>{% endif %}
 
     {% else %}
-    <div class="info-box">
-        The app is in transition from legacy vaccine/group scheduling toward the new product/series policy model. Use the steps below when adding new logic.
-    </div>
-
-    <div class="guide-step"><strong>1.</strong> Create concrete administered items in <strong>Products</strong>.</div>
+    <div class="info-box">The app is now transitioning toward a full product/series/dependency policy model. Use the steps below when adding new schedules like Pneumo.</div>
+    <div class="guide-step"><strong>1.</strong> Create concrete administered items in <strong>Products</strong>, including whether each one is currently available.</div>
     <div class="guide-step"><strong>2.</strong> Create the clinical protection track in <strong>Series</strong>.</div>
-    <div class="guide-step"><strong>3.</strong> Link the allowed products to the series with priorities.</div>
-    <div class="guide-step"><strong>4.</strong> Add slot rules that define age windows, intervals, and recommended timing.</div>
+    <div class="guide-step"><strong>3.</strong> Link all allowed products to the series and add slot rules for each product path.</div>
+    <div class="guide-step"><strong>4.</strong> Add <strong>Dependencies</strong> for cross-series timing, such as "Pneumo after DTP + 15 days".</div>
     <div class="guide-step"><strong>5.</strong> Use the legacy tabs only when you still need to maintain old schedule/group policy during the migration.</div>
-    <div class="guide-step"><strong>6.</strong> The next UI phase will add dependency and global-constraint authoring, such as "Pneumo after DTP + 15 days".</div>
     {% endif %}
 </div>
 {% endblock %}

@@ -131,6 +131,7 @@ class Product(models.Model):
     manufacturer = models.CharField(max_length=100, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     active = models.BooleanField(default=True)
+    available = models.BooleanField(default=True, help_text="Whether this product is currently available for scheduling")
 
     class Meta:
         ordering = ['vaccine__name']
@@ -246,3 +247,40 @@ class SeriesRule(models.Model):
                 f"Invalid age range: Min age ({self.min_age_days}d) "
                 f"is greater than Max age ({self.max_age_days}d)."
             )
+
+
+class DependencyRule(models.Model):
+    dependent_series = models.ForeignKey(Series, on_delete=models.CASCADE, related_name='dependency_rules')
+    dependent_slot_number = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Leave blank to apply to every slot in the dependent series",
+    )
+    anchor_series = models.ForeignKey(Series, on_delete=models.CASCADE, related_name='anchored_dependency_rules')
+    anchor_slot_number = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Leave blank to use the same slot number as the dependent series",
+    )
+    min_offset_days = models.PositiveIntegerField(default=0, help_text="Minimum days after the anchor slot")
+    block_if_anchor_missing = models.BooleanField(
+        default=True,
+        help_text="If enabled, the dependent slot stays blocked until the anchor slot exists",
+    )
+    active = models.BooleanField(default=True)
+    notes = models.TextField(blank=True, null=True)
+
+    class Meta:
+        ordering = ['dependent_series', 'dependent_slot_number', 'anchor_series', 'anchor_slot_number']
+
+    def __str__(self):
+        dependent_slot = self.dependent_slot_number or 'all'
+        anchor_slot = self.anchor_slot_number or 'matching'
+        return (
+            f"{self.dependent_series.name} slot {dependent_slot} after "
+            f"{self.anchor_series.name} slot {anchor_slot} + {self.min_offset_days}d"
+        )
+
+    def clean(self):
+        if self.dependent_series_id == self.anchor_series_id and self.min_offset_days == 0:
+            raise ValidationError("A dependency rule cannot self-reference the same series without an offset.")

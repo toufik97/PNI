@@ -13,6 +13,10 @@ urlpatterns = [
     path('settings/series/<int:pk>/edit/', views.series_edit, name='series_edit'),
     path('settings/series/<int:pk>/delete/', views.series_delete, name='series_delete'),
 
+    path('settings/dependency/new/', views.dependency_create, name='dependency_create'),
+    path('settings/dependency/<int:pk>/edit/', views.dependency_edit, name='dependency_edit'),
+    path('settings/dependency/<int:pk>/delete/', views.dependency_delete, name='dependency_delete'),
+
     path('settings/vaccine/new/', views.vaccine_create, name='vaccine_create'),
     path('settings/vaccine/<int:pk>/edit/', views.vaccine_edit, name='vaccine_edit'),
     path('settings/vaccine/<int:pk>/delete/', views.vaccine_delete, name='vaccine_delete'),
