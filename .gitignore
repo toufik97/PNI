@@ -34,3 +34,8 @@ result_dtp.txt
 
 # Gemini
 .gemini/
+.agent/workflows/add-vaccine-policy.md
+.agent/workflows/investigate-clinical-case.md
+.agent/workflows/sync-docs.md
+vaccines/engine.py,cover
+.coverage
