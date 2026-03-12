@@ -310,6 +310,42 @@ class GlobalConstraintRuleForm(forms.ModelForm):
         if not self.instance.pk and active_version:
             self.fields['policy_version'].initial = active_version
 
+
+class SeriesTransitionRuleInlineFormSet(forms.BaseInlineFormSet):
+    def clean(self):
+        super().clean()
+        seen_ranges = []
+
+        for form in self.forms:
+            if not hasattr(form, 'cleaned_data'):
+                continue
+
+            cleaned_data = form.cleaned_data
+            if not cleaned_data or cleaned_data.get('DELETE'):
+                continue
+
+            to_product = cleaned_data.get('to_product')
+            if not to_product or not cleaned_data.get('active'):
+                continue
+
+            from_product = cleaned_data.get('from_product')
+            start_slot = cleaned_data.get('start_slot_number') or 1
+            end_slot = cleaned_data.get('end_slot_number') or 10 ** 9
+            transition_key = (
+                from_product.pk if from_product else None,
+                to_product.pk,
+                bool(cleaned_data.get('allow_if_unavailable')),
+            )
+
+            for existing_key, existing_start, existing_end in seen_ranges:
+                if transition_key == existing_key and start_slot <= existing_end and end_slot >= existing_start:
+                    raise forms.ValidationError(
+                        'Active transition rules cannot overlap for the same source, destination, and availability condition.'
+                    )
+
+            seen_ranges.append((transition_key, start_slot, end_slot))
+
+
 class SeriesTransitionRuleForm(forms.ModelForm):
     class Meta:
         model = SeriesTransitionRule
@@ -335,6 +371,7 @@ SeriesTransitionRuleFormSet = forms.inlineformset_factory(
     Series,
     SeriesTransitionRule,
     form=SeriesTransitionRuleForm,
+    formset=SeriesTransitionRuleInlineFormSet,
     extra=1,
     can_delete=True,
 )
@@ -360,6 +397,8 @@ class DependencyRuleForm(forms.ModelForm):
         series_queryset = Series.objects.select_related('policy_version').order_by('policy_version__name', 'name')
         self.fields['dependent_series'].queryset = series_queryset
         self.fields['anchor_series'].queryset = series_queryset
+
+
 
 
 

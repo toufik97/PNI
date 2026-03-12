@@ -208,6 +208,62 @@ class TestSeriesSettingsUI(BaseVaccinationTestCase):
         self.assertContains(response, 'Only if prior product unavailable')
         self.assertContains(response, 'DTC')
 
+
+    def test_series_create_rejects_overlapping_transition_rules(self):
+        response = self.client.post(reverse('vaccines:series_create'), {
+            'name': 'Pneumo',
+            'code': 'pneumo',
+            'description': 'Pneumococcal series',
+            'active': 'on',
+            'mixing_policy': Series.MIXING_FLEXIBLE,
+            'min_valid_interval_days': '15',
+            'legacy_group': '',
+            'products-TOTAL_FORMS': '2',
+            'products-INITIAL_FORMS': '0',
+            'products-MIN_NUM_FORMS': '0',
+            'products-MAX_NUM_FORMS': '1000',
+            'products-0-product': str(self.product_map['Penta'].pk),
+            'products-0-priority': '0',
+            'products-1-product': str(self.product_map['DTC'].pk),
+            'products-1-priority': '1',
+            'rules-TOTAL_FORMS': '1',
+            'rules-INITIAL_FORMS': '0',
+            'rules-MIN_NUM_FORMS': '0',
+            'rules-MAX_NUM_FORMS': '1000',
+            'rules-0-slot_number': '1',
+            'rules-0-prior_valid_doses': '0',
+            'rules-0-product': str(self.product_map['Penta'].pk),
+            'rules-0-min_age_days': '60',
+            'rules-0-recommended_age_days': '60',
+            'rules-0-overdue_age_days': '75',
+            'rules-0-max_age_days': '',
+            'rules-0-min_interval_days': '0',
+            'rules-0-dose_amount': '0.5ml',
+            'rules-0-notes': 'Starter slot',
+            'transitions-TOTAL_FORMS': '2',
+            'transitions-INITIAL_FORMS': '0',
+            'transitions-MIN_NUM_FORMS': '0',
+            'transitions-MAX_NUM_FORMS': '1000',
+            'transitions-0-from_product': str(self.product_map['Penta'].pk),
+            'transitions-0-to_product': str(self.product_map['DTC'].pk),
+            'transitions-0-start_slot_number': '2',
+            'transitions-0-end_slot_number': '3',
+            'transitions-0-allow_if_unavailable': '',
+            'transitions-0-active': 'on',
+            'transitions-0-notes': 'First switch window',
+            'transitions-1-from_product': str(self.product_map['Penta'].pk),
+            'transitions-1-to_product': str(self.product_map['DTC'].pk),
+            'transitions-1-start_slot_number': '3',
+            'transitions-1-end_slot_number': '4',
+            'transitions-1-allow_if_unavailable': '',
+            'transitions-1-active': 'on',
+            'transitions-1-notes': 'Overlapping switch window',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Active transition rules cannot overlap for the same source, destination, and availability condition.')
+        self.assertFalse(Series.objects.filter(code='pneumo').exists())
+
     def test_legacy_vaccine_tab_is_read_only(self):
         response = self.client.get(reverse('vaccines:settings_tab', kwargs={'tab': 'vaccines'}))
 
@@ -246,3 +302,8 @@ class TestSeriesSettingsUI(BaseVaccinationTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'read-only during the series policy migration')
         self.assertEqual(VaccineGroup.objects.count(), group_count)
+
+
+
+
+
