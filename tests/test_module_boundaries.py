@@ -5,7 +5,7 @@ from vaccines.dependencies import DependencyEvaluator
 from vaccines.engine import VaccinationEngine
 from vaccines.global_constraints import LiveVaccineConstraintService
 from vaccines.history_normalizer import HistoryNormalizer
-from vaccines.models import DependencyRule, Product, Series, SeriesProduct, SeriesRule, Vaccine
+from vaccines.models import DependencyRule, PolicyVersion, Product, Series, SeriesProduct, SeriesRule, Vaccine
 from vaccines.policy_loader import PolicyLoader
 from vaccines.recommender import SeriesRecommender
 from vaccines.series_validator import SeriesHistoryValidator
@@ -39,9 +39,17 @@ class TestModuleBoundaries(BaseVaccinationTestCase):
         self.assertEqual(len(engine.invalid_history), 1)
 
     def test_policy_loader_returns_active_policy_objects(self):
+        future_version = PolicyVersion.objects.create(name='Series Policy Future', code='series-policy-future', is_active=False)
+        future_series = Series.objects.create(
+            name='Future Pneumo',
+            mixing_policy=Series.MIXING_FLEXIBLE,
+            min_valid_interval_days=28,
+            policy_version=future_version,
+        )
         loader = PolicyLoader()
 
         self.assertIn(self.dtp_series, loader.get_active_series())
+        self.assertNotIn(future_series, loader.get_active_series())
         self.assertIn(self.dtp_group, loader.get_vaccine_groups())
         self.assertEqual(loader.get_active_policy_version(), self.dtp_series.policy_version)
 
@@ -140,5 +148,3 @@ class TestModuleBoundaries(BaseVaccinationTestCase):
 
         self.assertEqual([item['vaccine'].name for item in result['due_today']], ['Penta'])
         self.assertEqual(result['due_but_unavailable'], [])
-
-

@@ -1,4 +1,5 @@
-﻿from vaccines.models import PolicyVersion, Series
+from vaccines.models import PolicyVersion, Series
+from vaccines.policy_loader import PolicyLoader
 from .base import BaseVaccinationTestCase
 
 
@@ -32,3 +33,9 @@ class TestPolicyVersioning(BaseVaccinationTestCase):
         result = self.evaluate(child)
 
         self.assertEqual(result['policy_version'], 'series-policy-v2')
+
+    def test_policy_loader_hides_series_from_previous_policy_version(self):
+        PolicyVersion.objects.create(name='Series Policy v2', code='series-policy-v2', is_active=True)
+        loader = PolicyLoader()
+
+        self.assertNotIn(self.dtp_series, loader.get_active_series())

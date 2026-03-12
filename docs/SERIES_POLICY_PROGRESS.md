@@ -4,7 +4,7 @@ Last updated: 2026-03-12
 
 ## Current Status
 
-Overall redesign progress is approximately 94 percent complete.
+Overall redesign progress is approximately 95 percent complete.
 
 The current implementation checkpoint after the redesign review includes:
 
@@ -23,6 +23,7 @@ The current implementation checkpoint after the redesign review includes:
 - added proactive transition overlap validation in the series admin flow
 - added proactive dependency slot-reference validation for both dependent and anchor series slots
 - added proactive transition validation so destination products must actually be reachable from at least one configured slot
+- scoped series policy loading to the active policy version so future or superseded series do not leak into engine evaluation
 - added `GlobalConstraintRule` modeling plus a Global Constraints settings tab
 - wired live/live spacing to read from policy instead of only using a hardcoded default
 - expanded module-boundary tests to cover the new service layer

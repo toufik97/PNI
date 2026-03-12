@@ -1,4 +1,4 @@
-from typing import List
+from django.db.models import Q
 
 from vaccines.models import PolicyVersion, Series, Vaccine, VaccineGroup
 
@@ -12,12 +12,19 @@ class PolicyLoader:
     def get_all_vaccines(self):
         return Vaccine.objects.all()
 
-    def get_active_series(self) -> List[Series]:
+    def get_active_series(self):
+        active_version = self.get_active_policy_version()
+        queryset = Series.objects.filter(active=True)
+        if active_version is not None:
+            queryset = queryset.filter(Q(policy_version=active_version) | Q(policy_version__isnull=True))
+
         return list(
-            Series.objects.filter(active=True).prefetch_related(
+            queryset.prefetch_related(
                 'series_products__product__vaccine',
                 'rules__product__vaccine',
                 'dependency_rules__anchor_series',
+                'transition_rules__from_product__vaccine',
+                'transition_rules__to_product__vaccine',
             )
         )
 
