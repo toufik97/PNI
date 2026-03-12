@@ -103,6 +103,7 @@ class VaccinationEngine:
                 covered_vaccine_names.add(link.product.vaccine.name)
 
         groups = self.policy_loader.get_vaccine_groups()
+        covered_group_ids.update(self._series_owned_group_ids(active_series, groups))
         grouped_vaccine_names = set(covered_vaccine_names)
 
         for group in groups:
@@ -528,6 +529,26 @@ class VaccinationEngine:
 
         self.global_constraints.validate_history(self.records, self.SOURCE_GLOBAL_CONSTRAINT)
 
+
+    def _series_owned_group_ids(self, active_series: List[Series], groups) -> set[int]:
+        owned_group_ids = set()
+        series_product_vaccine_ids = [
+            {link.product.vaccine_id for link in series.series_products.all()}
+            for series in active_series
+        ]
+
+        for group in groups:
+            group_vaccine_ids = {vaccine.id for vaccine in group.vaccines.all()}
+            if not group_vaccine_ids:
+                continue
+
+            for series_vaccine_ids in series_product_vaccine_ids:
+                if group_vaccine_ids.issubset(series_vaccine_ids):
+                    owned_group_ids.add(group.id)
+                    break
+
+        return owned_group_ids
+
     def _validate_series_history(self, series: Series, history_by_vaccine: Dict[str, List[VaccinationRecord]]) -> List[VaccinationRecord]:
         validator = SeriesHistoryValidator(self, history_by_vaccine)
         return validator.validate(series)
@@ -813,6 +834,9 @@ class VaccinationEngine:
             ))
 
         return result
+
+
+
 
 
 

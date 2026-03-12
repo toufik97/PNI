@@ -1,3 +1,4 @@
+from vaccines.engine import VaccinationEngine
 from .base import BaseVaccinationTestCase
 
 
@@ -31,3 +32,14 @@ class TestSeriesBackedDTP(BaseVaccinationTestCase):
         result = self.evaluate(child)
 
         self.assertIn('Td', self.due_names(result))
+
+    def test_series_owned_group_is_not_double_evaluated_when_bridge_is_removed(self):
+        self.dtp_series.legacy_group = None
+        self.dtp_series.save(update_fields=['legacy_group'])
+
+        child = self.make_child("Series Owned Group", age_days=90)
+        result = self.evaluate(child)
+
+        penta_due_items = [item for item in result['due_today'] if item['vaccine'].name == 'Penta']
+        self.assertEqual(len(penta_due_items), 1)
+        self.assertEqual(penta_due_items[0]['decision_source'], VaccinationEngine.SOURCE_SERIES_RULE)
