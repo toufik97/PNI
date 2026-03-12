@@ -225,6 +225,9 @@ class SeriesForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['code'].required = False
         self.fields['legacy_group'].queryset = VaccineGroup.objects.order_by('name')
+        self.fields['legacy_group'].required = False
+        self.fields['legacy_group'].disabled = True
+        self.fields['legacy_group'].help_text = 'Legacy group linkage is now read-only migration metadata and is no longer used for new policy edits.'
         self.fields['policy_version'].queryset = PolicyVersion.objects.order_by('-is_active', 'name')
         active_version = PolicyVersion.get_active()
         if not self.instance.pk and active_version:
@@ -397,11 +400,3 @@ class DependencyRuleForm(forms.ModelForm):
         series_queryset = Series.objects.select_related('policy_version').order_by('policy_version__name', 'name')
         self.fields['dependent_series'].queryset = series_queryset
         self.fields['anchor_series'].queryset = series_queryset
-
-
-
-
-
-
-
-

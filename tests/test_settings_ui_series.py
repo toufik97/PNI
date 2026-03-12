@@ -100,6 +100,45 @@ class TestSeriesSettingsUI(BaseVaccinationTestCase):
         self.assertEqual(transition.to_product.vaccine.name, 'DTC')
         self.assertTrue(transition.allow_if_unavailable)
 
+    def test_series_create_ignores_posted_legacy_group_bridge(self):
+        response = self.client.post(reverse('vaccines:series_create'), {
+            'name': 'Pneumo Legacy Bridge',
+            'code': 'pneumo-legacy-bridge',
+            'description': 'Pneumococcal series',
+            'active': 'on',
+            'mixing_policy': Series.MIXING_FLEXIBLE,
+            'min_valid_interval_days': '15',
+            'legacy_group': str(self.dtp_group.pk),
+            'products-TOTAL_FORMS': '1',
+            'products-INITIAL_FORMS': '0',
+            'products-MIN_NUM_FORMS': '0',
+            'products-MAX_NUM_FORMS': '1000',
+            'products-0-product': str(self.product_map['Penta'].pk),
+            'products-0-priority': '0',
+            'rules-TOTAL_FORMS': '1',
+            'rules-INITIAL_FORMS': '0',
+            'rules-MIN_NUM_FORMS': '0',
+            'rules-MAX_NUM_FORMS': '1000',
+            'rules-0-slot_number': '1',
+            'rules-0-prior_valid_doses': '0',
+            'rules-0-product': str(self.product_map['Penta'].pk),
+            'rules-0-min_age_days': '60',
+            'rules-0-recommended_age_days': '60',
+            'rules-0-overdue_age_days': '75',
+            'rules-0-max_age_days': '',
+            'rules-0-min_interval_days': '0',
+            'rules-0-dose_amount': '0.5ml',
+            'rules-0-notes': 'Starter slot',
+            'transitions-TOTAL_FORMS': '0',
+            'transitions-INITIAL_FORMS': '0',
+            'transitions-MIN_NUM_FORMS': '0',
+            'transitions-MAX_NUM_FORMS': '1000',
+        })
+
+        self.assertEqual(response.status_code, 302)
+        series = Series.objects.get(code='pneumo-legacy-bridge')
+        self.assertIsNone(series.legacy_group)
+
     def test_series_edit_updates_transition_rules(self):
         series = Series.objects.create(
             name='Pneumo',
