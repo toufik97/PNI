@@ -16,12 +16,14 @@ from django.test import TestCase
 from patients.models import Child, VaccinationRecord
 from vaccines.models import (
     CatchupRule,
+    DependencyRule,
     GroupRule,
     Product,
     ScheduleRule,
     Series,
     SeriesProduct,
     SeriesRule,
+    SeriesTransitionRule,
     Vaccine,
     VaccineGroup,
 )
@@ -29,6 +31,7 @@ from vaccines.models import (
 
 class BaseVaccinationTestCase(TestCase):
     include_dtp_legacy_group = True
+    optional_series_names = ()
 
     """
     Base class that sets up the full vaccine configuration per test:
@@ -50,15 +53,41 @@ class BaseVaccinationTestCase(TestCase):
         with open(policy_path, 'r') as handle:
             policy = json.load(handle)
 
+        enabled_optional_series = set(self.optional_series_names)
+        required_vaccine_names = set()
+
+        for schedule_data in policy['schedule_rules']:
+            required_vaccine_names.add(schedule_data['vaccine'])
+
+        for catchup_data in policy['catchup_rules']:
+            required_vaccine_names.add(catchup_data['vaccine'])
+
+        for group_data in policy['groups']:
+            required_vaccine_names.update(group_data['vaccines'])
+            required_vaccine_names.update(rule_data['vaccine_to_give'] for rule_data in group_data['rules'])
+
+        for series_data in policy.get('series', []):
+            if series_data.get('optional') and series_data['name'] not in enabled_optional_series:
+                continue
+            required_vaccine_names.update(series_data['products'])
+            required_vaccine_names.update(rule_data['product'] for rule_data in series_data['rules'])
+
         self.vaccine_map = {}
         self.product_map = {}
         self.series_map = {}
         self.group_map = {}
 
         for vaccine_data in policy['vaccines']:
+            if vaccine_data['name'] not in required_vaccine_names:
+                continue
+
             vaccine = Vaccine.objects.create(name=vaccine_data['name'], live=vaccine_data['live'])
             self.vaccine_map[vaccine_data['name']] = vaccine
-            product = Product.objects.create(vaccine=vaccine, manufacturer=vaccine_data.get('manufacturer'))
+            product = Product.objects.create(
+                vaccine=vaccine,
+                manufacturer=vaccine_data.get('manufacturer'),
+                available=vaccine_data.get('available', True),
+            )
             self.product_map[vaccine_data['name']] = product
 
         self.penta = self.vaccine_map.get('Penta')
@@ -66,6 +95,8 @@ class BaseVaccinationTestCase(TestCase):
         self.td = self.vaccine_map.get('Td')
         self.rr = self.vaccine_map.get('RR')
         self.bcg = self.vaccine_map.get('BCG')
+        self.prevenar13 = self.vaccine_map.get('Prevenar13')
+        self.primovax = self.vaccine_map.get('Primovax')
 
         for schedule_data in policy['schedule_rules']:
             vaccine = self.vaccine_map[schedule_data['vaccine']]
@@ -78,6 +109,8 @@ class BaseVaccinationTestCase(TestCase):
                 CatchupRule.objects.create(vaccine=vaccine, **rule)
 
         self.dtp_group = None
+        self.dtp_series = None
+        self.pneumo_series = None
 
         for group_data in policy['groups']:
             if group_data['name'] == 'DTP Family' and not self.include_dtp_legacy_group:
@@ -107,6 +140,9 @@ class BaseVaccinationTestCase(TestCase):
 
         explicit_series_names = set()
         for series_data in policy.get('series', []):
+            if series_data.get('optional') and series_data['name'] not in enabled_optional_series:
+                continue
+
             series = Series.objects.create(
                 name=series_data['name'],
                 min_valid_interval_days=series_data['min_valid_interval_days'],
@@ -137,9 +173,6 @@ class BaseVaccinationTestCase(TestCase):
                     dose_amount=rule_data.get('dose_amount'),
                     notes=rule_data.get('notes'),
                 )
-
-            if series_data['name'] == 'DTP Family':
-                self.dtp_series = series
 
         for group_data in policy['groups']:
             if group_data['name'] in explicit_series_names:
@@ -193,6 +226,42 @@ class BaseVaccinationTestCase(TestCase):
                     product=product,
                     dose_amount=dose_amount,
                 )
+
+        for transition_data in policy.get('transitions', []):
+            series = self.series_map.get(transition_data['series'])
+            if not series:
+                continue
+
+            SeriesTransitionRule.objects.create(
+                series=series,
+                from_product=self.product_map.get(transition_data.get('from_product')) if transition_data.get('from_product') else None,
+                to_product=self.product_map[transition_data['to_product']],
+                start_slot_number=transition_data.get('start_slot_number'),
+                end_slot_number=transition_data.get('end_slot_number'),
+                allow_if_unavailable=transition_data.get('allow_if_unavailable', False),
+                active=transition_data.get('active', True),
+                notes=transition_data.get('notes'),
+            )
+
+        for dependency_data in policy.get('dependencies', []):
+            dependent_series = self.series_map.get(dependency_data['dependent_series'])
+            anchor_series = self.series_map.get(dependency_data['anchor_series'])
+            if not dependent_series or not anchor_series:
+                continue
+
+            DependencyRule.objects.create(
+                dependent_series=dependent_series,
+                dependent_slot_number=dependency_data.get('dependent_slot_number'),
+                anchor_series=anchor_series,
+                anchor_slot_number=dependency_data.get('anchor_slot_number'),
+                min_offset_days=dependency_data.get('min_offset_days', 0),
+                block_if_anchor_missing=dependency_data.get('block_if_anchor_missing', True),
+                active=dependency_data.get('active', True),
+                notes=dependency_data.get('notes'),
+            )
+
+        self.dtp_series = self.series_map.get('DTP Family')
+        self.pneumo_series = self.series_map.get('Pneumo')
 
     def make_child(self, name, age_days, child_id=None):
         self._child_counter += 1

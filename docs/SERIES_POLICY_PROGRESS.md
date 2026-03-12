@@ -4,7 +4,7 @@ Last updated: 2026-03-12
 
 ## Current Status
 
-Overall redesign progress is approximately 90 percent complete.
+Overall redesign progress is approximately 92 percent complete.
 
 The current implementation checkpoint after the redesign review includes:
 
@@ -25,6 +25,7 @@ The current implementation checkpoint after the redesign review includes:
 - added proactive transition validation so destination products must actually be reachable from at least one configured slot
 - scoped series policy loading to the active policy version so future or superseded series do not leak into engine evaluation
 - scoped legacy schedule-history validation to the active series set so future or superseded series no longer suppress current standalone schedule validation
+- moved Pneumo fixture coverage into shared policy reference data with opt-in loading, transition rules, and DTP dependency rules
 - removed ScheduleRule fallback from the legacy group recommendation path so group evaluation now stays inside the group policy domain
 - added a true series-only DTP fixture path so regression tests no longer need to create and then delete the DTP legacy group
 - made the series form treat legacy group linkage as read-only migration metadata so new policy edits cannot reintroduce the old bridge
@@ -57,7 +58,7 @@ The current implementation checkpoint after the redesign review includes:
 
 - [ ] Remove legacy engine fallback for migrated series
 - [ ] Finish DTP migration in application policy data so production DTP no longer depends on schedule fallback or legacy group metadata outside transitional admin views
-- [ ] Expand Pneumo from first-slice support to full end-state multi-product series support
+- [ ] Expand Pneumo from shared fixture coverage to full production-end-state multi-product policy support
 
 ## Remaining Major Work
 
@@ -71,6 +72,7 @@ The current implementation checkpoint after the redesign review includes:
 
 1. Finish DTP parity entirely inside the series domain.
 2. Remove legacy group and schedule fallback for the DTP protection track at runtime, not just in fixtures.
-3. Expand Pneumo on top of the transition-rule-aware and availability-aware series path.
+3. Broaden dependency deadlock validation now that Pneumo runs through shared policy primitives.
 4. Add proactive admin validation for overlap, deadlock, and impossible-transition cases.
+
 
