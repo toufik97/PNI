@@ -4,7 +4,7 @@ Last updated: 2026-03-12
 
 ## Current Status
 
-Overall redesign progress is approximately 91 percent complete.
+Overall redesign progress is approximately 92 percent complete.
 
 The current implementation checkpoint after the redesign review includes:
 
@@ -56,7 +56,7 @@ The current implementation checkpoint after the redesign review includes:
 
 - [ ] Add runtime availability snapshot abstraction instead of storing availability only on `Product`
 
-- [ ] Expand proactive admin validation beyond transition overlap into dependency deadlocks and impossible cross-rule combinations
+- [ ] Expand proactive admin validation beyond transition overlap and direct dependency cycles into broader deadlocks and impossible cross-rule combinations
 - [ ] Add optional policy simulator UI
 - [ ] Remove old cross-domain fallback logic after DTP parity is proven
 
@@ -66,6 +66,8 @@ The current implementation checkpoint after the redesign review includes:
 2. Once DTP is isolated, remove group and schedule fallback for the DTP protection track.
 3. Expand Pneumo on top of the transition-rule-aware and availability-aware series path.
 4. Add proactive admin validation for overlap, deadlock, and impossible-transition cases.
+
+
 
 
 

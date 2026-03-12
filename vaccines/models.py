@@ -390,6 +390,31 @@ class DependencyRule(models.Model):
             anchor_version_id = self.anchor_series.policy_version_id
             if dependent_version_id and anchor_version_id and dependent_version_id != anchor_version_id:
                 raise ValidationError("Dependency rules must reference series from the same policy version.")
+
+            if self.block_if_anchor_missing:
+                reciprocal_rules = DependencyRule.objects.filter(
+                    dependent_series_id=self.anchor_series_id,
+                    anchor_series_id=self.dependent_series_id,
+                    block_if_anchor_missing=True,
+                    active=True,
+                ).exclude(pk=self.pk)
+                for reciprocal_rule in reciprocal_rules:
+                    dependent_slot_matches = (
+                        self.dependent_slot_number is None
+                        or reciprocal_rule.anchor_slot_number is None
+                        or self.dependent_slot_number == reciprocal_rule.anchor_slot_number
+                    )
+                    anchor_slot_matches = (
+                        self.anchor_slot_number is None
+                        or reciprocal_rule.dependent_slot_number is None
+                        or self.anchor_slot_number == reciprocal_rule.dependent_slot_number
+                    )
+                    if dependent_slot_matches and anchor_slot_matches:
+                        raise ValidationError(
+                            "Dependency rules cannot create a direct blocking cycle between two series slots."
+                        )
+
+
 class GlobalConstraintRule(models.Model):
     CONSTRAINT_LIVE_LIVE_SPACING = 'live_live_spacing'
     CONSTRAINT_TYPE_CHOICES = [
@@ -435,4 +460,5 @@ class GlobalConstraintRule(models.Model):
         if rule:
             return rule.min_spacing_days
         return 28
+
 

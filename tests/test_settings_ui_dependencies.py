@@ -5,10 +5,10 @@ from .base import BaseVaccinationTestCase
 
 
 class TestDependencySettingsUI(BaseVaccinationTestCase):
-    def create_pneumo_series(self):
-        vaccine = Vaccine.objects.create(name='Prevenar13', live=False)
+    def create_series(self, series_name='Pneumo', vaccine_name='Prevenar13'):
+        vaccine = Vaccine.objects.create(name=vaccine_name, live=False)
         product = Product.objects.create(vaccine=vaccine, available=True)
-        series = Series.objects.create(name='Pneumo', mixing_policy=Series.MIXING_FLEXIBLE)
+        series = Series.objects.create(name=series_name, mixing_policy=Series.MIXING_FLEXIBLE)
         SeriesProduct.objects.create(series=series, product=product, priority=0)
         SeriesRule.objects.create(
             series=series,
@@ -23,7 +23,7 @@ class TestDependencySettingsUI(BaseVaccinationTestCase):
         return series
 
     def test_dependencies_tab_lists_rules(self):
-        pneumo = self.create_pneumo_series()
+        pneumo = self.create_series()
         DependencyRule.objects.create(
             dependent_series=pneumo,
             dependent_slot_number=1,
@@ -40,7 +40,7 @@ class TestDependencySettingsUI(BaseVaccinationTestCase):
         self.assertContains(response, '15d')
 
     def test_dependency_create_persists_rule(self):
-        pneumo = self.create_pneumo_series()
+        pneumo = self.create_series()
 
         response = self.client.post(reverse('vaccines:dependency_create'), {
             'dependent_series': str(pneumo.pk),
@@ -57,3 +57,31 @@ class TestDependencySettingsUI(BaseVaccinationTestCase):
         dependency = DependencyRule.objects.get(dependent_series=pneumo)
         self.assertEqual(dependency.min_offset_days, 15)
         self.assertTrue(dependency.block_if_anchor_missing)
+
+    def test_dependency_create_rejects_direct_blocking_cycle(self):
+        pneumo = self.create_series()
+        rota = self.create_series(series_name='Rota Support', vaccine_name='Rota Support')
+        DependencyRule.objects.create(
+            dependent_series=pneumo,
+            dependent_slot_number=1,
+            anchor_series=rota,
+            anchor_slot_number=1,
+            min_offset_days=0,
+            block_if_anchor_missing=True,
+            active=True,
+        )
+
+        response = self.client.post(reverse('vaccines:dependency_create'), {
+            'dependent_series': str(rota.pk),
+            'dependent_slot_number': '1',
+            'anchor_series': str(pneumo.pk),
+            'anchor_slot_number': '1',
+            'min_offset_days': '0',
+            'block_if_anchor_missing': 'on',
+            'active': 'on',
+            'notes': 'Would deadlock with the existing Pneumo rule',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Dependency rules cannot create a direct blocking cycle between two series slots.')
+        self.assertEqual(DependencyRule.objects.filter(dependent_series=rota, anchor_series=pneumo).count(), 0)

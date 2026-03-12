@@ -1,6 +1,8 @@
-from django.test import TestCase
 from django.core.exceptions import ValidationError
-from vaccines.models import Vaccine, VaccineGroup, GroupRule, ScheduleRule
+from django.test import TestCase
+
+from vaccines.models import DependencyRule, GroupRule, ScheduleRule, Series, Vaccine, VaccineGroup
+
 
 class TestModelValidationPrevention(TestCase):
     def setUp(self):
@@ -13,33 +15,31 @@ class TestModelValidationPrevention(TestCase):
             vaccine=self.vax,
             dose_number=1,
             min_age_days=100,
-            recommended_age_days=50  # Invalid: min > rec
+            recommended_age_days=50,
         )
         with self.assertRaises(ValidationError) as cm:
             rule.full_clean()
         self.assertIn("cannot be greater than recommended age", str(cm.exception))
 
     def test_group_rule_overlap_prevention(self):
-        # 1. Create a valid rule: 0-100 days
         GroupRule.objects.create(
             group=self.group,
             prior_doses=0,
             min_age_days=0,
             max_age_days=100,
             vaccine_to_give=self.vax,
-            min_interval_days=0
+            min_interval_days=0,
         )
 
-        # 2. Try to create an overlapping rule: 50-150 days
         overlapping_rule = GroupRule(
             group=self.group,
             prior_doses=0,
             min_age_days=50,
             max_age_days=150,
             vaccine_to_give=self.vax,
-            min_interval_days=0
+            min_interval_days=0,
         )
-        
+
         with self.assertRaises(ValidationError) as cm:
             overlapping_rule.full_clean()
         self.assertIn("overlaps with an existing rule", str(cm.exception))
@@ -49,10 +49,37 @@ class TestModelValidationPrevention(TestCase):
             group=self.group,
             prior_doses=0,
             min_age_days=200,
-            max_age_days=100,  # Invalid: min > max
+            max_age_days=100,
             vaccine_to_give=self.vax,
-            min_interval_days=0
+            min_interval_days=0,
         )
         with self.assertRaises(ValidationError) as cm:
             rule.full_clean()
         self.assertIn("is greater than Max age", str(cm.exception))
+
+    def test_dependency_rule_direct_cycle_prevention(self):
+        series_a = Series.objects.create(name="Series A")
+        series_b = Series.objects.create(name="Series B")
+        DependencyRule.objects.create(
+            dependent_series=series_a,
+            dependent_slot_number=1,
+            anchor_series=series_b,
+            anchor_slot_number=1,
+            min_offset_days=0,
+            block_if_anchor_missing=True,
+            active=True,
+        )
+
+        cyclical_rule = DependencyRule(
+            dependent_series=series_b,
+            dependent_slot_number=1,
+            anchor_series=series_a,
+            anchor_slot_number=1,
+            min_offset_days=0,
+            block_if_anchor_missing=True,
+            active=True,
+        )
+
+        with self.assertRaises(ValidationError) as cm:
+            cyclical_rule.full_clean()
+        self.assertIn("direct blocking cycle", str(cm.exception))

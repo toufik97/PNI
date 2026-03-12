@@ -19,6 +19,7 @@
         {% csrf_token %}
         <div class="form-section">
             <h5>Dependency Rule</h5>
+            {% if form.non_field_errors %}<ul class="errorlist">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
             {% for field in form %}
             <div class="mb-3">
                 <label for="{{ field.id_for_label }}" class="form-label fw-semibold">{{ field.label }}</label>
@@ -42,3 +43,4 @@
     </form>
 </div>
 {% endblock %}
+
