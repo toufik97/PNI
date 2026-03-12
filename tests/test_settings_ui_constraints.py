@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from django.urls import reverse
 
 from vaccines.models import GlobalConstraintRule, PolicyVersion
@@ -5,6 +7,14 @@ from .base import BaseVaccinationTestCase
 
 
 class TestGlobalConstraintSettingsUI(BaseVaccinationTestCase):
+    @patch('vaccines.views._global_constraints_available', return_value=False)
+    def test_constraints_tab_handles_missing_constraints_table(self, _mock_available):
+        response = self.client.get(reverse('vaccines:settings_tab', kwargs={'tab': 'constraints'}))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Global constraints are temporarily unavailable')
+        self.assertNotContains(response, '+ Add Global Constraint')
+
     def test_constraints_tab_scopes_to_active_policy_version(self):
         future_version = PolicyVersion.objects.create(name='Series Policy v2', code='series-policy-v2', is_active=False)
         GlobalConstraintRule.objects.create(
@@ -27,6 +37,7 @@ class TestGlobalConstraintSettingsUI(BaseVaccinationTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Active Live Spacing')
         self.assertNotContains(response, 'Future Live Spacing')
+
     def test_constraints_tab_lists_rules(self):
         GlobalConstraintRule.objects.create(
             name='Live Spacing',
@@ -57,3 +68,10 @@ class TestGlobalConstraintSettingsUI(BaseVaccinationTestCase):
         rule = GlobalConstraintRule.objects.get(code='expanded-live-spacing')
         self.assertEqual(rule.min_spacing_days, 35)
         self.assertEqual(rule.policy_version, self.dtp_series.policy_version)
+
+    @patch('vaccines.views._global_constraints_available', return_value=False)
+    def test_global_constraint_create_redirects_when_constraints_table_missing(self, _mock_available):
+        response = self.client.get(reverse('vaccines:global_constraint_create'), follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Global constraints are unavailable until the latest database migrations are applied.')

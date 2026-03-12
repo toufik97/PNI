@@ -230,12 +230,18 @@
             <h4 class="mb-1" style="font-weight:700; color:#22303c;">Global Constraints</h4>
             <p class="text-muted mb-0">Orthogonal safety rules such as live/live spacing that apply across series.</p>
         </div>
+        {% if global_constraints_available %}
         <a href="{% url 'vaccines:global_constraint_create' %}" class="btn btn-add">+ Add Global Constraint</a>
+        {% endif %}
     </div>
 
+    {% if not global_constraints_available %}
+    <div class="warn-box">Global constraints are temporarily unavailable because the latest database migration has not been applied yet.</div>
+    {% else %}
     <div class="info-box">
         Global constraints should shape cross-cutting safety logic without changing which series owns a historical dose.
     </div>
+    {% endif %}
 
     {% if global_constraints %}
     {% for constraint in global_constraints %}
@@ -347,7 +353,3 @@
     {% endif %}
 </div>
 {% endblock %}
-
-
-
-

@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from django.urls import reverse
 
 from vaccines.models import PolicyVersion, Product, Series, SeriesRule, SeriesTransitionRule, Vaccine, VaccineGroup
@@ -5,6 +7,12 @@ from .base import BaseVaccinationTestCase
 
 
 class TestSeriesSettingsUI(BaseVaccinationTestCase):
+    @patch('vaccines.views._global_constraints_available', return_value=False)
+    def test_series_tab_handles_missing_constraints_table(self, _mock_available):
+        response = self.client.get(reverse('vaccines:settings_tab', kwargs={'tab': 'series'}))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Clinical Series')
     def test_series_tab_scopes_to_active_policy_version(self):
         future_version = PolicyVersion.objects.create(name='Series Policy v2', code='series-policy-v2', is_active=False)
         future_series = Series.objects.create(

@@ -1,5 +1,5 @@
 from django.contrib import messages
-from django.db import transaction
+from django.db import connection, transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
@@ -32,27 +32,55 @@ def _redirect_legacy_policy_read_only(request, tab):
     return redirect('vaccines:settings_tab', tab=tab)
 
 
+def _table_exists(model):
+    return model._meta.db_table in connection.introspection.table_names()
+
+
+def _global_constraints_available():
+    return _table_exists(GlobalConstraintRule)
+
+
+def _redirect_global_constraints_unavailable(request):
+    messages.warning(request, 'Global constraints are unavailable until the latest database migrations are applied.')
+    return redirect('vaccines:settings_tab', tab='constraints')
+
+
 def vaccine_settings(request, tab=None):
     active_tab = tab or request.GET.get('tab', 'products')
     if active_tab not in ALL_TABS:
         active_tab = 'products'
 
     active_policy_version = PolicyVersion.get_active()
+    constraints_available = _global_constraints_available()
 
     vaccines = Vaccine.objects.prefetch_related('schedule_rules', 'catchup_rules').all()
     groups = VaccineGroup.objects.prefetch_related('vaccines', 'rules').all()
     products = Product.objects.select_related('vaccine').prefetch_related('series_memberships').all()
-    series = Series.objects.select_related('policy_version').prefetch_related('series_products__product__vaccine', 'rules__product__vaccine', 'transition_rules__from_product__vaccine', 'transition_rules__to_product__vaccine')
+    series = Series.objects.select_related('policy_version').prefetch_related(
+        'series_products__product__vaccine',
+        'rules__product__vaccine',
+        'transition_rules__from_product__vaccine',
+        'transition_rules__to_product__vaccine',
+    )
     dependencies = DependencyRule.objects.select_related('dependent_series__policy_version', 'anchor_series__policy_version')
-    global_constraints = GlobalConstraintRule.objects.select_related('policy_version')
+    if constraints_available:
+        global_constraints = GlobalConstraintRule.objects.select_related('policy_version')
+    else:
+        global_constraints = []
+
     if active_policy_version is not None:
         series = series.filter(policy_version=active_policy_version)
-        dependencies = dependencies.filter(dependent_series__policy_version=active_policy_version, anchor_series__policy_version=active_policy_version)
-        global_constraints = global_constraints.filter(policy_version=active_policy_version)
+        dependencies = dependencies.filter(
+            dependent_series__policy_version=active_policy_version,
+            anchor_series__policy_version=active_policy_version,
+        )
+        if constraints_available:
+            global_constraints = global_constraints.filter(policy_version=active_policy_version)
     else:
         series = series.none()
         dependencies = dependencies.none()
-        global_constraints = global_constraints.none()
+        global_constraints = [] if not constraints_available else global_constraints.none()
+
     policy_versions = PolicyVersion.objects.order_by('-is_active', 'name')
 
     context = {
@@ -66,6 +94,7 @@ def vaccine_settings(request, tab=None):
         'active_policy_version': active_policy_version,
         'active_tab': active_tab,
         'legacy_policy_read_only': LEGACY_POLICY_READ_ONLY,
+        'global_constraints_available': constraints_available,
     }
     return render(request, 'vaccines/settings.html', context)
 
@@ -229,6 +258,7 @@ def series_edit(request, pk):
         'series': series,
     })
 
+
 def series_delete(request, pk):
     series = get_object_or_404(Series, pk=pk)
     if request.method == 'POST':
@@ -278,8 +308,10 @@ def dependency_delete(request, pk):
     return render(request, 'vaccines/confirm_delete.html', {'object': dependency, 'object_type': 'Dependency Rule', 'cancel_href': reverse('vaccines:settings_tab', kwargs={'tab': 'dependencies'})})
 
 
-
 def global_constraint_create(request):
+    if not _global_constraints_available():
+        return _redirect_global_constraints_unavailable(request)
+
     if request.method == 'POST':
         form = GlobalConstraintRuleForm(request.POST)
         if form.is_valid():
@@ -294,6 +326,9 @@ def global_constraint_create(request):
 
 
 def global_constraint_edit(request, pk):
+    if not _global_constraints_available():
+        return _redirect_global_constraints_unavailable(request)
+
     constraint = get_object_or_404(GlobalConstraintRule, pk=pk)
     if request.method == 'POST':
         form = GlobalConstraintRuleForm(request.POST, instance=constraint)
@@ -309,6 +344,9 @@ def global_constraint_edit(request, pk):
 
 
 def global_constraint_delete(request, pk):
+    if not _global_constraints_available():
+        return _redirect_global_constraints_unavailable(request)
+
     constraint = get_object_or_404(GlobalConstraintRule, pk=pk)
     if request.method == 'POST':
         name = constraint.name
@@ -316,6 +354,8 @@ def global_constraint_delete(request, pk):
         messages.success(request, f'Global constraint "{name}" deleted.')
         return redirect('vaccines:settings_tab', tab='constraints')
     return render(request, 'vaccines/confirm_delete.html', {'object': constraint, 'object_type': 'Global Constraint', 'cancel_href': reverse('vaccines:settings_tab', kwargs={'tab': 'constraints'})})
+
+
 # Legacy Vaccine CRUD
 
 def vaccine_create(request):
