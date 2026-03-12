@@ -1,4 +1,5 @@
 from vaccines.engine import VaccinationEngine
+from vaccines.models import ScheduleRule
 from .base import BaseVaccinationTestCase
 
 
@@ -43,3 +44,12 @@ class TestSeriesBackedDTP(BaseVaccinationTestCase):
         penta_due_items = [item for item in result['due_today'] if item['vaccine'].name == 'Penta']
         self.assertEqual(len(penta_due_items), 1)
         self.assertEqual(penta_due_items[0]['decision_source'], VaccinationEngine.SOURCE_SERIES_RULE)
+
+    def test_series_recommendations_do_not_depend_on_dtp_schedule_rules(self):
+        self.dtp_group.delete()
+        ScheduleRule.objects.filter(vaccine__name__in=['Penta', 'DTC', 'Td']).delete()
+
+        child = self.make_child("Series Without Legacy Schedules", age_days=90)
+        result = self.evaluate(child)
+
+        self.assertIn('Penta', self.due_names(result))

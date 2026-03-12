@@ -1,6 +1,6 @@
 """
 Shared test setup for vaccination engine tests.
-Creates vaccines, schedule rules, vaccine groups, and group rules
+Creates vaccines, schedule rules, vaccine groups, and series policies
 that mirror the production DTP Family configuration.
 
 Note: We use setUp() (per-test) rather than setUpTestData() (per-class)
@@ -34,7 +34,7 @@ class BaseVaccinationTestCase(TestCase):
     - RR (standard schedule vaccine, live)
     - All GroupRules for DTP Family
     - ScheduleRules for standard vaccines
-    - First-slice Product/Series policy for grouped vaccines
+    - Explicit series policy for DTP Family
     """
 
     def setUp(self):
@@ -51,6 +51,7 @@ class BaseVaccinationTestCase(TestCase):
         self.vaccine_map = {}
         self.product_map = {}
         self.series_map = {}
+        self.group_map = {}
 
         for vaccine_data in policy['vaccines']:
             vaccine = Vaccine.objects.create(name=vaccine_data['name'], live=vaccine_data['live'])
@@ -81,7 +82,64 @@ class BaseVaccinationTestCase(TestCase):
             )
             group_vaccines = [self.vaccine_map[name] for name in group_data['vaccines']]
             group.vaccines.set(group_vaccines)
+            self.group_map[group_data['name']] = group
 
+            for rule_data in group_data['rules']:
+                GroupRule.objects.create(
+                    group=group,
+                    vaccine_to_give=self.vaccine_map[rule_data['vaccine_to_give']],
+                    prior_doses=rule_data['prior_doses'],
+                    min_age_days=rule_data['min_age_days'],
+                    max_age_days=rule_data['max_age_days'],
+                    min_interval_days=rule_data['min_interval_days'],
+                    dose_amount=rule_data.get('dose_amount'),
+                )
+
+            if group_data['name'] == 'DTP Family':
+                self.dtp_group = group
+
+        explicit_series_names = set()
+        for series_data in policy.get('series', []):
+            series = Series.objects.create(
+                name=series_data['name'],
+                min_valid_interval_days=series_data['min_valid_interval_days'],
+                mixing_policy=series_data.get('mixing_policy', Series.MIXING_AGE_RULE),
+                legacy_group=self.group_map.get(series_data.get('legacy_group')) if series_data.get('legacy_group') else None,
+            )
+            self.series_map[series_data['name']] = series
+            explicit_series_names.add(series_data['name'])
+
+            for index, product_name in enumerate(series_data['products']):
+                SeriesProduct.objects.create(
+                    series=series,
+                    product=self.product_map[product_name],
+                    priority=index,
+                )
+
+            for rule_data in series_data['rules']:
+                SeriesRule.objects.create(
+                    series=series,
+                    slot_number=rule_data['slot_number'],
+                    prior_valid_doses=rule_data['prior_valid_doses'],
+                    min_age_days=rule_data['min_age_days'],
+                    recommended_age_days=rule_data['recommended_age_days'],
+                    overdue_age_days=rule_data.get('overdue_age_days'),
+                    max_age_days=rule_data.get('max_age_days'),
+                    min_interval_days=rule_data['min_interval_days'],
+                    product=self.product_map[rule_data['product']],
+                    dose_amount=rule_data.get('dose_amount'),
+                    notes=rule_data.get('notes'),
+                )
+
+            if series_data['name'] == 'DTP Family':
+                self.dtp_series = series
+
+        for group_data in policy['groups']:
+            if group_data['name'] in explicit_series_names:
+                continue
+
+            group = self.group_map[group_data['name']]
+            group_vaccines = [self.vaccine_map[name] for name in group_data['vaccines']]
             series = Series.objects.create(
                 name=group_data['name'],
                 min_valid_interval_days=group_data['min_valid_interval_days'],
@@ -99,50 +157,35 @@ class BaseVaccinationTestCase(TestCase):
             for rule_data in group_data['rules']:
                 vaccine_name = rule_data['vaccine_to_give']
                 product = self.product_map[vaccine_name]
-                group_rule = GroupRule.objects.create(
+                group_rule = GroupRule.objects.filter(
                     group=group,
                     vaccine_to_give=self.vaccine_map[vaccine_name],
                     prior_doses=rule_data['prior_doses'],
                     min_age_days=rule_data['min_age_days'],
                     max_age_days=rule_data['max_age_days'],
                     min_interval_days=rule_data['min_interval_days'],
-                    dose_amount=rule_data.get('dose_amount'),
-                )
-                slot_number = group_rule.prior_doses + 1
+                ).first()
+                slot_number = rule_data['prior_doses'] + 1
                 schedule_rule = ScheduleRule.objects.filter(
-                    vaccine=group_rule.vaccine_to_give,
+                    vaccine=self.vaccine_map[vaccine_name],
                     dose_number=slot_number,
                 ).first()
-                min_age = (
-                    max(group_rule.min_age_days, schedule_rule.min_age_days)
-                    if schedule_rule else group_rule.min_age_days
-                )
-                recommended_age = (
-                    max(min_age, schedule_rule.recommended_age_days)
-                    if schedule_rule else group_rule.min_age_days
-                )
-                overdue_age = (
-                    schedule_rule.overdue_age_days
-                    if schedule_rule and schedule_rule.overdue_age_days is not None
-                    else recommended_age
-                )
-                dose_amount = group_rule.dose_amount or (schedule_rule.dose_amount if schedule_rule else None)
+                min_age = max(rule_data['min_age_days'], schedule_rule.min_age_days) if schedule_rule else rule_data['min_age_days']
+                recommended_age = max(min_age, schedule_rule.recommended_age_days) if schedule_rule else rule_data['min_age_days']
+                overdue_age = schedule_rule.overdue_age_days if schedule_rule and schedule_rule.overdue_age_days is not None else recommended_age
+                dose_amount = rule_data.get('dose_amount') or (schedule_rule.dose_amount if schedule_rule else None)
                 SeriesRule.objects.create(
                     series=series,
                     slot_number=slot_number,
-                    prior_valid_doses=group_rule.prior_doses,
+                    prior_valid_doses=rule_data['prior_doses'],
                     min_age_days=min_age,
                     recommended_age_days=recommended_age,
                     overdue_age_days=overdue_age,
-                    max_age_days=group_rule.max_age_days,
-                    min_interval_days=group_rule.min_interval_days,
+                    max_age_days=rule_data['max_age_days'],
+                    min_interval_days=group_rule.min_interval_days if group_rule else rule_data['min_interval_days'],
                     product=product,
                     dose_amount=dose_amount,
                 )
-
-            if group_data['name'] == 'DTP Family':
-                self.dtp_group = group
-                self.dtp_series = series
 
     def make_child(self, name, age_days, child_id=None):
         self._child_counter += 1
@@ -171,4 +214,3 @@ class BaseVaccinationTestCase(TestCase):
 
     def upcoming_names(self, result):
         return sorted([item[0].name for item in result['upcoming']])
-

@@ -256,5 +256,179 @@
                 }
             ]
         }
+    ],
+    "series": [
+        {
+            "name": "DTP Family",
+            "min_valid_interval_days": 28,
+            "mixing_policy": "flexible",
+            "products": [
+                "Penta",
+                "DTC",
+                "Td"
+            ],
+            "rules": [
+                {
+                    "slot_number": 1,
+                    "prior_valid_doses": 0,
+                    "product": "Penta",
+                    "min_age_days": 53,
+                    "recommended_age_days": 60,
+                    "overdue_age_days": 60,
+                    "max_age_days": 364,
+                    "min_interval_days": 0
+                },
+                {
+                    "slot_number": 1,
+                    "prior_valid_doses": 0,
+                    "product": "Penta",
+                    "min_age_days": 365,
+                    "recommended_age_days": 365,
+                    "overdue_age_days": 365,
+                    "max_age_days": 1094,
+                    "min_interval_days": 0
+                },
+                {
+                    "slot_number": 1,
+                    "prior_valid_doses": 0,
+                    "product": "DTC",
+                    "min_age_days": 1095,
+                    "recommended_age_days": 1095,
+                    "overdue_age_days": 1095,
+                    "max_age_days": 2554,
+                    "min_interval_days": 0
+                },
+                {
+                    "slot_number": 1,
+                    "prior_valid_doses": 0,
+                    "product": "Td",
+                    "min_age_days": 2555,
+                    "recommended_age_days": 2555,
+                    "overdue_age_days": 2555,
+                    "max_age_days": null,
+                    "min_interval_days": 0
+                },
+                {
+                    "slot_number": 2,
+                    "prior_valid_doses": 1,
+                    "product": "Penta",
+                    "min_age_days": 83,
+                    "recommended_age_days": 90,
+                    "overdue_age_days": 90,
+                    "max_age_days": 539,
+                    "min_interval_days": 28
+                },
+                {
+                    "slot_number": 2,
+                    "prior_valid_doses": 1,
+                    "product": "Penta",
+                    "min_age_days": 540,
+                    "recommended_age_days": 540,
+                    "overdue_age_days": 540,
+                    "max_age_days": 1094,
+                    "min_interval_days": 28
+                },
+                {
+                    "slot_number": 2,
+                    "prior_valid_doses": 1,
+                    "product": "DTC",
+                    "min_age_days": 1825,
+                    "recommended_age_days": 1825,
+                    "overdue_age_days": 1825,
+                    "max_age_days": 2554,
+                    "min_interval_days": 28
+                },
+                {
+                    "slot_number": 2,
+                    "prior_valid_doses": 1,
+                    "product": "Td",
+                    "min_age_days": 2555,
+                    "recommended_age_days": 2555,
+                    "overdue_age_days": 2555,
+                    "max_age_days": null,
+                    "min_interval_days": 28
+                },
+                {
+                    "slot_number": 3,
+                    "prior_valid_doses": 2,
+                    "product": "Penta",
+                    "min_age_days": 113,
+                    "recommended_age_days": 120,
+                    "overdue_age_days": 120,
+                    "max_age_days": 539,
+                    "min_interval_days": 28
+                },
+                {
+                    "slot_number": 3,
+                    "prior_valid_doses": 2,
+                    "product": "Penta",
+                    "min_age_days": 540,
+                    "recommended_age_days": 540,
+                    "overdue_age_days": 540,
+                    "max_age_days": 1094,
+                    "min_interval_days": 28
+                },
+                {
+                    "slot_number": 3,
+                    "prior_valid_doses": 2,
+                    "product": "DTC",
+                    "min_age_days": 1095,
+                    "recommended_age_days": 1095,
+                    "overdue_age_days": 1095,
+                    "max_age_days": 2554,
+                    "min_interval_days": 28
+                },
+                {
+                    "slot_number": 3,
+                    "prior_valid_doses": 2,
+                    "product": "Td",
+                    "min_age_days": 2555,
+                    "recommended_age_days": 2555,
+                    "overdue_age_days": 2555,
+                    "max_age_days": null,
+                    "min_interval_days": 28
+                },
+                {
+                    "slot_number": 4,
+                    "prior_valid_doses": 3,
+                    "product": "DTC",
+                    "min_age_days": 540,
+                    "recommended_age_days": 540,
+                    "overdue_age_days": 540,
+                    "max_age_days": null,
+                    "min_interval_days": 180
+                },
+                {
+                    "slot_number": 4,
+                    "prior_valid_doses": 3,
+                    "product": "Td",
+                    "min_age_days": 2555,
+                    "recommended_age_days": 2555,
+                    "overdue_age_days": 2555,
+                    "max_age_days": null,
+                    "min_interval_days": 180
+                },
+                {
+                    "slot_number": 5,
+                    "prior_valid_doses": 4,
+                    "product": "DTC",
+                    "min_age_days": 1825,
+                    "recommended_age_days": 1825,
+                    "overdue_age_days": 1825,
+                    "max_age_days": null,
+                    "min_interval_days": 1285
+                },
+                {
+                    "slot_number": 5,
+                    "prior_valid_doses": 4,
+                    "product": "Td",
+                    "min_age_days": 2555,
+                    "recommended_age_days": 2555,
+                    "overdue_age_days": 2555,
+                    "max_age_days": null,
+                    "min_interval_days": 365
+                }
+            ]
+        }
     ]
 }

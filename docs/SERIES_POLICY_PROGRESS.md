@@ -4,7 +4,7 @@ Last updated: 2026-03-12
 
 ## Current Status
 
-Overall redesign progress is approximately 88 percent complete.
+Overall redesign progress is approximately 90 percent complete.
 
 The current implementation checkpoint after the redesign review includes:
 
@@ -18,7 +18,7 @@ The current implementation checkpoint after the redesign review includes:
 - added explicit `SeriesTransitionRule` modeling and migration-backed switching semantics
 - exposed transition-rule authoring in the series create/edit UI and series settings summary
 - suppressed legacy group fallback when an active series already owns the full legacy group track
-- switched the baseline DTP test policy to run without an explicit `legacy_group` bridge
+- moved the shared DTP policy fixture to explicit series rules instead of deriving them from legacy group and schedule data
 - added proactive transition overlap validation in the series admin flow
 - added `GlobalConstraintRule` modeling plus a Global Constraints settings tab
 - wired live/live spacing to read from policy instead of only using a hardcoded default
@@ -48,7 +48,7 @@ The current implementation checkpoint after the redesign review includes:
 ## In Progress
 
 - [ ] Remove legacy engine fallback for migrated series
-- [ ] Finish DTP migration so it no longer depends on schedule fallback or legacy group metadata outside transitional admin views
+- [ ] Finish DTP migration in application policy data so production DTP no longer depends on schedule fallback or legacy group metadata outside transitional admin views
 - [ ] Expand Pneumo from first-slice support to full end-state multi-product series support
 
 ## Remaining Major Work
@@ -65,6 +65,11 @@ The current implementation checkpoint after the redesign review includes:
 2. Once DTP is isolated, remove group and schedule fallback for the DTP protection track.
 3. Expand Pneumo on top of the transition-rule-aware and availability-aware series path.
 4. Add proactive admin validation for overlap, deadlock, and impossible-transition cases.
+
+
+
+
+
 
 
 
