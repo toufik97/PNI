@@ -125,6 +125,35 @@ class GroupRule(models.Model):
                 )
 
 
+class PolicyVersion(models.Model):
+    code = models.SlugField(max_length=100, unique=True)
+    name = models.CharField(max_length=120, unique=True)
+    description = models.TextField(blank=True, null=True)
+    effective_date = models.DateField(null=True, blank=True)
+    is_active = models.BooleanField(default=False, help_text="Exactly one policy version should be active for scheduling.")
+    notes = models.TextField(blank=True, null=True)
+
+    class Meta:
+        ordering = ['-is_active', 'name']
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.code:
+            self.code = slugify(self.name)
+        super().save(*args, **kwargs)
+        if self.is_active:
+            PolicyVersion.objects.exclude(pk=self.pk).filter(is_active=True).update(is_active=False)
+
+    @classmethod
+    def get_active(cls):
+        active = cls.objects.filter(is_active=True).order_by('-id').first()
+        if active:
+            return active
+        return cls.objects.order_by('-id').first()
+
+
 class Product(models.Model):
     vaccine = models.OneToOneField(Vaccine, on_delete=models.CASCADE, related_name='product_profile')
     code = models.SlugField(max_length=100, unique=True)
@@ -167,6 +196,7 @@ class Series(models.Model):
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True, null=True)
     active = models.BooleanField(default=True)
+    policy_version = models.ForeignKey(PolicyVersion, on_delete=models.PROTECT, related_name='series', null=True, blank=True)
     min_valid_interval_days = models.PositiveIntegerField(
         default=28,
         help_text="Absolute minimum valid interval between any two doses in this series"
@@ -194,6 +224,8 @@ class Series(models.Model):
     def save(self, *args, **kwargs):
         if not self.code:
             self.code = slugify(self.name)
+        if not self.policy_version_id:
+            self.policy_version = PolicyVersion.get_active()
         super().save(*args, **kwargs)
 
 
@@ -235,6 +267,11 @@ class SeriesRule(models.Model):
     def clean(self):
         if self.slot_number != self.prior_valid_doses + 1:
             raise ValidationError("Slot number must equal prior valid doses + 1.")
+
+        if self.series_id and self.product_id:
+            linked_products = self.series.series_products.filter(product_id=self.product_id)
+            if not linked_products.exists():
+                raise ValidationError("Series rules can only reference products linked to the same series.")
 
         if self.min_age_days > self.recommended_age_days:
             raise ValidationError(
@@ -284,3 +321,9 @@ class DependencyRule(models.Model):
     def clean(self):
         if self.dependent_series_id == self.anchor_series_id and self.min_offset_days == 0:
             raise ValidationError("A dependency rule cannot self-reference the same series without an offset.")
+
+        if self.dependent_series_id and self.anchor_series_id:
+            dependent_version_id = self.dependent_series.policy_version_id
+            anchor_version_id = self.anchor_series.policy_version_id
+            if dependent_version_id and anchor_version_id and dependent_version_id != anchor_version_id:
+                raise ValidationError("Dependency rules must reference series from the same policy version.")

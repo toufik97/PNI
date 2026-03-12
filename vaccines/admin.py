@@ -1,9 +1,10 @@
-from django.contrib import admin
+﻿from django.contrib import admin
 
 from .models import (
     CatchupRule,
     DependencyRule,
     GroupRule,
+    PolicyVersion,
     Product,
     ScheduleRule,
     Series,
@@ -60,6 +61,13 @@ class VaccineGroupAdmin(admin.ModelAdmin):
     inlines = [GroupRuleInline]
 
 
+@admin.register(PolicyVersion)
+class PolicyVersionAdmin(admin.ModelAdmin):
+    list_display = ('name', 'code', 'effective_date', 'is_active')
+    list_filter = ('is_active',)
+    search_fields = ('name', 'code')
+
+
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = ('vaccine', 'code', 'manufacturer', 'active', 'available')
@@ -79,8 +87,8 @@ class SeriesRuleInline(admin.TabularInline):
 
 @admin.register(Series)
 class SeriesAdmin(admin.ModelAdmin):
-    list_display = ('name', 'code', 'active', 'mixing_policy', 'min_valid_interval_days', 'legacy_group')
-    list_filter = ('active', 'mixing_policy')
+    list_display = ('name', 'code', 'policy_version', 'active', 'mixing_policy', 'min_valid_interval_days', 'legacy_group')
+    list_filter = ('active', 'mixing_policy', 'policy_version')
     search_fields = ('name', 'code')
     inlines = [SeriesProductInline, SeriesRuleInline]
 

@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% load vaccine_tags %}
 
 {% block title %}Vaccine Settings{% endblock %}
@@ -40,13 +40,18 @@
 <div class="pt-3">
     <div class="settings-header">
         <h2>Vaccine Policy Settings</h2>
-        <p>Manage concrete products, clinical series, slot dependencies, legacy policies, and the transition to the new scheduling model.</p>
+        <p>Manage concrete products, clinical series, policy versions, slot dependencies, legacy policies, and the transition to the new scheduling model.</p>
     </div>
+
+    {% if active_policy_version %}
+    <div class="info-box">Active policy version: <strong>{{ active_policy_version.name }}</strong> <span class="text-muted">({{ active_policy_version.code }})</span></div>
+    {% endif %}
 
     <ul class="nav nav-tabs mb-3" id="settingsTabs">
         <li class="nav-item"><a class="nav-link {% if active_tab == 'products' %}active{% endif %}" href="{% url 'vaccines:settings_tab' 'products' %}">Products</a></li>
         <li class="nav-item"><a class="nav-link {% if active_tab == 'series' %}active{% endif %}" href="{% url 'vaccines:settings_tab' 'series' %}">Series</a></li>
         <li class="nav-item"><a class="nav-link {% if active_tab == 'dependencies' %}active{% endif %}" href="{% url 'vaccines:settings_tab' 'dependencies' %}">Dependencies</a></li>
+        <li class="nav-item"><a class="nav-link {% if active_tab == 'versions' %}active{% endif %}" href="{% url 'vaccines:settings_tab' 'versions' %}">Versions</a></li>
         <li class="nav-item"><a class="nav-link {% if active_tab == 'vaccines' %}active{% endif %}" href="{% url 'vaccines:settings_tab' 'vaccines' %}">Legacy Vaccines</a></li>
         <li class="nav-item"><a class="nav-link {% if active_tab == 'groups' %}active{% endif %}" href="{% url 'vaccines:settings_tab' 'groups' %}">Legacy Groups</a></li>
         <li class="nav-item"><a class="nav-link {% if active_tab == 'guide' %}active{% endif %}" href="{% url 'vaccines:settings_tab' 'guide' %}">Guide</a></li>
@@ -99,13 +104,13 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
             <h4 class="mb-1" style="font-weight:700; color:#22303c;">Clinical Series</h4>
-            <p class="text-muted mb-0">Series define the protection track, slot rules, and product choices that the engine evaluates first.</p>
+            <p class="text-muted mb-0">Series define the protection track, slot rules, product choices, and policy version that the engine evaluates first.</p>
         </div>
         <a href="{% url 'vaccines:series_create' %}" class="btn btn-add">+ Add Series</a>
     </div>
 
     <div class="info-box">
-        The series layer now supports overlapping candidate products per slot and leaves final selection to availability plus mixing policy.
+        The series layer now supports overlapping candidate products per slot, managed policy versions, and final selection by availability plus mixing policy.
     </div>
 
     {% if series_list %}
@@ -116,6 +121,7 @@
                 <h5 class="d-inline">{{ series.name }}</h5>
                 <span class="badge badge-soft ms-2">{{ series.code }}</span>
                 <span class="badge badge-chip ms-1">{{ series.get_mixing_policy_display }}</span>
+                {% if series.policy_version %}<span class="badge badge-soft ms-1">{{ series.policy_version.code }}</span>{% endif %}
                 {% if series.legacy_group %}<span class="badge badge-legacy ms-1">Legacy bridge</span>{% endif %}
             </div>
             <div>
@@ -128,6 +134,7 @@
                 <div class="col-md-4"><div class="text-muted small text-uppercase fw-bold mb-1">Series Interval Floor</div><div>{{ series.min_valid_interval_days|humanize_days }} <small class="text-muted">({{ series.min_valid_interval_days }}d)</small></div></div>
                 <div class="col-md-4"><div class="text-muted small text-uppercase fw-bold mb-1">Products</div><div class="inline-chips">{% for link in series.series_products.all %}<span class="badge badge-chip">{{ link.product.vaccine.name }}</span>{% empty %}<span class="text-muted">No products linked</span>{% endfor %}</div></div>
                 <div class="col-md-4"><div class="text-muted small text-uppercase fw-bold mb-1">Rules</div><div>{{ series.rules.count }} slot rule{{ series.rules.count|pluralize }}</div></div>
+                <div class="col-md-4"><div class="text-muted small text-uppercase fw-bold mb-1">Policy Version</div><div>{{ series.policy_version.name|default:"Unassigned" }}</div></div>
             </div>
             {% if series.rules.count > 0 %}
             <table class="table table-sm rule-table">
@@ -196,9 +203,47 @@
     <div class="empty-state"><p class="mb-2">No dependency rules configured yet.</p><a href="{% url 'vaccines:dependency_create' %}" class="btn btn-add">Add Your First Dependency</a></div>
     {% endif %}
 
+    {% elif active_tab == 'versions' %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="mb-1" style="font-weight:700; color:#22303c;">Policy Versions</h4>
+            <p class="text-muted mb-0">Version clinical policy changes and mark the active release used by the scheduling engine.</p>
+        </div>
+        <a href="{% url 'vaccines:policy_version_create' %}" class="btn btn-add">+ Add Version</a>
+    </div>
+
+    {% if policy_versions %}
+    {% for version in policy_versions %}
+    <div class="entity-card card">
+        <div class="card-header">
+            <div>
+                <h5 class="d-inline">{{ version.name }}</h5>
+                <span class="badge badge-soft ms-2">{{ version.code }}</span>
+                {% if version.is_active %}<span class="badge badge-chip ms-1">Active</span>{% endif %}
+            </div>
+            <div>
+                <a href="{% url 'vaccines:policy_version_edit' version.pk %}" class="btn btn-edit">Edit</a>
+                <a href="{% url 'vaccines:policy_version_delete' version.pk %}" class="btn btn-delete ms-1">Delete</a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4"><div class="text-muted small text-uppercase fw-bold mb-1">Effective Date</div><div>{{ version.effective_date|default:"-" }}</div></div>
+                <div class="col-md-4"><div class="text-muted small text-uppercase fw-bold mb-1">Series Count</div><div>{{ version.series.count }}</div></div>
+                <div class="col-md-4"><div class="text-muted small text-uppercase fw-bold mb-1">Status</div><div>{% if version.is_active %}Used by engine{% else %}Inactive{% endif %}</div></div>
+            </div>
+            {% if version.description %}<p class="text-muted mb-0 mt-3">{{ version.description }}</p>{% endif %}
+            {% if version.notes %}<p class="text-muted mb-0 mt-2">{{ version.notes }}</p>{% endif %}
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="empty-state"><p class="mb-2">No policy versions configured yet.</p><a href="{% url 'vaccines:policy_version_create' %}" class="btn btn-add">Add Your First Version</a></div>
+    {% endif %}
+
     {% elif active_tab == 'vaccines' %}
     <div class="d-flex justify-content-between align-items-center mb-3"><div><h4 class="mb-1" style="font-weight:700; color:#22303c;">Legacy Vaccine Schedules</h4><p class="text-muted mb-0">These screens still manage the old per-vaccine schedule model while the transition remains in progress.</p></div><a href="{% url 'vaccines:vaccine_create' %}" class="btn btn-add">+ Add Vaccine</a></div>
-    <div class="warn-box">Legacy vaccines remain editable for backwards compatibility, but new grouped policy work should move into the <strong>Series</strong> and <strong>Dependencies</strong> tabs.</div>
+    <div class="warn-box">Legacy vaccines remain editable for backwards compatibility, but new grouped policy work should move into the <strong>Series</strong>, <strong>Versions</strong>, and <strong>Dependencies</strong> tabs.</div>
     {% if vaccines %}
     {% for vaccine in vaccines %}
     <div class="entity-card card">
@@ -214,7 +259,7 @@
 
     {% elif active_tab == 'groups' %}
     <div class="d-flex justify-content-between align-items-center mb-3"><div><h4 class="mb-1" style="font-weight:700; color:#22303c;">Legacy Vaccine Groups</h4><p class="text-muted mb-0">These remain visible while their policies are mirrored into the new series model.</p></div><a href="{% url 'vaccines:group_create' %}" class="btn btn-add">+ Add Group</a></div>
-    <div class="warn-box">Group rules are now a migration bridge. New grouped scheduling logic should be authored in <strong>Series</strong> and <strong>Dependencies</strong> instead.</div>
+    <div class="warn-box">Group rules are now a migration bridge. New grouped scheduling logic should be authored in <strong>Series</strong>, <strong>Versions</strong>, and <strong>Dependencies</strong> instead.</div>
     {% if groups %}
     {% for group in groups %}
     <div class="entity-card card">
@@ -230,12 +275,13 @@
     {% else %}<div class="empty-state"><p>No legacy groups configured yet.</p></div>{% endif %}
 
     {% else %}
-    <div class="info-box">The app is now transitioning toward a full product/series/dependency policy model. Use the steps below when adding new schedules like Pneumo.</div>
+    <div class="info-box">The app is now transitioning toward a full product/series/dependency policy model with versioned releases. Use the steps below when adding new schedules like Pneumo.</div>
     <div class="guide-step"><strong>1.</strong> Create concrete administered items in <strong>Products</strong>, including whether each one is currently available.</div>
-    <div class="guide-step"><strong>2.</strong> Create the clinical protection track in <strong>Series</strong>.</div>
-    <div class="guide-step"><strong>3.</strong> Link all allowed products to the series and add slot rules for each product path.</div>
-    <div class="guide-step"><strong>4.</strong> Add <strong>Dependencies</strong> for cross-series timing, such as "Pneumo after DTP + 15 days".</div>
-    <div class="guide-step"><strong>5.</strong> Use the legacy tabs only when you still need to maintain old schedule/group policy during the migration.</div>
+    <div class="guide-step"><strong>2.</strong> Create or choose a <strong>Policy Version</strong> for the rollout you are editing.</div>
+    <div class="guide-step"><strong>3.</strong> Create the clinical protection track in <strong>Series</strong> and attach it to that version.</div>
+    <div class="guide-step"><strong>4.</strong> Link all allowed products to the series and add slot rules for each product path.</div>
+    <div class="guide-step"><strong>5.</strong> Add <strong>Dependencies</strong> for cross-series timing, such as "Pneumo after DTP + 15 days".</div>
+    <div class="guide-step"><strong>6.</strong> Use the legacy tabs only when you still need to maintain old schedule/group policy during the migration.</div>
     {% endif %}
 </div>
 {% endblock %}

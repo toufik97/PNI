@@ -2,7 +2,7 @@ from datetime import date, timedelta
 from typing import Any, Dict, List, Optional
 
 from patients.models import Child, VaccinationRecord
-from vaccines.models import CatchupRule, Product, ScheduleRule, Series, Vaccine, VaccineGroup
+from vaccines.models import CatchupRule, PolicyVersion, Product, ScheduleRule, Series, Vaccine, VaccineGroup
 
 
 class VaccinationEngine:
@@ -34,6 +34,8 @@ class VaccinationEngine:
         self.vaccines = Vaccine.objects.all()
         self.series_history_cache: Dict[int, List[VaccinationRecord]] = {}
         self.invalid_history: List[Dict[str, Any]] = []
+        self.policy_version = PolicyVersion.get_active()
+        self.policy_version_code = self.policy_version.code if self.policy_version else self.POLICY_VERSION
 
     def evaluate(self) -> Dict[str, Any]:
         history_by_vaccine = self._group_history()
@@ -270,7 +272,7 @@ class VaccinationEngine:
         next_appointment = min([item['target_date'] for item in upcoming_details], default=None)
 
         return {
-            'policy_version': self.POLICY_VERSION,
+            'policy_version': self.policy_version_code,
             'due_today': due_today,
             'due_but_unavailable': due_but_unavailable,
             'blocked': blocked,
@@ -285,7 +287,7 @@ class VaccinationEngine:
         normalized = []
         for item in items:
             if isinstance(item, dict):
-                item.setdefault('policy_version', self.POLICY_VERSION)
+                item.setdefault('policy_version', self.policy_version_code)
                 item.setdefault('blocking_constraints', [])
                 normalized.append(item)
             else:
@@ -339,6 +341,13 @@ class VaccinationEngine:
         anchor_slot = dependency.anchor_slot_number or slot_number
         return f"dependency:{dependency.dependent_series.code}:{slot_number}:{dependency.anchor_series.code}:{anchor_slot}:{dependency.min_offset_days}"
 
+    def _policy_version_code(self, series: Optional[Series] = None, group: Optional[VaccineGroup] = None) -> str:
+        if series and series.policy_version_id:
+            return series.policy_version.code
+        if group and hasattr(group, 'series_policy') and group.series_policy and group.series_policy.policy_version_id:
+            return group.series_policy.policy_version.code
+        return self.policy_version_code
+
     def _build_decision_item(
         self,
         *,
@@ -367,7 +376,7 @@ class VaccinationEngine:
             'rule_key': rule_key,
             'reason_code': reason_code,
             'message': message,
-            'policy_version': self.POLICY_VERSION,
+            'policy_version': self.policy_version_code,
             'series_code': series.code if series else None,
             'series_name': series.name if series else None,
             'group_code': str(group.id) if group else None,
@@ -430,7 +439,7 @@ class VaccinationEngine:
             'rule_key': rule_key,
             'reason_code': reason_code,
             'message': message,
-            'policy_version': self.POLICY_VERSION,
+            'policy_version': self.policy_version_code,
             'series_code': series.code if series else None,
             'series_name': series.name if series else None,
             'group_code': str(group.id) if group else None,

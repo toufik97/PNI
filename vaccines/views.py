@@ -6,6 +6,7 @@ from .forms import (
     CatchupRuleFormSet,
     DependencyRuleForm,
     GroupRuleFormSet,
+    PolicyVersionForm,
     ProductForm,
     ScheduleRuleFormSet,
     SeriesForm,
@@ -14,11 +15,11 @@ from .forms import (
     VaccineForm,
     VaccineGroupForm,
 )
-from .models import DependencyRule, Product, Series, Vaccine, VaccineGroup
+from .models import DependencyRule, PolicyVersion, Product, Series, Vaccine, VaccineGroup
 
 
 LEGACY_TABS = {'vaccines', 'groups'}
-NEW_TABS = {'products', 'series', 'dependencies', 'guide'}
+NEW_TABS = {'products', 'series', 'dependencies', 'versions', 'guide'}
 ALL_TABS = LEGACY_TABS.union(NEW_TABS)
 
 
@@ -30,8 +31,10 @@ def vaccine_settings(request, tab=None):
     vaccines = Vaccine.objects.prefetch_related('schedule_rules', 'catchup_rules').all()
     groups = VaccineGroup.objects.prefetch_related('vaccines', 'rules').all()
     products = Product.objects.select_related('vaccine').prefetch_related('series_memberships').all()
-    series = Series.objects.prefetch_related('series_products__product__vaccine', 'rules__product__vaccine').all()
-    dependencies = DependencyRule.objects.select_related('dependent_series', 'anchor_series').all()
+    series = Series.objects.select_related('policy_version').prefetch_related('series_products__product__vaccine', 'rules__product__vaccine').all()
+    dependencies = DependencyRule.objects.select_related('dependent_series__policy_version', 'anchor_series__policy_version').all()
+    policy_versions = PolicyVersion.objects.order_by('-is_active', 'name')
+    active_policy_version = PolicyVersion.get_active()
 
     context = {
         'vaccines': vaccines,
@@ -39,6 +42,8 @@ def vaccine_settings(request, tab=None):
         'products': products,
         'series_list': series,
         'dependencies': dependencies,
+        'policy_versions': policy_versions,
+        'active_policy_version': active_policy_version,
         'active_tab': active_tab,
     }
     return render(request, 'vaccines/settings.html', context)
@@ -83,20 +88,60 @@ def product_delete(request, pk):
     return render(request, 'vaccines/confirm_delete.html', {'object': product, 'object_type': 'Product Profile', 'cancel_href': reverse('vaccines:settings_tab', kwargs={'tab': 'products'})})
 
 
+def policy_version_create(request):
+    if request.method == 'POST':
+        form = PolicyVersionForm(request.POST)
+        if form.is_valid():
+            version = form.save()
+            messages.success(request, f'Policy version "{version.name}" created successfully.')
+            return redirect('vaccines:settings_tab', tab='versions')
+        messages.error(request, 'Please correct the errors below.')
+    else:
+        form = PolicyVersionForm()
+
+    return render(request, 'vaccines/policy_version_form.html', {'form': form, 'title': 'Add Policy Version', 'submit_label': 'Create Version'})
+
+
+def policy_version_edit(request, pk):
+    version = get_object_or_404(PolicyVersion, pk=pk)
+    if request.method == 'POST':
+        form = PolicyVersionForm(request.POST, instance=version)
+        if form.is_valid():
+            version = form.save()
+            messages.success(request, f'Policy version "{version.name}" updated successfully.')
+            return redirect('vaccines:settings_tab', tab='versions')
+        messages.error(request, 'Please correct the errors below.')
+    else:
+        form = PolicyVersionForm(instance=version)
+
+    return render(request, 'vaccines/policy_version_form.html', {'form': form, 'title': f'Edit Policy Version: {version.name}', 'submit_label': 'Save Changes', 'policy_version': version})
+
+
+def policy_version_delete(request, pk):
+    version = get_object_or_404(PolicyVersion, pk=pk)
+    if request.method == 'POST':
+        name = version.name
+        version.delete()
+        messages.success(request, f'Policy version "{name}" deleted.')
+        return redirect('vaccines:settings_tab', tab='versions')
+    return render(request, 'vaccines/confirm_delete.html', {'object': version, 'object_type': 'Policy Version', 'cancel_href': reverse('vaccines:settings_tab', kwargs={'tab': 'versions'})})
+
+
 def series_create(request):
     if request.method == 'POST':
         form = SeriesForm(request.POST)
         product_formset = SeriesProductFormSet(request.POST, prefix='products')
         rule_formset = SeriesRuleFormSet(request.POST, prefix='rules')
-        if form.is_valid():
+        if form.is_valid() and product_formset.is_valid():
             series = form.save()
             product_formset = SeriesProductFormSet(request.POST, instance=series, prefix='products')
-            rule_formset = SeriesRuleFormSet(request.POST, instance=series, prefix='rules')
-            if product_formset.is_valid() and rule_formset.is_valid():
+            if product_formset.is_valid():
                 product_formset.save()
-                rule_formset.save()
-                messages.success(request, f'Series "{series.name}" created successfully.')
-                return redirect('vaccines:settings_tab', tab='series')
+                rule_formset = SeriesRuleFormSet(request.POST, instance=series, prefix='rules')
+                if rule_formset.is_valid():
+                    rule_formset.save()
+                    messages.success(request, f'Series "{series.name}" created successfully.')
+                    return redirect('vaccines:settings_tab', tab='series')
             series.delete()
             messages.error(request, 'Error in series products or series rules. Please check the forms.')
         else:
@@ -114,13 +159,16 @@ def series_edit(request, pk):
     if request.method == 'POST':
         form = SeriesForm(request.POST, instance=series)
         product_formset = SeriesProductFormSet(request.POST, instance=series, prefix='products')
-        rule_formset = SeriesRuleFormSet(request.POST, instance=series, prefix='rules')
-        if form.is_valid() and product_formset.is_valid() and rule_formset.is_valid():
+        if form.is_valid() and product_formset.is_valid():
             form.save()
             product_formset.save()
-            rule_formset.save()
-            messages.success(request, f'Series "{series.name}" updated successfully.')
-            return redirect('vaccines:settings_tab', tab='series')
+            rule_formset = SeriesRuleFormSet(request.POST, instance=series, prefix='rules')
+            if rule_formset.is_valid():
+                rule_formset.save()
+                messages.success(request, f'Series "{series.name}" updated successfully.')
+                return redirect('vaccines:settings_tab', tab='series')
+        else:
+            rule_formset = SeriesRuleFormSet(request.POST, instance=series, prefix='rules')
         messages.error(request, 'Please correct the errors below.')
     else:
         form = SeriesForm(instance=series)

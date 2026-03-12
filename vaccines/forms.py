@@ -1,10 +1,11 @@
-from django import forms
+﻿from django import forms
 from django.db import transaction
 
 from .models import (
     CatchupRule,
     DependencyRule,
     GroupRule,
+    PolicyVersion,
     Product,
     ScheduleRule,
     Series,
@@ -136,6 +137,24 @@ class ProductForm(forms.Form):
         return self.instance
 
 
+class PolicyVersionForm(forms.ModelForm):
+    class Meta:
+        model = PolicyVersion
+        fields = ['name', 'code', 'description', 'effective_date', 'is_active', 'notes']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Series Policy v2'}),
+            'code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Optional slug code'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Optional version summary'}),
+            'effective_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Optional rollout or migration notes'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['code'].required = False
+
+
 class ScheduleRuleForm(forms.ModelForm):
     class Meta:
         model = ScheduleRule
@@ -204,15 +223,20 @@ class SeriesForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['code'].required = False
         self.fields['legacy_group'].queryset = VaccineGroup.objects.order_by('name')
+        self.fields['policy_version'].queryset = PolicyVersion.objects.order_by('-is_active', 'name')
+        active_version = PolicyVersion.get_active()
+        if not self.instance.pk and active_version:
+            self.fields['policy_version'].initial = active_version
 
     class Meta:
         model = Series
-        fields = ['name', 'code', 'description', 'active', 'mixing_policy', 'min_valid_interval_days', 'legacy_group']
+        fields = ['name', 'code', 'description', 'active', 'policy_version', 'mixing_policy', 'min_valid_interval_days', 'legacy_group']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Pneumo'}),
             'code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Optional slug code'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Clinical series description'}),
             'active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'policy_version': forms.Select(attrs={'class': 'form-select'}),
             'mixing_policy': forms.Select(attrs={'class': 'form-select'}),
             'min_valid_interval_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'e.g., 28'}),
             'legacy_group': forms.Select(attrs={'class': 'form-select'}),
@@ -264,16 +288,7 @@ SeriesRuleFormSet = forms.inlineformset_factory(Series, SeriesRule, form=SeriesR
 class DependencyRuleForm(forms.ModelForm):
     class Meta:
         model = DependencyRule
-        fields = [
-            'dependent_series',
-            'dependent_slot_number',
-            'anchor_series',
-            'anchor_slot_number',
-            'min_offset_days',
-            'block_if_anchor_missing',
-            'active',
-            'notes',
-        ]
+        fields = ['dependent_series', 'dependent_slot_number', 'anchor_series', 'anchor_slot_number', 'min_offset_days', 'block_if_anchor_missing', 'active', 'notes']
         widgets = {
             'dependent_series': forms.Select(attrs={'class': 'form-select'}),
             'dependent_slot_number': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'placeholder': 'Optional'}),
@@ -282,15 +297,11 @@ class DependencyRuleForm(forms.ModelForm):
             'min_offset_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'e.g., 15'}),
             'block_if_anchor_missing': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Optional notes'}),
-        }
-        help_texts = {
-            'dependent_slot_number': 'Leave blank to apply to every slot in the dependent series.',
-            'anchor_slot_number': 'Leave blank to use the same slot number as the dependent series.',
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Optional notes'}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        series_qs = Series.objects.order_by('name')
-        self.fields['dependent_series'].queryset = series_qs
-        self.fields['anchor_series'].queryset = series_qs
+        series_queryset = Series.objects.select_related('policy_version').order_by('policy_version__name', 'name')
+        self.fields['dependent_series'].queryset = series_queryset
+        self.fields['anchor_series'].queryset = series_queryset
