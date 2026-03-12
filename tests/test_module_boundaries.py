@@ -5,7 +5,7 @@ from vaccines.dependencies import DependencyEvaluator
 from vaccines.engine import VaccinationEngine
 from vaccines.global_constraints import LiveVaccineConstraintService
 from vaccines.history_normalizer import HistoryNormalizer
-from vaccines.models import DependencyRule, PolicyVersion, Product, Series, SeriesProduct, SeriesRule, Vaccine
+from vaccines.models import DependencyRule, PolicyVersion, Product, ScheduleRule, Series, SeriesProduct, SeriesRule, Vaccine
 from vaccines.policy_loader import PolicyLoader
 from vaccines.recommender import SeriesRecommender
 from vaccines.series_validator import SeriesHistoryValidator
@@ -52,6 +52,46 @@ class TestModuleBoundaries(BaseVaccinationTestCase):
         self.assertNotIn(future_series, loader.get_active_series())
         self.assertIn(self.dtp_group, loader.get_vaccine_groups())
         self.assertEqual(loader.get_active_policy_version(), self.dtp_series.policy_version)
+
+    def test_future_policy_series_does_not_suppress_current_schedule_validation(self):
+        future_version = PolicyVersion.objects.create(name='Series Policy Future 2', code='series-policy-future-2', is_active=False)
+        standalone_vaccine = Vaccine.objects.create(name='Versioned Standalone', live=False)
+        standalone_product = Product.objects.create(vaccine=standalone_vaccine)
+        ScheduleRule.objects.create(
+            vaccine=standalone_vaccine,
+            dose_number=1,
+            min_age_days=30,
+            recommended_age_days=30,
+            overdue_age_days=30,
+            min_interval_days=0,
+        )
+        future_series = Series.objects.create(
+            name='Future Standalone Series',
+            mixing_policy=Series.MIXING_FLEXIBLE,
+            min_valid_interval_days=28,
+            policy_version=future_version,
+        )
+        SeriesProduct.objects.create(series=future_series, product=standalone_product, priority=0)
+        SeriesRule.objects.create(
+            series=future_series,
+            slot_number=1,
+            prior_valid_doses=0,
+            product=standalone_product,
+            min_age_days=60,
+            recommended_age_days=60,
+            overdue_age_days=90,
+            min_interval_days=0,
+        )
+
+        child = self.make_child('Versioned Standalone Child', age_days=7)
+        record = self.give_dose(child, standalone_vaccine, days_ago=0)
+
+        result = self.evaluate(child)
+
+        record.refresh_from_db()
+        self.assertTrue(record.invalid_flag)
+        invalid_item = next(item for item in result['invalid_history'] if item['vaccine'].name == 'Versioned Standalone')
+        self.assertEqual(invalid_item['decision_source'], VaccinationEngine.SOURCE_SCHEDULE_RULE)
 
     def test_availability_resolver_uses_product_availability_and_priority(self):
         resolver = AvailabilityResolver()
@@ -126,6 +166,7 @@ class TestModuleBoundaries(BaseVaccinationTestCase):
         self.assertEqual(deferred[0]['vaccine'], self.rr)
         self.assertEqual(deferred[0]['target_date'], date.today() + timedelta(days=18))
         self.assertEqual(deferred[0]['recent_count'], 1)
+
     def test_series_recommender_returns_due_item_for_due_series(self):
         child = self.make_child('Recommender Child', age_days=90)
         engine = VaccinationEngine(child)

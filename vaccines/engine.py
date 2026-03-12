@@ -73,7 +73,9 @@ class VaccinationEngine:
 
     def evaluate(self) -> Dict[str, Any]:
         history_by_vaccine = self._group_history()
-        self._validate_history(history_by_vaccine)
+        active_series = self.policy_loader.get_active_series()
+        groups = self.policy_loader.get_vaccine_groups()
+        self._validate_history(history_by_vaccine, active_series, groups)
 
         due_today = []
         due_but_unavailable = []
@@ -81,7 +83,6 @@ class VaccinationEngine:
         missing_doses = []
         upcoming_details = []
 
-        active_series = self.policy_loader.get_active_series()
         covered_group_ids = set()
         covered_vaccine_names = set()
 
@@ -99,7 +100,6 @@ class VaccinationEngine:
             for link in series.series_products.all():
                 covered_vaccine_names.add(link.product.vaccine.name)
 
-        groups = self.policy_loader.get_vaccine_groups()
         covered_group_ids.update(self._series_owned_group_ids(active_series, groups))
         grouped_vaccine_names = set(covered_vaccine_names)
 
@@ -455,13 +455,16 @@ class VaccinationEngine:
             'product_name': product.vaccine.name if product else record.vaccine.name,
             'blocking_constraints': [],
         })
-    def _validate_history(self, history_by_vaccine: Dict[str, List[VaccinationRecord]]):
+    def _validate_history(
+        self,
+        history_by_vaccine: Dict[str, List[VaccinationRecord]],
+        active_series: List[Series],
+        groups,
+    ):
         from patients.models import VaccinationRecord as VR
 
-        series_vaccine_ids = set(
-            Product.objects.filter(series_memberships__active=True).values_list('vaccine_id', flat=True)
-        )
-        grouped_vaccine_ids = set(VaccineGroup.objects.values_list('vaccines__id', flat=True))
+        series_vaccine_ids = self._active_series_vaccine_ids(active_series)
+        grouped_vaccine_ids = {vaccine.id for group in groups for vaccine in group.vaccines.all()}
         skip_vaccine_ids = {vaccine_id for vaccine_id in series_vaccine_ids.union(grouped_vaccine_ids) if vaccine_id}
 
         for vaccine_id, records in history_by_vaccine.items():
@@ -527,10 +530,17 @@ class VaccinationEngine:
         self.global_constraints.validate_history(self.records, self.SOURCE_GLOBAL_CONSTRAINT)
 
 
+    def _active_series_vaccine_ids(self, active_series: List[Series]) -> set[int]:
+        return {
+            link.product.vaccine_id
+            for series in active_series
+            for link in series.series_products.all()
+        }
+
     def _series_owned_group_ids(self, active_series: List[Series], groups) -> set[int]:
         owned_group_ids = set()
         series_product_vaccine_ids = [
-            {link.product.vaccine_id for link in series.series_products.all()}
+            self._active_series_vaccine_ids([series])
             for series in active_series
         ]
 
@@ -820,3 +830,5 @@ class VaccinationEngine:
             ))
 
         return result
+
+

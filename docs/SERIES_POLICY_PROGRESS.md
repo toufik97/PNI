@@ -4,7 +4,7 @@ Last updated: 2026-03-12
 
 ## Current Status
 
-Overall redesign progress is approximately 98 percent complete.
+Overall redesign progress is approximately 90 percent complete.
 
 The current implementation checkpoint after the redesign review includes:
 
@@ -24,6 +24,7 @@ The current implementation checkpoint after the redesign review includes:
 - added proactive dependency slot-reference validation for both dependent and anchor series slots
 - added proactive transition validation so destination products must actually be reachable from at least one configured slot
 - scoped series policy loading to the active policy version so future or superseded series do not leak into engine evaluation
+- scoped legacy schedule-history validation to the active series set so future or superseded series no longer suppress current standalone schedule validation
 - removed ScheduleRule fallback from the legacy group recommendation path so group evaluation now stays inside the group policy domain
 - added a true series-only DTP fixture path so regression tests no longer need to create and then delete the DTP legacy group
 - made the series form treat legacy group linkage as read-only migration metadata so new policy edits cannot reintroduce the old bridge
@@ -69,6 +70,7 @@ The current implementation checkpoint after the redesign review includes:
 ## Next Recommended Slice
 
 1. Finish DTP parity entirely inside the series domain.
-2. Once DTP is isolated, remove group and schedule fallback for the DTP protection track.
+2. Remove legacy group and schedule fallback for the DTP protection track at runtime, not just in fixtures.
 3. Expand Pneumo on top of the transition-rule-aware and availability-aware series path.
 4. Add proactive admin validation for overlap, deadlock, and impossible-transition cases.
+
