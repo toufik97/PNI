@@ -171,3 +171,4 @@ class BaseVaccinationTestCase(TestCase):
 
     def upcoming_names(self, result):
         return sorted([item[0].name for item in result['upcoming']])
+
