@@ -391,6 +391,12 @@ class DependencyRule(models.Model):
             if dependent_version_id and anchor_version_id and dependent_version_id != anchor_version_id:
                 raise ValidationError("Dependency rules must reference series from the same policy version.")
 
+            if self.dependent_slot_number and not self.dependent_series.rules.filter(slot_number=self.dependent_slot_number).exists():
+                raise ValidationError("Dependency rules can only reference dependent slots that exist in the dependent series.")
+
+            if self.anchor_slot_number and not self.anchor_series.rules.filter(slot_number=self.anchor_slot_number).exists():
+                raise ValidationError("Dependency rules can only reference anchor slots that exist in the anchor series.")
+
             if self.block_if_anchor_missing:
                 reciprocal_rules = DependencyRule.objects.filter(
                     dependent_series_id=self.anchor_series_id,
@@ -460,5 +466,3 @@ class GlobalConstraintRule(models.Model):
         if rule:
             return rule.min_spacing_days
         return 28
-
-

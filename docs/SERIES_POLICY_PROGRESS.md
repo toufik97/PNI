@@ -4,7 +4,7 @@ Last updated: 2026-03-12
 
 ## Current Status
 
-Overall redesign progress is approximately 92 percent complete.
+Overall redesign progress is approximately 93 percent complete.
 
 The current implementation checkpoint after the redesign review includes:
 
@@ -21,6 +21,7 @@ The current implementation checkpoint after the redesign review includes:
 - moved the shared DTP policy fixture to explicit series rules instead of deriving them from legacy group and schedule data
 - removed the engine's direct reliance on `legacy_group` for suppressing duplicate group fallback
 - added proactive transition overlap validation in the series admin flow
+- added proactive dependency slot-reference validation for both dependent and anchor series slots
 - added `GlobalConstraintRule` modeling plus a Global Constraints settings tab
 - wired live/live spacing to read from policy instead of only using a hardcoded default
 - expanded module-boundary tests to cover the new service layer
@@ -66,22 +67,3 @@ The current implementation checkpoint after the redesign review includes:
 2. Once DTP is isolated, remove group and schedule fallback for the DTP protection track.
 3. Expand Pneumo on top of the transition-rule-aware and availability-aware series path.
 4. Add proactive admin validation for overlap, deadlock, and impossible-transition cases.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

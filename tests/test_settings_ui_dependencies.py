@@ -58,6 +58,42 @@ class TestDependencySettingsUI(BaseVaccinationTestCase):
         self.assertEqual(dependency.min_offset_days, 15)
         self.assertTrue(dependency.block_if_anchor_missing)
 
+    def test_dependency_create_rejects_missing_dependent_slot(self):
+        pneumo = self.create_series()
+
+        response = self.client.post(reverse('vaccines:dependency_create'), {
+            'dependent_series': str(pneumo.pk),
+            'dependent_slot_number': '2',
+            'anchor_series': str(self.dtp_series.pk),
+            'anchor_slot_number': '1',
+            'min_offset_days': '15',
+            'block_if_anchor_missing': 'on',
+            'active': 'on',
+            'notes': 'References a slot that does not exist',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Dependency rules can only reference dependent slots that exist in the dependent series.')
+        self.assertEqual(DependencyRule.objects.filter(dependent_series=pneumo).count(), 0)
+
+    def test_dependency_create_rejects_missing_anchor_slot(self):
+        pneumo = self.create_series()
+
+        response = self.client.post(reverse('vaccines:dependency_create'), {
+            'dependent_series': str(pneumo.pk),
+            'dependent_slot_number': '1',
+            'anchor_series': str(self.dtp_series.pk),
+            'anchor_slot_number': '9',
+            'min_offset_days': '15',
+            'block_if_anchor_missing': 'on',
+            'active': 'on',
+            'notes': 'References an anchor slot that does not exist',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Dependency rules can only reference anchor slots that exist in the anchor series.')
+        self.assertEqual(DependencyRule.objects.filter(dependent_series=pneumo).count(), 0)
+
     def test_dependency_create_rejects_direct_blocking_cycle(self):
         pneumo = self.create_series()
         rota = self.create_series(series_name='Rota Support', vaccine_name='Rota Support')
