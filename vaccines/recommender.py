@@ -129,10 +129,47 @@ class SeriesRecommender:
 
     def filter_series_candidates(self, series: Series, candidates, valid_records: List[VaccinationRecord]):
         filtered = list(candidates)
-        if valid_records and series.mixing_policy == Series.MIXING_STRICT:
+        if not valid_records:
+            return filtered
+
+        transition_rules = list(
+            series.transition_rules.filter(active=True).select_related('from_product__vaccine', 'to_product__vaccine')
+        )
+        if transition_rules:
+            return [
+                rule for rule in filtered
+                if self.transition_allows_product(rule, valid_records, transition_rules)
+            ]
+
+        if series.mixing_policy == Series.MIXING_STRICT:
             last_vaccine_id = valid_records[-1].vaccine_id
-            filtered = [rule for rule in filtered if rule.product.vaccine_id == last_vaccine_id]
+            return [rule for rule in filtered if rule.product.vaccine_id == last_vaccine_id]
+
         return filtered
+
+    def transition_allows_product(self, rule, valid_records: List[VaccinationRecord], transition_rules):
+        last_vaccine_id = valid_records[-1].vaccine_id
+        if rule.product.vaccine_id == last_vaccine_id:
+            return True
+
+        slot_number = rule.slot_number
+        matching_rules = [
+            transition_rule for transition_rule in transition_rules
+            if transition_rule.to_product_id == rule.product_id
+            and (transition_rule.from_product_id is None or transition_rule.from_product.vaccine_id == last_vaccine_id)
+            and (transition_rule.start_slot_number is None or slot_number >= transition_rule.start_slot_number)
+            and (transition_rule.end_slot_number is None or slot_number <= transition_rule.end_slot_number)
+        ]
+        if not matching_rules:
+            return False
+
+        for transition_rule in matching_rules:
+            if not transition_rule.allow_if_unavailable:
+                return True
+            if transition_rule.from_product_id and not self.availability.is_product_available(transition_rule.from_product):
+                return True
+
+        return False
 
     def build_series_candidate_state(
         self,
@@ -175,3 +212,4 @@ class SeriesRecommender:
             'last_product_match': bool(valid_records and valid_records[-1].vaccine_id == rule.product.vaccine_id),
             'priority': self.availability.series_product_priority(series, rule.product_id),
         }
+

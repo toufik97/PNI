@@ -4,7 +4,7 @@ Last updated: 2026-03-12
 
 ## Current Status
 
-Overall redesign progress is approximately 70 percent complete.
+Overall redesign progress is approximately 75 percent complete.
 
 The current implementation checkpoint after the redesign review includes:
 
@@ -15,8 +15,10 @@ The current implementation checkpoint after the redesign review includes:
 - refactored `vaccines/engine.py` to delegate to those modules
 - extracted series recommendation flow into `vaccines/recommender.py`
 - made legacy vaccine and legacy group configuration read-only in the settings UI and views
+- added explicit `SeriesTransitionRule` modeling and migration-backed switching semantics
 - expanded module-boundary tests to cover the new service layer
 - expanded module-boundary tests to cover the recommender service
+- added transition-rule tests for strict, flexible, and unavailable-only switching behavior
 - expanded settings UI tests to cover the read-only migration path
 - verified the full Django test suite passes
 
@@ -31,6 +33,7 @@ The current implementation checkpoint after the redesign review includes:
 - [x] Extract series recommendation flow into a dedicated recommender service
 - [x] Replace inline engine rule math with dedicated recommender and policy-loader orchestration boundaries
 - [x] Make legacy vaccine and legacy group configuration read-only during migration
+- [x] Add explicit transition-rule model and semantics
 
 ## In Progress
 
@@ -40,7 +43,6 @@ The current implementation checkpoint after the redesign review includes:
 
 ## Remaining Major Work
 
-- [ ] Add explicit transition-rule model and semantics
 - [ ] Add global-constraint rule model beyond live/live spacing
 - [ ] Add runtime availability snapshot abstraction instead of storing availability only on `Product`
 
@@ -53,8 +55,6 @@ The current implementation checkpoint after the redesign review includes:
 
 1. Finish DTP parity entirely inside the series domain.
 2. Once DTP is isolated, remove group and schedule fallback for the DTP protection track.
-3. Add explicit transition-rule modeling for product switching.
-4. Add a first end-state `Global Constraints` tab and rule model.
-
-
+3. Add a first end-state `Global Constraints` tab and rule model.
+4. Expand Pneumo on top of the transition-rule-aware series path.
 

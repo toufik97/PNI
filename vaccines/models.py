@@ -286,6 +286,69 @@ class SeriesRule(models.Model):
             )
 
 
+
+class SeriesTransitionRule(models.Model):
+    series = models.ForeignKey(Series, on_delete=models.CASCADE, related_name='transition_rules')
+    from_product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='from_transition_rules',
+        null=True,
+        blank=True,
+        help_text='Optional source product. Leave blank to allow transition from any prior product in the series.',
+    )
+    to_product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='to_transition_rules',
+        help_text='Product that becomes allowed when this transition rule matches.',
+    )
+    start_slot_number = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text='First slot number where this transition is allowed. Leave blank to allow from slot 1.',
+    )
+    end_slot_number = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text='Last slot number where this transition is allowed. Leave blank to allow indefinitely.',
+    )
+    allow_if_unavailable = models.BooleanField(
+        default=False,
+        help_text='If enabled, the transition is allowed only when the prior product is unavailable.',
+    )
+    active = models.BooleanField(default=True)
+    notes = models.TextField(blank=True, null=True)
+
+    class Meta:
+        ordering = ['series', 'start_slot_number', 'to_product__vaccine__name']
+
+    def __str__(self):
+        source = self.from_product.vaccine.name if self.from_product_id else 'Any product'
+        start_slot = self.start_slot_number or 1
+        end_slot = self.end_slot_number or 'any'
+        qualifier = ' if unavailable' if self.allow_if_unavailable else ''
+        return (
+            f"{self.series.name}: {source} -> {self.to_product.vaccine.name} "
+            f"(slots {start_slot}-{end_slot}){qualifier}"
+        )
+
+    def clean(self):
+        if self.from_product_id and self.from_product_id == self.to_product_id:
+            raise ValidationError('Transition rules must point to a different destination product.')
+
+        if self.end_slot_number is not None and self.start_slot_number is not None and self.end_slot_number < self.start_slot_number:
+            raise ValidationError('End slot must be greater than or equal to the start slot.')
+
+        if self.allow_if_unavailable and not self.from_product_id:
+            raise ValidationError('Unavailable-only transitions must specify a source product.')
+
+        linked_product_ids = set(self.series.series_products.values_list('product_id', flat=True)) if self.series_id else set()
+        if self.to_product_id and linked_product_ids and self.to_product_id not in linked_product_ids:
+            raise ValidationError('Transition rules can only target products linked to the same series.')
+
+        if self.from_product_id and linked_product_ids and self.from_product_id not in linked_product_ids:
+            raise ValidationError('Transition rules can only reference source products linked to the same series.')
 class DependencyRule(models.Model):
     dependent_series = models.ForeignKey(Series, on_delete=models.CASCADE, related_name='dependency_rules')
     dependent_slot_number = models.PositiveIntegerField(
@@ -327,3 +390,4 @@ class DependencyRule(models.Model):
             anchor_version_id = self.anchor_series.policy_version_id
             if dependent_version_id and anchor_version_id and dependent_version_id != anchor_version_id:
                 raise ValidationError("Dependency rules must reference series from the same policy version.")
+
