@@ -4,7 +4,7 @@ Last updated: 2026-03-12
 
 ## Current Status
 
-Overall redesign progress is approximately 96 percent complete.
+Overall redesign progress is approximately 97 percent complete.
 
 The current implementation checkpoint after the redesign review includes:
 
@@ -25,6 +25,7 @@ The current implementation checkpoint after the redesign review includes:
 - added proactive transition validation so destination products must actually be reachable from at least one configured slot
 - scoped series policy loading to the active policy version so future or superseded series do not leak into engine evaluation
 - removed ScheduleRule fallback from the legacy group recommendation path so group evaluation now stays inside the group policy domain
+- added a true series-only DTP fixture path so regression tests no longer need to create and then delete the DTP legacy group
 - added `GlobalConstraintRule` modeling plus a Global Constraints settings tab
 - wired live/live spacing to read from policy instead of only using a hardcoded default
 - expanded module-boundary tests to cover the new service layer

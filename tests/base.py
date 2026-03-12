@@ -28,6 +28,8 @@ from vaccines.models import (
 
 
 class BaseVaccinationTestCase(TestCase):
+    include_dtp_legacy_group = True
+
     """
     Base class that sets up the full vaccine configuration per test:
     - Penta, DTC, Td (grouped as DTP Family)
@@ -75,7 +77,12 @@ class BaseVaccinationTestCase(TestCase):
             for rule in catchup_data['rules']:
                 CatchupRule.objects.create(vaccine=vaccine, **rule)
 
+        self.dtp_group = None
+
         for group_data in policy['groups']:
+            if group_data['name'] == 'DTP Family' and not self.include_dtp_legacy_group:
+                continue
+
             group = VaccineGroup.objects.create(
                 name=group_data['name'],
                 min_valid_interval_days=group_data['min_valid_interval_days'],
