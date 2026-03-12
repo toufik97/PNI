@@ -96,9 +96,6 @@ class VaccinationEngine:
             missing_doses.extend(series_eval['missing_doses'])
             upcoming_details.extend(series_eval['upcoming'])
 
-            if series.legacy_group_id:
-                covered_group_ids.add(series.legacy_group_id)
-
             for link in series.series_products.all():
                 covered_vaccine_names.add(link.product.vaccine.name)
 
@@ -834,6 +831,7 @@ class VaccinationEngine:
             ))
 
         return result
+
 
 
 
