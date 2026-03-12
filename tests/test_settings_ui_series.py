@@ -1,10 +1,27 @@
 from django.urls import reverse
 
-from vaccines.models import Product, Series, SeriesRule, SeriesTransitionRule, Vaccine, VaccineGroup
+from vaccines.models import PolicyVersion, Product, Series, SeriesRule, SeriesTransitionRule, Vaccine, VaccineGroup
 from .base import BaseVaccinationTestCase
 
 
 class TestSeriesSettingsUI(BaseVaccinationTestCase):
+    def test_series_tab_scopes_to_active_policy_version(self):
+        future_version = PolicyVersion.objects.create(name='Series Policy v2', code='series-policy-v2', is_active=False)
+        future_series = Series.objects.create(
+            name='Future Pneumo',
+            code='future-pneumo',
+            description='Future rollout',
+            active=True,
+            policy_version=future_version,
+            mixing_policy=Series.MIXING_FLEXIBLE,
+            min_valid_interval_days=15,
+        )
+
+        response = self.client.get(reverse('vaccines:settings_tab', kwargs={'tab': 'series'}))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'DTP Family')
+        self.assertNotContains(response, future_series.name)
     def test_products_tab_lists_existing_products(self):
         response = self.client.get(reverse('vaccines:settings_tab', kwargs={'tab': 'products'}))
 

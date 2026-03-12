@@ -37,14 +37,23 @@ def vaccine_settings(request, tab=None):
     if active_tab not in ALL_TABS:
         active_tab = 'products'
 
+    active_policy_version = PolicyVersion.get_active()
+
     vaccines = Vaccine.objects.prefetch_related('schedule_rules', 'catchup_rules').all()
     groups = VaccineGroup.objects.prefetch_related('vaccines', 'rules').all()
     products = Product.objects.select_related('vaccine').prefetch_related('series_memberships').all()
-    series = Series.objects.select_related('policy_version').prefetch_related('series_products__product__vaccine', 'rules__product__vaccine', 'transition_rules__from_product__vaccine', 'transition_rules__to_product__vaccine').all()
-    dependencies = DependencyRule.objects.select_related('dependent_series__policy_version', 'anchor_series__policy_version').all()
-    global_constraints = GlobalConstraintRule.objects.select_related('policy_version').all()
+    series = Series.objects.select_related('policy_version').prefetch_related('series_products__product__vaccine', 'rules__product__vaccine', 'transition_rules__from_product__vaccine', 'transition_rules__to_product__vaccine')
+    dependencies = DependencyRule.objects.select_related('dependent_series__policy_version', 'anchor_series__policy_version')
+    global_constraints = GlobalConstraintRule.objects.select_related('policy_version')
+    if active_policy_version is not None:
+        series = series.filter(policy_version=active_policy_version)
+        dependencies = dependencies.filter(dependent_series__policy_version=active_policy_version, anchor_series__policy_version=active_policy_version)
+        global_constraints = global_constraints.filter(policy_version=active_policy_version)
+    else:
+        series = series.none()
+        dependencies = dependencies.none()
+        global_constraints = global_constraints.none()
     policy_versions = PolicyVersion.objects.order_by('-is_active', 'name')
-    active_policy_version = PolicyVersion.get_active()
 
     context = {
         'vaccines': vaccines,
