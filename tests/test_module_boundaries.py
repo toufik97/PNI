@@ -105,6 +105,7 @@ class TestModuleBoundaries(BaseVaccinationTestCase):
                 'target_date': safe_date,
                 'recent_count': len(recent_live_doses),
             },
+            spacing_days_resolver=lambda: 28,
         )
 
         remaining_due, deferred = service.defer_recommendations(
@@ -139,4 +140,5 @@ class TestModuleBoundaries(BaseVaccinationTestCase):
 
         self.assertEqual([item['vaccine'].name for item in result['due_today']], ['Penta'])
         self.assertEqual(result['due_but_unavailable'], [])
+
 

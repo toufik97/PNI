@@ -390,4 +390,49 @@ class DependencyRule(models.Model):
             anchor_version_id = self.anchor_series.policy_version_id
             if dependent_version_id and anchor_version_id and dependent_version_id != anchor_version_id:
                 raise ValidationError("Dependency rules must reference series from the same policy version.")
+class GlobalConstraintRule(models.Model):
+    CONSTRAINT_LIVE_LIVE_SPACING = 'live_live_spacing'
+    CONSTRAINT_TYPE_CHOICES = [
+        (CONSTRAINT_LIVE_LIVE_SPACING, 'Live/live spacing'),
+    ]
+
+    code = models.SlugField(max_length=100, unique=True)
+    name = models.CharField(max_length=120, unique=True)
+    constraint_type = models.CharField(max_length=50, choices=CONSTRAINT_TYPE_CHOICES)
+    min_spacing_days = models.PositiveIntegerField(default=28)
+    policy_version = models.ForeignKey(
+        PolicyVersion,
+        on_delete=models.PROTECT,
+        related_name='global_constraints',
+        null=True,
+        blank=True,
+    )
+    active = models.BooleanField(default=True)
+    notes = models.TextField(blank=True, null=True)
+
+    class Meta:
+        ordering = ['constraint_type', 'name']
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.code:
+            self.code = slugify(self.name)
+        if not self.policy_version_id:
+            self.policy_version = PolicyVersion.get_active()
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get_live_spacing_days(cls, policy_version=None):
+        query = cls.objects.filter(
+            active=True,
+            constraint_type=cls.CONSTRAINT_LIVE_LIVE_SPACING,
+        )
+        if policy_version is not None:
+            query = query.filter(policy_version=policy_version)
+        rule = query.order_by('-id').first()
+        if rule:
+            return rule.min_spacing_days
+        return 28
 

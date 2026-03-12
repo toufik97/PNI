@@ -51,6 +51,7 @@
         <li class="nav-item"><a class="nav-link {% if active_tab == 'products' %}active{% endif %}" href="{% url 'vaccines:settings_tab' 'products' %}">Products</a></li>
         <li class="nav-item"><a class="nav-link {% if active_tab == 'series' %}active{% endif %}" href="{% url 'vaccines:settings_tab' 'series' %}">Series</a></li>
         <li class="nav-item"><a class="nav-link {% if active_tab == 'dependencies' %}active{% endif %}" href="{% url 'vaccines:settings_tab' 'dependencies' %}">Dependencies</a></li>
+        <li class="nav-item"><a class="nav-link {% if active_tab == 'constraints' %}active{% endif %}" href="{% url 'vaccines:settings_tab' 'constraints' %}">Global Constraints</a></li>
         <li class="nav-item"><a class="nav-link {% if active_tab == 'versions' %}active{% endif %}" href="{% url 'vaccines:settings_tab' 'versions' %}">Versions</a></li>
         <li class="nav-item"><a class="nav-link {% if active_tab == 'vaccines' %}active{% endif %}" href="{% url 'vaccines:settings_tab' 'vaccines' %}">Legacy Vaccines</a></li>
         <li class="nav-item"><a class="nav-link {% if active_tab == 'groups' %}active{% endif %}" href="{% url 'vaccines:settings_tab' 'groups' %}">Legacy Groups</a></li>
@@ -203,6 +204,46 @@
     <div class="empty-state"><p class="mb-2">No dependency rules configured yet.</p><a href="{% url 'vaccines:dependency_create' %}" class="btn btn-add">Add Your First Dependency</a></div>
     {% endif %}
 
+    {% elif active_tab == 'constraints' %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="mb-1" style="font-weight:700; color:#22303c;">Global Constraints</h4>
+            <p class="text-muted mb-0">Orthogonal safety rules such as live/live spacing that apply across series.</p>
+        </div>
+        <a href="{% url 'vaccines:global_constraint_create' %}" class="btn btn-add">+ Add Global Constraint</a>
+    </div>
+
+    <div class="info-box">
+        Global constraints should shape cross-cutting safety logic without changing which series owns a historical dose.
+    </div>
+
+    {% if global_constraints %}
+    {% for constraint in global_constraints %}
+    <div class="entity-card card">
+        <div class="card-header">
+            <div>
+                <h5 class="d-inline">{{ constraint.name }}</h5>
+                <span class="badge badge-soft ms-2">{{ constraint.constraint_type }}</span>
+                {% if constraint.active %}<span class="badge badge-chip ms-1">Active</span>{% else %}<span class="badge badge-inactive ms-1">Inactive</span>{% endif %}
+            </div>
+            <div>
+                <a href="{% url 'vaccines:global_constraint_edit' constraint.pk %}" class="btn btn-edit">Edit</a>
+                <a href="{% url 'vaccines:global_constraint_delete' constraint.pk %}" class="btn btn-delete ms-1">Delete</a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4"><div class="text-muted small text-uppercase fw-bold mb-1">Constraint Type</div><div>{{ constraint.get_constraint_type_display }}</div></div>
+                <div class="col-md-4"><div class="text-muted small text-uppercase fw-bold mb-1">Spacing</div><div>{{ constraint.min_spacing_days|humanize_days }} <small class="text-muted">({{ constraint.min_spacing_days }}d)</small></div></div>
+                <div class="col-md-4"><div class="text-muted small text-uppercase fw-bold mb-1">Policy Version</div><div>{{ constraint.policy_version.name|default:"Unassigned" }}</div></div>
+            </div>
+            {% if constraint.notes %}<p class="text-muted mb-0 mt-3">{{ constraint.notes }}</p>{% endif %}
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="empty-state"><p class="mb-2">No global constraints configured yet.</p><a href="{% url 'vaccines:global_constraint_create' %}" class="btn btn-add">Add Your First Global Constraint</a></div>
+    {% endif %}
     {% elif active_tab == 'versions' %}
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
@@ -285,4 +326,5 @@
     {% endif %}
 </div>
 {% endblock %}
+
 

@@ -6,7 +6,7 @@ from vaccines.availability import AvailabilityResolver
 from vaccines.dependencies import DependencyEvaluator
 from vaccines.global_constraints import LiveVaccineConstraintService
 from vaccines.history_normalizer import HistoryNormalizer
-from vaccines.models import CatchupRule, Product, ScheduleRule, Series, Vaccine, VaccineGroup
+from vaccines.models import CatchupRule, GlobalConstraintRule, Product, ScheduleRule, Series, Vaccine, VaccineGroup
 from vaccines.policy_loader import PolicyLoader
 from vaccines.recommender import SeriesRecommender
 from vaccines.series_validator import SeriesHistoryValidator
@@ -56,6 +56,7 @@ class VaccinationEngine:
             product_lookup=self._product_for_vaccine,
             flag_invalid=self._flag_invalid,
             build_live_deferral_item=self._build_live_deferral_item,
+            spacing_days_resolver=self._live_spacing_days,
         )
         self.recommender = SeriesRecommender(
             child=self.child,
@@ -395,6 +396,9 @@ class VaccinationEngine:
         if unavailable:
             item['unavailable'] = True
         return item
+
+    def _live_spacing_days(self) -> int:
+        return GlobalConstraintRule.get_live_spacing_days(self.policy_version)
 
     def _build_live_deferral_item(self, item: Dict[str, Any], safe_date: date, recent_live_doses: List[VaccinationRecord]) -> Dict[str, Any]:
         reasons = [record.vaccine.name for record in recent_live_doses]
@@ -809,6 +813,7 @@ class VaccinationEngine:
             ))
 
         return result
+
 
 
 

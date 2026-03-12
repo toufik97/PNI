@@ -5,6 +5,7 @@ from django.urls import reverse
 from .forms import (
     CatchupRuleFormSet,
     DependencyRuleForm,
+    GlobalConstraintRuleForm,
     GroupRuleFormSet,
     PolicyVersionForm,
     ProductForm,
@@ -15,11 +16,11 @@ from .forms import (
     VaccineForm,
     VaccineGroupForm,
 )
-from .models import DependencyRule, PolicyVersion, Product, Series, Vaccine, VaccineGroup
+from .models import DependencyRule, GlobalConstraintRule, PolicyVersion, Product, Series, Vaccine, VaccineGroup
 
 
 LEGACY_TABS = {'vaccines', 'groups'}
-NEW_TABS = {'products', 'series', 'dependencies', 'versions', 'guide'}
+NEW_TABS = {'products', 'series', 'dependencies', 'constraints', 'versions', 'guide'}
 ALL_TABS = LEGACY_TABS.union(NEW_TABS)
 LEGACY_POLICY_READ_ONLY = True
 
@@ -39,6 +40,7 @@ def vaccine_settings(request, tab=None):
     products = Product.objects.select_related('vaccine').prefetch_related('series_memberships').all()
     series = Series.objects.select_related('policy_version').prefetch_related('series_products__product__vaccine', 'rules__product__vaccine').all()
     dependencies = DependencyRule.objects.select_related('dependent_series__policy_version', 'anchor_series__policy_version').all()
+    global_constraints = GlobalConstraintRule.objects.select_related('policy_version').all()
     policy_versions = PolicyVersion.objects.order_by('-is_active', 'name')
     active_policy_version = PolicyVersion.get_active()
 
@@ -48,6 +50,7 @@ def vaccine_settings(request, tab=None):
         'products': products,
         'series_list': series,
         'dependencies': dependencies,
+        'global_constraints': global_constraints,
         'policy_versions': policy_versions,
         'active_policy_version': active_policy_version,
         'active_tab': active_tab,
@@ -234,6 +237,44 @@ def dependency_delete(request, pk):
     return render(request, 'vaccines/confirm_delete.html', {'object': dependency, 'object_type': 'Dependency Rule', 'cancel_href': reverse('vaccines:settings_tab', kwargs={'tab': 'dependencies'})})
 
 
+
+def global_constraint_create(request):
+    if request.method == 'POST':
+        form = GlobalConstraintRuleForm(request.POST)
+        if form.is_valid():
+            constraint = form.save()
+            messages.success(request, f'Global constraint "{constraint.name}" created successfully.')
+            return redirect('vaccines:settings_tab', tab='constraints')
+        messages.error(request, 'Please correct the errors below.')
+    else:
+        form = GlobalConstraintRuleForm()
+
+    return render(request, 'vaccines/constraint_form.html', {'form': form, 'title': 'Add Global Constraint', 'submit_label': 'Create Constraint'})
+
+
+def global_constraint_edit(request, pk):
+    constraint = get_object_or_404(GlobalConstraintRule, pk=pk)
+    if request.method == 'POST':
+        form = GlobalConstraintRuleForm(request.POST, instance=constraint)
+        if form.is_valid():
+            constraint = form.save()
+            messages.success(request, f'Global constraint "{constraint.name}" updated successfully.')
+            return redirect('vaccines:settings_tab', tab='constraints')
+        messages.error(request, 'Please correct the errors below.')
+    else:
+        form = GlobalConstraintRuleForm(instance=constraint)
+
+    return render(request, 'vaccines/constraint_form.html', {'form': form, 'title': f'Edit Global Constraint: {constraint.name}', 'submit_label': 'Save Changes', 'constraint': constraint})
+
+
+def global_constraint_delete(request, pk):
+    constraint = get_object_or_404(GlobalConstraintRule, pk=pk)
+    if request.method == 'POST':
+        name = constraint.name
+        constraint.delete()
+        messages.success(request, f'Global constraint "{name}" deleted.')
+        return redirect('vaccines:settings_tab', tab='constraints')
+    return render(request, 'vaccines/confirm_delete.html', {'object': constraint, 'object_type': 'Global Constraint', 'cancel_href': reverse('vaccines:settings_tab', kwargs={'tab': 'constraints'})})
 # Legacy Vaccine CRUD
 
 def vaccine_create(request):
@@ -260,3 +301,4 @@ def group_edit(request, pk):
 
 def group_delete(request, pk):
     return _redirect_legacy_policy_read_only(request, 'groups')
+

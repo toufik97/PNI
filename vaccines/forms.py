@@ -1,9 +1,10 @@
-﻿from django import forms
+from django import forms
 from django.db import transaction
 
 from .models import (
     CatchupRule,
     DependencyRule,
+    GlobalConstraintRule,
     GroupRule,
     PolicyVersion,
     Product,
@@ -285,6 +286,28 @@ class SeriesRuleForm(forms.ModelForm):
 SeriesRuleFormSet = forms.inlineformset_factory(Series, SeriesRule, form=SeriesRuleForm, extra=1, can_delete=True)
 
 
+
+class GlobalConstraintRuleForm(forms.ModelForm):
+    class Meta:
+        model = GlobalConstraintRule
+        fields = ['name', 'code', 'constraint_type', 'min_spacing_days', 'policy_version', 'active', 'notes']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Standard Live Spacing'}),
+            'code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Optional slug code'}),
+            'constraint_type': forms.Select(attrs={'class': 'form-select'}),
+            'min_spacing_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'e.g., 28'}),
+            'policy_version': forms.Select(attrs={'class': 'form-select'}),
+            'active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Optional notes'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['code'].required = False
+        self.fields['policy_version'].queryset = PolicyVersion.objects.order_by('-is_active', 'name')
+        active_version = PolicyVersion.get_active()
+        if not self.instance.pk and active_version:
+            self.fields['policy_version'].initial = active_version
 class DependencyRuleForm(forms.ModelForm):
     class Meta:
         model = DependencyRule
@@ -305,3 +328,7 @@ class DependencyRuleForm(forms.ModelForm):
         series_queryset = Series.objects.select_related('policy_version').order_by('policy_version__name', 'name')
         self.fields['dependent_series'].queryset = series_queryset
         self.fields['anchor_series'].queryset = series_queryset
+
+
+
+
