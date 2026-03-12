@@ -1,4 +1,4 @@
-﻿from django.urls import reverse
+from django.urls import reverse
 
 from vaccines.models import PolicyVersion, Series
 from .base import BaseVaccinationTestCase
@@ -60,6 +60,10 @@ class TestPolicyVersionSettingsUI(BaseVaccinationTestCase):
             'rules-0-min_interval_days': '0',
             'rules-0-dose_amount': '0.5ml',
             'rules-0-notes': 'Starter slot',
+            'transitions-TOTAL_FORMS': '0',
+            'transitions-INITIAL_FORMS': '0',
+            'transitions-MIN_NUM_FORMS': '0',
+            'transitions-MAX_NUM_FORMS': '1000',
         })
 
         self.assertEqual(response.status_code, 302)

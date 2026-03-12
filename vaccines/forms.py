@@ -12,6 +12,7 @@ from .models import (
     Series,
     SeriesProduct,
     SeriesRule,
+    SeriesTransitionRule,
     Vaccine,
     VaccineGroup,
 )
@@ -308,6 +309,37 @@ class GlobalConstraintRuleForm(forms.ModelForm):
         active_version = PolicyVersion.get_active()
         if not self.instance.pk and active_version:
             self.fields['policy_version'].initial = active_version
+
+class SeriesTransitionRuleForm(forms.ModelForm):
+    class Meta:
+        model = SeriesTransitionRule
+        fields = ['from_product', 'to_product', 'start_slot_number', 'end_slot_number', 'allow_if_unavailable', 'active', 'notes']
+        widgets = {
+            'from_product': forms.Select(attrs={'class': 'form-select'}),
+            'to_product': forms.Select(attrs={'class': 'form-select'}),
+            'start_slot_number': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'placeholder': 'Optional'}),
+            'end_slot_number': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'placeholder': 'Optional'}),
+            'allow_if_unavailable': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Optional notes'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        product_queryset = Product.objects.select_related('vaccine').order_by('vaccine__name')
+        self.fields['from_product'].queryset = product_queryset
+        self.fields['to_product'].queryset = product_queryset
+
+
+SeriesTransitionRuleFormSet = forms.inlineformset_factory(
+    Series,
+    SeriesTransitionRule,
+    form=SeriesTransitionRuleForm,
+    extra=1,
+    can_delete=True,
+)
+
+
 class DependencyRuleForm(forms.ModelForm):
     class Meta:
         model = DependencyRule
@@ -328,6 +360,8 @@ class DependencyRuleForm(forms.ModelForm):
         series_queryset = Series.objects.select_related('policy_version').order_by('policy_version__name', 'name')
         self.fields['dependent_series'].queryset = series_queryset
         self.fields['anchor_series'].queryset = series_queryset
+
+
 
 
 

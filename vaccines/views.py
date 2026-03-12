@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
@@ -13,6 +14,7 @@ from .forms import (
     SeriesForm,
     SeriesProductFormSet,
     SeriesRuleFormSet,
+    SeriesTransitionRuleFormSet,
     VaccineForm,
     VaccineGroupForm,
 )
@@ -38,7 +40,7 @@ def vaccine_settings(request, tab=None):
     vaccines = Vaccine.objects.prefetch_related('schedule_rules', 'catchup_rules').all()
     groups = VaccineGroup.objects.prefetch_related('vaccines', 'rules').all()
     products = Product.objects.select_related('vaccine').prefetch_related('series_memberships').all()
-    series = Series.objects.select_related('policy_version').prefetch_related('series_products__product__vaccine', 'rules__product__vaccine').all()
+    series = Series.objects.select_related('policy_version').prefetch_related('series_products__product__vaccine', 'rules__product__vaccine', 'transition_rules__from_product__vaccine', 'transition_rules__to_product__vaccine').all()
     dependencies = DependencyRule.objects.select_related('dependent_series__policy_version', 'anchor_series__policy_version').all()
     global_constraints = GlobalConstraintRule.objects.select_related('policy_version').all()
     policy_versions = PolicyVersion.objects.order_by('-is_active', 'name')
@@ -142,26 +144,38 @@ def series_create(request):
         form = SeriesForm(request.POST)
         product_formset = SeriesProductFormSet(request.POST, prefix='products')
         rule_formset = SeriesRuleFormSet(request.POST, prefix='rules')
+        transition_formset = SeriesTransitionRuleFormSet(request.POST, prefix='transitions')
         if form.is_valid() and product_formset.is_valid():
-            series = form.save()
-            product_formset = SeriesProductFormSet(request.POST, instance=series, prefix='products')
-            if product_formset.is_valid():
-                product_formset.save()
-                rule_formset = SeriesRuleFormSet(request.POST, instance=series, prefix='rules')
-                if rule_formset.is_valid():
-                    rule_formset.save()
-                    messages.success(request, f'Series "{series.name}" created successfully.')
-                    return redirect('vaccines:settings_tab', tab='series')
-            series.delete()
-            messages.error(request, 'Error in series products or series rules. Please check the forms.')
+            with transaction.atomic():
+                series = form.save()
+                product_formset = SeriesProductFormSet(request.POST, instance=series, prefix='products')
+                if product_formset.is_valid():
+                    product_formset.save()
+                    rule_formset = SeriesRuleFormSet(request.POST, instance=series, prefix='rules')
+                    transition_formset = SeriesTransitionRuleFormSet(request.POST, instance=series, prefix='transitions')
+                    if rule_formset.is_valid() and transition_formset.is_valid():
+                        rule_formset.save()
+                        transition_formset.save()
+                        messages.success(request, f'Series "{series.name}" created successfully.')
+                        return redirect('vaccines:settings_tab', tab='series')
+                transaction.set_rollback(True)
+            messages.error(request, 'Error in linked products, slot rules, or transition rules. Please check the forms below.')
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
         form = SeriesForm()
         product_formset = SeriesProductFormSet(prefix='products')
         rule_formset = SeriesRuleFormSet(prefix='rules')
+        transition_formset = SeriesTransitionRuleFormSet(prefix='transitions')
 
-    return render(request, 'vaccines/series_form.html', {'form': form, 'product_formset': product_formset, 'rule_formset': rule_formset, 'title': 'Add New Series', 'submit_label': 'Create Series'})
+    return render(request, 'vaccines/series_form.html', {
+        'form': form,
+        'product_formset': product_formset,
+        'rule_formset': rule_formset,
+        'transition_formset': transition_formset,
+        'title': 'Add New Series',
+        'submit_label': 'Create Series',
+    })
 
 
 def series_edit(request, pk):
@@ -169,25 +183,38 @@ def series_edit(request, pk):
     if request.method == 'POST':
         form = SeriesForm(request.POST, instance=series)
         product_formset = SeriesProductFormSet(request.POST, instance=series, prefix='products')
+        rule_formset = SeriesRuleFormSet(request.POST, instance=series, prefix='rules')
+        transition_formset = SeriesTransitionRuleFormSet(request.POST, instance=series, prefix='transitions')
         if form.is_valid() and product_formset.is_valid():
-            form.save()
-            product_formset.save()
-            rule_formset = SeriesRuleFormSet(request.POST, instance=series, prefix='rules')
-            if rule_formset.is_valid():
-                rule_formset.save()
-                messages.success(request, f'Series "{series.name}" updated successfully.')
-                return redirect('vaccines:settings_tab', tab='series')
+            with transaction.atomic():
+                form.save()
+                product_formset.save()
+                rule_formset = SeriesRuleFormSet(request.POST, instance=series, prefix='rules')
+                transition_formset = SeriesTransitionRuleFormSet(request.POST, instance=series, prefix='transitions')
+                if rule_formset.is_valid() and transition_formset.is_valid():
+                    rule_formset.save()
+                    transition_formset.save()
+                    messages.success(request, f'Series "{series.name}" updated successfully.')
+                    return redirect('vaccines:settings_tab', tab='series')
+                transaction.set_rollback(True)
+            messages.error(request, 'Error in slot rules or transition rules. Please check the forms below.')
         else:
-            rule_formset = SeriesRuleFormSet(request.POST, instance=series, prefix='rules')
-        messages.error(request, 'Please correct the errors below.')
+            messages.error(request, 'Please correct the errors below.')
     else:
         form = SeriesForm(instance=series)
         product_formset = SeriesProductFormSet(instance=series, prefix='products')
         rule_formset = SeriesRuleFormSet(instance=series, prefix='rules')
+        transition_formset = SeriesTransitionRuleFormSet(instance=series, prefix='transitions')
 
-    return render(request, 'vaccines/series_form.html', {'form': form, 'product_formset': product_formset, 'rule_formset': rule_formset, 'title': f'Edit Series: {series.name}', 'submit_label': 'Save Changes', 'series': series})
-
-
+    return render(request, 'vaccines/series_form.html', {
+        'form': form,
+        'product_formset': product_formset,
+        'rule_formset': rule_formset,
+        'transition_formset': transition_formset,
+        'title': f'Edit Series: {series.name}',
+        'submit_label': 'Save Changes',
+        'series': series,
+    })
 def series_delete(request, pk):
     series = get_object_or_404(Series, pk=pk)
     if request.method == 'POST':
@@ -301,4 +328,11 @@ def group_edit(request, pk):
 
 def group_delete(request, pk):
     return _redirect_legacy_policy_read_only(request, 'groups')
+
+
+
+
+
+
+
 

@@ -151,6 +151,33 @@
             {% endif %}
         </div>
 
+
+        <div class="form-section">
+            <h5>Transition Rules</h5>
+            <p class="text-muted" style="font-size:0.85rem;">Define when the series can switch from one product to another, including slot ranges and stock-driven fallback rules.</p>
+            {{ transition_formset.management_form }}
+            {% for tform in transition_formset %}
+            <div class="formset-row">
+                {% if tform.instance.pk %}{{ tform.DELETE }}{% endif %}
+                <div class="row g-2 align-items-start">
+                    {% for field in tform.visible_fields %}
+                    {% if field.name != 'DELETE' %}
+                    <div class="col-md-3">
+                        <label class="form-label">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}<div class="help-inline">{{ field.help_text }}</div>{% endif %}
+                        {% if field.errors %}<ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% for hidden in tform.hidden_fields %}{{ hidden }}{% endfor %}
+            </div>
+            {% endfor %}
+            {% if transition_formset.non_form_errors %}
+            <ul class="errorlist">{% for e in transition_formset.non_form_errors %}<li>{{ e }}</li>{% endfor %}</ul>
+            {% endif %}
+        </div>
         <div class="d-flex justify-content-between align-items-center">
             <a href="{% url 'vaccines:settings_tab' 'series' %}" class="btn-back">Back to Settings</a>
             <button type="submit" class="btn btn-save">{{ submit_label }}</button>
@@ -158,3 +185,4 @@
     </form>
 </div>
 {% endblock %}
+

@@ -4,7 +4,7 @@ Last updated: 2026-03-12
 
 ## Current Status
 
-Overall redesign progress is approximately 80 percent complete.
+Overall redesign progress is approximately 82 percent complete.
 
 The current implementation checkpoint after the redesign review includes:
 
@@ -16,6 +16,7 @@ The current implementation checkpoint after the redesign review includes:
 - extracted series recommendation flow into `vaccines/recommender.py`
 - made legacy vaccine and legacy group configuration read-only in the settings UI and views
 - added explicit `SeriesTransitionRule` modeling and migration-backed switching semantics
+- exposed transition-rule authoring in the series create/edit UI and series settings summary
 - added `GlobalConstraintRule` modeling plus a Global Constraints settings tab
 - wired live/live spacing to read from policy instead of only using a hardcoded default
 - expanded module-boundary tests to cover the new service layer
@@ -37,6 +38,7 @@ The current implementation checkpoint after the redesign review includes:
 - [x] Replace inline engine rule math with dedicated recommender and policy-loader orchestration boundaries
 - [x] Make legacy vaccine and legacy group configuration read-only during migration
 - [x] Add explicit transition-rule model and semantics
+- [x] Expose transition-rule configuration in the series settings UI
 - [x] Add a first end-state `Global Constraints` tab and rule model
 
 ## In Progress
@@ -59,4 +61,6 @@ The current implementation checkpoint after the redesign review includes:
 2. Once DTP is isolated, remove group and schedule fallback for the DTP protection track.
 3. Expand Pneumo on top of the transition-rule-aware and availability-aware series path.
 4. Add proactive admin validation for overlap, deadlock, and impossible-transition cases.
+
+
 

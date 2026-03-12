@@ -111,7 +111,7 @@
     </div>
 
     <div class="info-box">
-        The series layer now supports overlapping candidate products per slot, managed policy versions, and final selection by availability plus mixing policy.
+        The series layer now supports overlapping candidate products per slot, explicit transition rules, managed policy versions, and final selection by availability plus mixing policy.
     </div>
 
     {% if series_list %}
@@ -132,10 +132,11 @@
         </div>
         <div class="card-body">
             <div class="row g-3 mb-3">
-                <div class="col-md-4"><div class="text-muted small text-uppercase fw-bold mb-1">Series Interval Floor</div><div>{{ series.min_valid_interval_days|humanize_days }} <small class="text-muted">({{ series.min_valid_interval_days }}d)</small></div></div>
-                <div class="col-md-4"><div class="text-muted small text-uppercase fw-bold mb-1">Products</div><div class="inline-chips">{% for link in series.series_products.all %}<span class="badge badge-chip">{{ link.product.vaccine.name }}</span>{% empty %}<span class="text-muted">No products linked</span>{% endfor %}</div></div>
-                <div class="col-md-4"><div class="text-muted small text-uppercase fw-bold mb-1">Rules</div><div>{{ series.rules.count }} slot rule{{ series.rules.count|pluralize }}</div></div>
-                <div class="col-md-4"><div class="text-muted small text-uppercase fw-bold mb-1">Policy Version</div><div>{{ series.policy_version.name|default:"Unassigned" }}</div></div>
+                <div class="col-md-3"><div class="text-muted small text-uppercase fw-bold mb-1">Series Interval Floor</div><div>{{ series.min_valid_interval_days|humanize_days }} <small class="text-muted">({{ series.min_valid_interval_days }}d)</small></div></div>
+                <div class="col-md-3"><div class="text-muted small text-uppercase fw-bold mb-1">Products</div><div class="inline-chips">{% for link in series.series_products.all %}<span class="badge badge-chip">{{ link.product.vaccine.name }}</span>{% empty %}<span class="text-muted">No products linked</span>{% endfor %}</div></div>
+                <div class="col-md-2"><div class="text-muted small text-uppercase fw-bold mb-1">Rules</div><div>{{ series.rules.count }} slot rule{{ series.rules.count|pluralize }}</div></div>
+                <div class="col-md-2"><div class="text-muted small text-uppercase fw-bold mb-1">Transitions</div><div>{{ series.transition_rules.count }} rule{{ series.transition_rules.count|pluralize }}</div></div>
+                <div class="col-md-2"><div class="text-muted small text-uppercase fw-bold mb-1">Policy Version</div><div>{{ series.policy_version.name|default:"Unassigned" }}</div></div>
             </div>
             {% if series.rules.count > 0 %}
             <table class="table table-sm rule-table">
@@ -155,6 +156,25 @@
             </table>
             {% else %}
             <p class="text-muted mb-0">No slot rules defined yet.</p>
+            {% endif %}
+            {% if series.transition_rules.count > 0 %}
+            <div class="mt-3">
+                <div class="text-muted small text-uppercase fw-bold mb-2">Transition Rules</div>
+                <table class="table table-sm rule-table">
+                    <thead><tr><th>From</th><th>To</th><th>Slots</th><th>Condition</th><th>Status</th></tr></thead>
+                    <tbody>
+                        {% for transition in series.transition_rules.all %}
+                        <tr>
+                            <td>{{ transition.from_product.vaccine.name|default:"Any product" }}</td>
+                            <td><strong>{{ transition.to_product.vaccine.name }}</strong></td>
+                            <td>{{ transition.start_slot_number|default:1 }} - {{ transition.end_slot_number|default:"Any" }}</td>
+                            <td>{% if transition.allow_if_unavailable %}Only if prior product unavailable{% else %}Always allowed{% endif %}</td>
+                            <td>{% if transition.active %}Active{% else %}Inactive{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
             {% endif %}
         </div>
     </div>
@@ -321,10 +341,13 @@
     <div class="guide-step"><strong>2.</strong> Create or choose a <strong>Policy Version</strong> for the rollout you are editing.</div>
     <div class="guide-step"><strong>3.</strong> Create the clinical protection track in <strong>Series</strong> and attach it to that version.</div>
     <div class="guide-step"><strong>4.</strong> Link all allowed products to the series and add slot rules for each product path.</div>
-    <div class="guide-step"><strong>5.</strong> Add <strong>Dependencies</strong> for cross-series timing, such as "Pneumo after DTP + 15 days".</div>
-    <div class="guide-step"><strong>6.</strong> Use the legacy tabs only when you still need to maintain old schedule/group policy during the migration.</div>
+    <div class="guide-step"><strong>5.</strong> Add transition rules when product switching is clinically allowed or should be limited to stock outages.</div>
+    <div class="guide-step"><strong>6.</strong> Add <strong>Dependencies</strong> for cross-series timing, such as "Pneumo after DTP + 15 days".</div>
+    <div class="guide-step"><strong>7.</strong> Use the legacy tabs only when you still need to maintain old schedule/group policy during the migration.</div>
     {% endif %}
 </div>
 {% endblock %}
+
+
 
 
