@@ -2,8 +2,13 @@ from datetime import date, timedelta
 from typing import Any, Dict, List, Optional
 
 from patients.models import Child, VaccinationRecord
+from vaccines.availability import AvailabilityResolver
+from vaccines.dependencies import DependencyEvaluator
+from vaccines.global_constraints import LiveVaccineConstraintService
 from vaccines.history_normalizer import HistoryNormalizer
-from vaccines.models import CatchupRule, PolicyVersion, Product, ScheduleRule, Series, Vaccine, VaccineGroup
+from vaccines.models import CatchupRule, Product, ScheduleRule, Series, Vaccine, VaccineGroup
+from vaccines.policy_loader import PolicyLoader
+from vaccines.recommender import SeriesRecommender
 from vaccines.series_validator import SeriesHistoryValidator
 
 
@@ -35,11 +40,35 @@ class VaccinationEngine:
         self.records = list(self.child.vaccination_records.all().order_by('date_given'))
         self.history = HistoryNormalizer(self.child, self.records)
         self.records = self.history.records
-        self.vaccines = Vaccine.objects.all()
+        self.policy_loader = PolicyLoader()
+        self.vaccines = self.policy_loader.get_all_vaccines()
         self.series_history_cache: Dict[int, List[VaccinationRecord]] = {}
         self.invalid_history: List[Dict[str, Any]] = []
-        self.policy_version = PolicyVersion.get_active()
+        self.policy_version = self.policy_loader.get_active_policy_version()
         self.policy_version_code = self.policy_version.code if self.policy_version else self.POLICY_VERSION
+        self.availability = AvailabilityResolver()
+        self.dependencies = DependencyEvaluator(
+            series_history_cache=self.series_history_cache,
+            dependency_rule_key_builder=self._dependency_rule_key,
+        )
+        self.global_constraints = LiveVaccineConstraintService(
+            global_live_rule_key=self.GLOBAL_LIVE_RULE_KEY,
+            product_lookup=self._product_for_vaccine,
+            flag_invalid=self._flag_invalid,
+            build_live_deferral_item=self._build_live_deferral_item,
+        )
+        self.recommender = SeriesRecommender(
+            child=self.child,
+            evaluation_date=self.evaluation_date,
+            age_days=self.age_days,
+            availability=self.availability,
+            dependencies=self.dependencies,
+            series_history_cache=self.series_history_cache,
+            state_to_due_item=self._state_to_due_item,
+            state_to_missing_item=self._state_to_missing_item,
+            state_to_upcoming_item=self._state_to_upcoming_item,
+            state_to_blocked_item=self._state_to_blocked_item,
+        )
 
     def evaluate(self) -> Dict[str, Any]:
         history_by_vaccine = self._group_history()
@@ -51,13 +80,7 @@ class VaccinationEngine:
         missing_doses = []
         upcoming_details = []
 
-        active_series = list(
-            Series.objects.filter(active=True).prefetch_related(
-                'series_products__product__vaccine',
-                'rules__product__vaccine',
-                'dependency_rules__anchor_series',
-            )
-        )
+        active_series = self.policy_loader.get_active_series()
         covered_group_ids = set()
         covered_vaccine_names = set()
 
@@ -78,7 +101,7 @@ class VaccinationEngine:
             for link in series.series_products.all():
                 covered_vaccine_names.add(link.product.vaccine.name)
 
-        groups = VaccineGroup.objects.prefetch_related('vaccines', 'rules').all()
+        groups = self.policy_loader.get_vaccine_groups()
         grouped_vaccine_names = set(covered_vaccine_names)
 
         for group in groups:
@@ -241,31 +264,12 @@ class VaccinationEngine:
                     target_date=target_date,
                 ))
 
-        recent_live_doses = [
-            record for record in self.records
-            if record.vaccine.live and not record.invalid_flag and (self.evaluation_date - record.date_given).days < 28
-        ]
-
-        if recent_live_doses:
-            latest_live_date = max(record.date_given for record in recent_live_doses)
-            safe_date = latest_live_date + timedelta(days=28)
-
-            non_deferred_due = []
-            for item in due_today:
-                vaccine = item['vaccine']
-                if vaccine.live:
-                    is_compatible = True
-                    for record in recent_live_doses:
-                        if not vaccine.compatible_live_vaccines.filter(id=record.vaccine.id).exists():
-                            is_compatible = False
-                            break
-
-                    if not is_compatible:
-                        upcoming_details.append(self._build_live_deferral_item(item, safe_date, recent_live_doses))
-                        continue
-
-                non_deferred_due.append(item)
-            due_today = non_deferred_due
+        due_today, deferred_upcoming = self.global_constraints.defer_recommendations(
+            self.records,
+            due_today,
+            self.evaluation_date,
+        )
+        upcoming_details.extend(deferred_upcoming)
 
         due_today = self._normalize_due_items(due_today)
         due_but_unavailable = self._normalize_due_items(due_but_unavailable)
@@ -518,212 +522,41 @@ class VaccinationEngine:
 
                 valid_records.append(record)
 
-        valid_live = []
-        for record in self.records:
-            if not record.vaccine.live or record.invalid_flag:
-                continue
-
-            if valid_live:
-                previous = valid_live[-1]
-                gap = (record.date_given - previous.date_given).days
-                if gap < 28:
-                    is_compatible = record.vaccine.compatible_live_vaccines.filter(id=previous.vaccine.id).exists()
-                    if gap == 0 and is_compatible:
-                        pass
-                    else:
-                        self._flag_invalid(
-                            record,
-                            VR.REASON_INTERVAL,
-                            f"Live vax conflict: {record.vaccine.name} given {gap} days after live {previous.vaccine.name}. Standard protocol requires 28-day gap.",
-                            decision_source=self.SOURCE_GLOBAL_CONSTRAINT,
-                            rule_key=self.GLOBAL_LIVE_RULE_KEY,
-                            product=self._product_for_vaccine(record.vaccine),
-                        )
-                        continue
-
-            valid_live.append(record)
+        self.global_constraints.validate_history(self.records, self.SOURCE_GLOBAL_CONSTRAINT)
 
     def _validate_series_history(self, series: Series, history_by_vaccine: Dict[str, List[VaccinationRecord]]) -> List[VaccinationRecord]:
         validator = SeriesHistoryValidator(self, history_by_vaccine)
         return validator.validate(series)
 
     def _recommend_series(self, series: Series) -> Dict[str, Any]:
-        result = {
-            'due_today': [],
-            'due_but_unavailable': [],
-            'blocked': [],
-            'missing_doses': [],
-            'upcoming': [],
-        }
-
-        valid_records = self.series_history_cache.get(series.id, [])
-        prior_doses = len(valid_records)
-        last_dose_date = valid_records[-1].date_given if valid_records else None
-
-        current_candidates = self._filter_series_candidates(
-            series,
-            self._series_age_candidates(series, prior_doses, self.age_days),
-            valid_records,
-        )
-        candidate_states = [self._build_series_candidate_state(series, valid_records, last_dose_date, rule) for rule in current_candidates]
-        candidate_states = [state for state in candidate_states if state is not None]
-
-        if candidate_states:
-            due_states = [state for state in candidate_states if not state['blocking_constraints'] and self.evaluation_date >= state['target_date']]
-            if due_states:
-                chosen_due_state = self._choose_due_state(series, valid_records, due_states)
-                if chosen_due_state['is_available']:
-                    result['due_today'].append(self._state_to_due_item(series, chosen_due_state))
-                else:
-                    result['due_but_unavailable'].append(self._state_to_due_item(series, chosen_due_state, unavailable=True))
-                if self.evaluation_date > chosen_due_state['overdue_date']:
-                    result['missing_doses'].append(self._state_to_missing_item(series, chosen_due_state))
-                return result
-
-            upcoming_states = [state for state in candidate_states if not state['blocking_constraints'] and self.evaluation_date < state['target_date']]
-            if upcoming_states:
-                chosen_upcoming = self._choose_upcoming_state(series, valid_records, upcoming_states)
-                result['upcoming'].append(self._state_to_upcoming_item(series, chosen_upcoming))
-                return result
-
-            blocked_states = [state for state in candidate_states if state['blocking_constraints']]
-            if blocked_states:
-                result['blocked'].append(self._state_to_blocked_item(series, self._choose_preferred_state(series, valid_records, blocked_states)))
-                return result
-
-        future_rule = self._first_series_future_rule(series, prior_doses, valid_records)
-        if future_rule:
-            future_state = self._build_series_candidate_state(series, valid_records, last_dose_date, future_rule, future=True)
-            if future_state['blocking_constraints']:
-                result['blocked'].append(self._state_to_blocked_item(series, future_state))
-            else:
-                result['upcoming'].append(self._state_to_upcoming_item(series, future_state))
-
-        return result
+        return self.recommender.recommend(series)
 
     def _series_age_candidates(self, series: Series, prior_doses: int, age_days: int):
-        candidates = [rule for rule in series.rules.all() if rule.prior_valid_doses == prior_doses and rule.min_age_days <= age_days]
-        return [rule for rule in candidates if rule.max_age_days is None or age_days <= rule.max_age_days]
+        return self.recommender.series_age_candidates(series, prior_doses, age_days)
 
     def _first_series_future_rule(self, series: Series, prior_doses: int, valid_records: List[VaccinationRecord], reference_age_days: Optional[int] = None):
-        age_days = self.age_days if reference_age_days is None else reference_age_days
-        future_candidates = [rule for rule in series.rules.all() if rule.prior_valid_doses == prior_doses and rule.min_age_days > age_days]
-        filtered = self._filter_series_candidates(series, future_candidates, valid_records)
-        if not filtered:
-            return None
-        return sorted(
-            filtered,
-            key=lambda rule: (
-                rule.min_age_days,
-                0 if rule.product.active and rule.product.available else 1,
-                self._series_product_priority(series, rule.product_id),
-                rule.product.vaccine.name,
-            ),
-        )[0]
+        return self.recommender.first_series_future_rule(series, prior_doses, valid_records, reference_age_days)
 
     def _filter_series_candidates(self, series: Series, candidates, valid_records: List[VaccinationRecord]):
-        filtered = list(candidates)
-        if valid_records and series.mixing_policy == Series.MIXING_STRICT:
-            last_vaccine_id = valid_records[-1].vaccine_id
-            filtered = [rule for rule in filtered if rule.product.vaccine_id == last_vaccine_id]
-        return filtered
+        return self.recommender.filter_series_candidates(series, candidates, valid_records)
 
     def _series_product_priority(self, series: Series, product_id: int) -> int:
-        for link in series.series_products.all():
-            if link.product_id == product_id:
-                return link.priority
-        return 9999
+        return self.availability.series_product_priority(series, product_id)
 
     def _build_series_candidate_state(self, series: Series, valid_records: List[VaccinationRecord], last_dose_date: Optional[date], rule, future: bool = False):
-        if future:
-            target_date = self.child.dob + timedelta(days=(rule.recommended_age_days if rule.prior_valid_doses == 0 else rule.min_age_days))
-            if last_dose_date:
-                interval_date = last_dose_date + timedelta(days=rule.min_interval_days)
-                age_floor_date = self.child.dob + timedelta(days=rule.min_age_days)
-                target_date = max(target_date, interval_date, age_floor_date)
-        else:
-            if rule.prior_valid_doses == 0:
-                target_date = self.child.dob + timedelta(days=rule.recommended_age_days)
-            elif last_dose_date:
-                interval_date = last_dose_date + timedelta(days=rule.min_interval_days)
-                age_floor_date = self.child.dob + timedelta(days=rule.min_age_days)
-                target_date = max(interval_date, age_floor_date)
-            else:
-                target_date = self.child.dob + timedelta(days=rule.min_age_days)
-
-        overdue_age = rule.overdue_age_days if rule.overdue_age_days is not None else rule.recommended_age_days
-        overdue_date = self.child.dob + timedelta(days=overdue_age)
-        target_date, blocking_constraints = self._apply_dependency_rules(series, rule.slot_number, target_date)
-        if blocking_constraints:
-            overdue_date = max(overdue_date, target_date)
-
-        return {
-            'rule': rule,
-            'target_date': target_date,
-            'overdue_date': overdue_date,
-            'blocking_constraints': blocking_constraints,
-            'is_available': rule.product.active and rule.product.available,
-            'last_product_match': bool(valid_records and valid_records[-1].vaccine_id == rule.product.vaccine_id),
-            'priority': self._series_product_priority(series, rule.product_id),
-        }
+        return self.recommender.build_series_candidate_state(series, valid_records, last_dose_date, rule, future)
 
     def _apply_dependency_rules(self, series: Series, slot_number: int, target_date: date):
-        blocking_constraints = []
-        adjusted_target = target_date
-        for dependency in series.dependency_rules.all():
-            if not dependency.active:
-                continue
-            if dependency.dependent_slot_number and dependency.dependent_slot_number != slot_number:
-                continue
+        return self.dependencies.apply(series, slot_number, target_date)
 
-            anchor_slot = dependency.anchor_slot_number or slot_number
-            anchor_history = self.series_history_cache.get(dependency.anchor_series_id, [])
-            if len(anchor_history) < anchor_slot:
-                if dependency.block_if_anchor_missing:
-                    blocking_constraints.append({
-                        'rule_key': self._dependency_rule_key(dependency, slot_number),
-                        'reason_code': 'dependency_anchor_missing',
-                        'message': f"Requires {dependency.anchor_series.name} slot {anchor_slot} before {series.name} slot {slot_number}.",
-                    })
-                continue
-
-            anchor_record = anchor_history[anchor_slot - 1]
-            adjusted_target = max(adjusted_target, anchor_record.date_given + timedelta(days=dependency.min_offset_days))
-        return adjusted_target, blocking_constraints
     def _choose_due_state(self, series: Series, valid_records: List[VaccinationRecord], states):
-        available_states = [state for state in states if state['is_available']]
-        if available_states:
-            return self._choose_preferred_state(series, valid_records, available_states)
-        return self._choose_preferred_state(series, valid_records, states)
+        return self.availability.choose_due_state(series, valid_records, states)
 
     def _choose_upcoming_state(self, series: Series, valid_records: List[VaccinationRecord], states):
-        available_states = [state for state in states if state['is_available']]
-        if available_states:
-            states = available_states
-        return sorted(
-            states,
-            key=lambda state: (
-                state['target_date'],
-                -state['rule'].min_age_days,
-                0 if state['last_product_match'] else 1,
-                state['priority'],
-                state['rule'].product.vaccine.name,
-            ),
-        )[0]
+        return self.availability.choose_upcoming_state(series, valid_records, states)
 
     def _choose_preferred_state(self, series: Series, valid_records: List[VaccinationRecord], states):
-        available_states = [state for state in states if state['is_available']]
-        if available_states:
-            states = available_states
-        return sorted(
-            states,
-            key=lambda state: (
-                -state['rule'].min_age_days,
-                0 if state['last_product_match'] else 1,
-                state['priority'],
-                state['rule'].product.vaccine.name,
-            ),
-        )[0]
+        return self.availability.choose_preferred_state(series, valid_records, states)
 
     def _state_to_due_item(self, series: Series, state, unavailable: bool = False):
         decision_type = self.DECISION_DUE_UNAVAILABLE if unavailable else self.DECISION_DUE
@@ -976,3 +809,8 @@ class VaccinationEngine:
             ))
 
         return result
+
+
+
+
+

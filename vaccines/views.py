@@ -21,6 +21,12 @@ from .models import DependencyRule, PolicyVersion, Product, Series, Vaccine, Vac
 LEGACY_TABS = {'vaccines', 'groups'}
 NEW_TABS = {'products', 'series', 'dependencies', 'versions', 'guide'}
 ALL_TABS = LEGACY_TABS.union(NEW_TABS)
+LEGACY_POLICY_READ_ONLY = True
+
+
+def _redirect_legacy_policy_read_only(request, tab):
+    messages.warning(request, 'Legacy vaccine and group configuration is read-only during the series policy migration.')
+    return redirect('vaccines:settings_tab', tab=tab)
 
 
 def vaccine_settings(request, tab=None):
@@ -45,6 +51,7 @@ def vaccine_settings(request, tab=None):
         'policy_versions': policy_versions,
         'active_policy_version': active_policy_version,
         'active_tab': active_tab,
+        'legacy_policy_read_only': LEGACY_POLICY_READ_ONLY,
     }
     return render(request, 'vaccines/settings.html', context)
 
@@ -230,105 +237,26 @@ def dependency_delete(request, pk):
 # Legacy Vaccine CRUD
 
 def vaccine_create(request):
-    if request.method == 'POST':
-        form = VaccineForm(request.POST)
-        schedule_formset = ScheduleRuleFormSet(request.POST, prefix='schedule')
-        catchup_formset = CatchupRuleFormSet(request.POST, prefix='catchup')
-        if form.is_valid():
-            vaccine = form.save()
-            schedule_formset = ScheduleRuleFormSet(request.POST, instance=vaccine, prefix='schedule')
-            catchup_formset = CatchupRuleFormSet(request.POST, instance=vaccine, prefix='catchup')
-            if schedule_formset.is_valid() and catchup_formset.is_valid():
-                schedule_formset.save()
-                catchup_formset.save()
-                messages.success(request, f'Vaccine "{vaccine.name}" created successfully.')
-                return redirect('vaccines:settings_tab', tab='vaccines')
-            vaccine.delete()
-            messages.error(request, 'Error in schedule or catchup rules. Please check the forms.')
-    else:
-        form = VaccineForm()
-        schedule_formset = ScheduleRuleFormSet(prefix='schedule')
-        catchup_formset = CatchupRuleFormSet(prefix='catchup')
-
-    return render(request, 'vaccines/vaccine_form.html', {'form': form, 'schedule_formset': schedule_formset, 'catchup_formset': catchup_formset, 'title': 'Add New Vaccine', 'submit_label': 'Create Vaccine'})
+    return _redirect_legacy_policy_read_only(request, 'vaccines')
 
 
 def vaccine_edit(request, pk):
-    vaccine = get_object_or_404(Vaccine, pk=pk)
-    if request.method == 'POST':
-        form = VaccineForm(request.POST, instance=vaccine)
-        schedule_formset = ScheduleRuleFormSet(request.POST, instance=vaccine, prefix='schedule')
-        catchup_formset = CatchupRuleFormSet(request.POST, instance=vaccine, prefix='catchup')
-        if form.is_valid() and schedule_formset.is_valid() and catchup_formset.is_valid():
-            form.save()
-            schedule_formset.save()
-            catchup_formset.save()
-            messages.success(request, f'Vaccine "{vaccine.name}" updated successfully.')
-            return redirect('vaccines:settings_tab', tab='vaccines')
-        messages.error(request, 'Please correct the errors below.')
-    else:
-        form = VaccineForm(instance=vaccine)
-        schedule_formset = ScheduleRuleFormSet(instance=vaccine, prefix='schedule')
-        catchup_formset = CatchupRuleFormSet(instance=vaccine, prefix='catchup')
-
-    return render(request, 'vaccines/vaccine_form.html', {'form': form, 'schedule_formset': schedule_formset, 'catchup_formset': catchup_formset, 'title': f'Edit Vaccine: {vaccine.name}', 'submit_label': 'Save Changes', 'vaccine': vaccine})
+    return _redirect_legacy_policy_read_only(request, 'vaccines')
 
 
 def vaccine_delete(request, pk):
-    vaccine = get_object_or_404(Vaccine, pk=pk)
-    if request.method == 'POST':
-        name = vaccine.name
-        vaccine.delete()
-        messages.success(request, f'Vaccine "{name}" deleted.')
-        return redirect('vaccines:settings_tab', tab='vaccines')
-    return render(request, 'vaccines/confirm_delete.html', {'object': vaccine, 'object_type': 'Vaccine', 'cancel_href': reverse('vaccines:settings_tab', kwargs={'tab': 'vaccines'})})
+    return _redirect_legacy_policy_read_only(request, 'vaccines')
 
 
 # Legacy Group CRUD
 
 def group_create(request):
-    if request.method == 'POST':
-        form = VaccineGroupForm(request.POST)
-        rule_formset = GroupRuleFormSet(request.POST, prefix='rules')
-        if form.is_valid():
-            group = form.save()
-            rule_formset = GroupRuleFormSet(request.POST, instance=group, prefix='rules')
-            if rule_formset.is_valid():
-                rule_formset.save()
-                messages.success(request, f'Group "{group.name}" created successfully.')
-                return redirect('vaccines:settings_tab', tab='groups')
-            group.delete()
-            messages.error(request, 'Error in group rules. Please check the forms.')
-    else:
-        form = VaccineGroupForm()
-        rule_formset = GroupRuleFormSet(prefix='rules')
-
-    return render(request, 'vaccines/group_form.html', {'form': form, 'rule_formset': rule_formset, 'title': 'Add New Vaccine Group', 'submit_label': 'Create Group'})
+    return _redirect_legacy_policy_read_only(request, 'groups')
 
 
 def group_edit(request, pk):
-    group = get_object_or_404(VaccineGroup, pk=pk)
-    if request.method == 'POST':
-        form = VaccineGroupForm(request.POST, instance=group)
-        rule_formset = GroupRuleFormSet(request.POST, instance=group, prefix='rules')
-        if form.is_valid() and rule_formset.is_valid():
-            form.save()
-            rule_formset.save()
-            messages.success(request, f'Group "{group.name}" updated successfully.')
-            return redirect('vaccines:settings_tab', tab='groups')
-        messages.error(request, 'Please correct the errors below.')
-    else:
-        form = VaccineGroupForm(instance=group)
-        rule_formset = GroupRuleFormSet(instance=group, prefix='rules')
-
-    return render(request, 'vaccines/group_form.html', {'form': form, 'rule_formset': rule_formset, 'title': f'Edit Group: {group.name}', 'submit_label': 'Save Changes', 'group': group})
+    return _redirect_legacy_policy_read_only(request, 'groups')
 
 
 def group_delete(request, pk):
-    group = get_object_or_404(VaccineGroup, pk=pk)
-    if request.method == 'POST':
-        name = group.name
-        group.delete()
-        messages.success(request, f'Group "{name}" deleted.')
-        return redirect('vaccines:settings_tab', tab='groups')
-    return render(request, 'vaccines/confirm_delete.html', {'object': group, 'object_type': 'Vaccine Group', 'cancel_href': reverse('vaccines:settings_tab', kwargs={'tab': 'groups'})})
+    return _redirect_legacy_policy_read_only(request, 'groups')

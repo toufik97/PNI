@@ -1,6 +1,6 @@
 from django.urls import reverse
 
-from vaccines.models import Product, Series, SeriesRule
+from vaccines.models import Product, Series, SeriesRule, Vaccine, VaccineGroup
 from .base import BaseVaccinationTestCase
 
 
@@ -71,3 +71,42 @@ class TestSeriesSettingsUI(BaseVaccinationTestCase):
         self.assertEqual(series.rules.count(), 1)
         rule = SeriesRule.objects.get(series=series)
         self.assertEqual(rule.product.vaccine.name, 'Penta')
+
+    def test_legacy_vaccine_tab_is_read_only(self):
+        response = self.client.get(reverse('vaccines:settings_tab', kwargs={'tab': 'vaccines'}))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Legacy vaccines are now read-only during the migration.')
+        self.assertNotContains(response, '+ Add Vaccine')
+        self.assertNotContains(response, reverse('vaccines:vaccine_edit', kwargs={'pk': self.penta.pk}))
+
+    def test_legacy_group_tab_is_read_only(self):
+        response = self.client.get(reverse('vaccines:settings_tab', kwargs={'tab': 'groups'}))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Legacy groups are now read-only during the migration.')
+        self.assertNotContains(response, '+ Add Group')
+        self.assertNotContains(response, reverse('vaccines:group_edit', kwargs={'pk': self.dtp_group.pk}))
+
+    def test_legacy_vaccine_create_redirects_without_writing(self):
+        vaccine_count = Vaccine.objects.count()
+
+        response = self.client.post(reverse('vaccines:vaccine_create'), {
+            'name': 'Legacy New',
+            'live': '',
+        }, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'read-only during the series policy migration')
+        self.assertEqual(Vaccine.objects.count(), vaccine_count)
+
+    def test_legacy_group_create_redirects_without_writing(self):
+        group_count = VaccineGroup.objects.count()
+
+        response = self.client.post(reverse('vaccines:group_create'), {
+            'name': 'Legacy Group',
+        }, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'read-only during the series policy migration')
+        self.assertEqual(VaccineGroup.objects.count(), group_count)

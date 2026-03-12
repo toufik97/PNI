@@ -1,0 +1,75 @@
+from datetime import timedelta
+from typing import List
+
+from patients.models import VaccinationRecord
+
+
+class LiveVaccineConstraintService:
+    def __init__(
+        self,
+        *,
+        global_live_rule_key,
+        product_lookup,
+        flag_invalid,
+        build_live_deferral_item,
+    ):
+        self.global_live_rule_key = global_live_rule_key
+        self.product_lookup = product_lookup
+        self.flag_invalid = flag_invalid
+        self.build_live_deferral_item = build_live_deferral_item
+
+    def validate_history(self, records: List[VaccinationRecord], source_global_constraint: str):
+        valid_live = []
+        for record in records:
+            if not record.vaccine.live or record.invalid_flag:
+                continue
+
+            if valid_live:
+                previous = valid_live[-1]
+                gap = (record.date_given - previous.date_given).days
+                if gap < 28:
+                    is_compatible = record.vaccine.compatible_live_vaccines.filter(id=previous.vaccine.id).exists()
+                    if gap == 0 and is_compatible:
+                        pass
+                    else:
+                        self.flag_invalid(
+                            record,
+                            VaccinationRecord.REASON_INTERVAL,
+                            f"Live vax conflict: {record.vaccine.name} given {gap} days after live {previous.vaccine.name}. Standard protocol requires 28-day gap.",
+                            decision_source=source_global_constraint,
+                            rule_key=self.global_live_rule_key,
+                            product=self.product_lookup(record.vaccine),
+                        )
+                        continue
+
+            valid_live.append(record)
+
+    def defer_recommendations(self, records: List[VaccinationRecord], due_today_items, evaluation_date):
+        recent_live_doses = [
+            record for record in records
+            if record.vaccine.live and not record.invalid_flag and (evaluation_date - record.date_given).days < 28
+        ]
+        if not recent_live_doses:
+            return due_today_items, []
+
+        latest_live_date = max(record.date_given for record in recent_live_doses)
+        safe_date = latest_live_date + timedelta(days=28)
+
+        non_deferred_due = []
+        deferred_upcoming = []
+        for item in due_today_items:
+            vaccine = item['vaccine']
+            if vaccine.live:
+                is_compatible = True
+                for record in recent_live_doses:
+                    if not vaccine.compatible_live_vaccines.filter(id=record.vaccine.id).exists():
+                        is_compatible = False
+                        break
+
+                if not is_compatible:
+                    deferred_upcoming.append(self.build_live_deferral_item(item, safe_date, recent_live_doses))
+                    continue
+
+            non_deferred_due.append(item)
+
+        return non_deferred_due, deferred_upcoming

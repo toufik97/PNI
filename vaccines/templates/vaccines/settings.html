@@ -1,4 +1,4 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 {% load vaccine_tags %}
 
 {% block title %}Vaccine Settings{% endblock %}
@@ -242,12 +242,12 @@
     {% endif %}
 
     {% elif active_tab == 'vaccines' %}
-    <div class="d-flex justify-content-between align-items-center mb-3"><div><h4 class="mb-1" style="font-weight:700; color:#22303c;">Legacy Vaccine Schedules</h4><p class="text-muted mb-0">These screens still manage the old per-vaccine schedule model while the transition remains in progress.</p></div><a href="{% url 'vaccines:vaccine_create' %}" class="btn btn-add">+ Add Vaccine</a></div>
-    <div class="warn-box">Legacy vaccines remain editable for backwards compatibility, but new grouped policy work should move into the <strong>Series</strong>, <strong>Versions</strong>, and <strong>Dependencies</strong> tabs.</div>
+    <div class="d-flex justify-content-between align-items-center mb-3"><div><h4 class="mb-1" style="font-weight:700; color:#22303c;">Legacy Vaccine Schedules</h4><p class="text-muted mb-0">These screens still manage the old per-vaccine schedule model while the transition remains in progress.</p></div><span class="badge badge-inactive">Read-only</span></div>
+    <div class="warn-box">Legacy vaccines are now read-only during the migration. New policy work should move into the <strong>Series</strong>, <strong>Versions</strong>, and <strong>Dependencies</strong> tabs.</div>
     {% if vaccines %}
     {% for vaccine in vaccines %}
     <div class="entity-card card">
-        <div class="card-header"><div><h5 class="d-inline">{{ vaccine.name }}</h5>{% if vaccine.live %}<span class="badge badge-live ms-2">Live</span>{% endif %}<span class="badge badge-soft ms-1">{{ vaccine.schedule_rules.count }} dose{{ vaccine.schedule_rules.count|pluralize }}</span>{% if vaccine.catchup_rules.count > 0 %}<span class="badge badge-legacy ms-1">{{ vaccine.catchup_rules.count }} catchup</span>{% endif %}</div><div><a href="{% url 'vaccines:vaccine_edit' vaccine.pk %}" class="btn btn-edit">Edit</a><a href="{% url 'vaccines:vaccine_delete' vaccine.pk %}" class="btn btn-delete ms-1">Delete</a></div></div>
+        <div class="card-header"><div><h5 class="d-inline">{{ vaccine.name }}</h5>{% if vaccine.live %}<span class="badge badge-live ms-2">Live</span>{% endif %}<span class="badge badge-soft ms-1">{{ vaccine.schedule_rules.count }} dose{{ vaccine.schedule_rules.count|pluralize }}</span>{% if vaccine.catchup_rules.count > 0 %}<span class="badge badge-legacy ms-1">{{ vaccine.catchup_rules.count }} catchup</span>{% endif %}</div><div><span class="badge badge-inactive">Read-only</span></div></div>
         <div class="card-body">
             {% if vaccine.schedule_rules.count > 0 %}
             <table class="table table-sm rule-table"><thead><tr><th>Dose #</th><th>Min Age</th><th>Recommended</th><th>Max Age</th><th>Min Interval</th></tr></thead><tbody>{% for rule in vaccine.schedule_rules.all %}<tr><td>{{ rule.dose_number }}</td><td>{{ rule.min_age_days|humanize_days }} <small class="text-muted">({{ rule.min_age_days }}d)</small></td><td>{{ rule.recommended_age_days|humanize_days }} <small class="text-muted">({{ rule.recommended_age_days }}d)</small></td><td>{% if rule.max_age_days %}{{ rule.max_age_days|humanize_days }} <small class="text-muted">({{ rule.max_age_days }}d)</small>{% else %}<span class="text-muted">-</span>{% endif %}</td><td>{{ rule.min_interval_days|humanize_days }} <small class="text-muted">({{ rule.min_interval_days }}d)</small></td></tr>{% endfor %}</tbody></table>
@@ -258,12 +258,12 @@
     {% else %}<div class="empty-state"><p>No legacy vaccines configured yet.</p></div>{% endif %}
 
     {% elif active_tab == 'groups' %}
-    <div class="d-flex justify-content-between align-items-center mb-3"><div><h4 class="mb-1" style="font-weight:700; color:#22303c;">Legacy Vaccine Groups</h4><p class="text-muted mb-0">These remain visible while their policies are mirrored into the new series model.</p></div><a href="{% url 'vaccines:group_create' %}" class="btn btn-add">+ Add Group</a></div>
-    <div class="warn-box">Group rules are now a migration bridge. New grouped scheduling logic should be authored in <strong>Series</strong>, <strong>Versions</strong>, and <strong>Dependencies</strong> instead.</div>
+    <div class="d-flex justify-content-between align-items-center mb-3"><div><h4 class="mb-1" style="font-weight:700; color:#22303c;">Legacy Vaccine Groups</h4><p class="text-muted mb-0">These remain visible while their policies are mirrored into the new series model.</p></div><span class="badge badge-inactive">Read-only</span></div>
+    <div class="warn-box">Legacy groups are now read-only during the migration. New grouped scheduling logic should be authored in <strong>Series</strong>, <strong>Versions</strong>, and <strong>Dependencies</strong> instead.</div>
     {% if groups %}
     {% for group in groups %}
     <div class="entity-card card">
-        <div class="card-header"><div><h5 class="d-inline">{{ group.name }}</h5><span class="badge badge-soft ms-2">Interval {{ group.min_valid_interval_days }}d</span></div><div><a href="{% url 'vaccines:group_edit' group.pk %}" class="btn btn-edit">Edit</a><a href="{% url 'vaccines:group_delete' group.pk %}" class="btn btn-delete ms-1">Delete</a></div></div>
+        <div class="card-header"><div><h5 class="d-inline">{{ group.name }}</h5><span class="badge badge-soft ms-2">Interval {{ group.min_valid_interval_days }}d</span></div><div><span class="badge badge-inactive">Read-only</span></div></div>
         <div class="card-body">
             <div class="inline-chips mb-3">{% for vaccine in group.vaccines.all %}<span class="badge badge-chip">{{ vaccine.name }}</span>{% endfor %}</div>
             {% if group.rules.count > 0 %}
@@ -285,3 +285,4 @@
     {% endif %}
 </div>
 {% endblock %}
+
