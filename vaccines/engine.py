@@ -2,7 +2,9 @@ from datetime import date, timedelta
 from typing import Any, Dict, List, Optional
 
 from patients.models import Child, VaccinationRecord
+from vaccines.history_normalizer import HistoryNormalizer
 from vaccines.models import CatchupRule, PolicyVersion, Product, ScheduleRule, Series, Vaccine, VaccineGroup
+from vaccines.series_validator import SeriesHistoryValidator
 
 
 class VaccinationEngine:
@@ -31,6 +33,8 @@ class VaccinationEngine:
         self.age_months = self.age_days / 30.44
         self.age_years = self.age_days / 365.25
         self.records = list(self.child.vaccination_records.all().order_by('date_given'))
+        self.history = HistoryNormalizer(self.child, self.records)
+        self.records = self.history.records
         self.vaccines = Vaccine.objects.all()
         self.series_history_cache: Dict[int, List[VaccinationRecord]] = {}
         self.invalid_history: List[Dict[str, Any]] = []
@@ -305,10 +309,7 @@ class VaccinationEngine:
         return (item['vaccine'], item['target_date'], item['dose_number'])
 
     def _group_history(self) -> Dict[str, List[VaccinationRecord]]:
-        history = {}
-        for record in self.records:
-            history.setdefault(record.vaccine.id, []).append(record)
-        return history
+        return self.history.history_by_vaccine
 
     def _product_for_vaccine(self, vaccine: Vaccine):
         try:
@@ -466,7 +467,7 @@ class VaccinationEngine:
                 if record.invalid_flag:
                     continue
 
-                age_at_dose = (record.date_given - self.child.dob).days
+                age_at_dose = self.history.age_at_dose(record)
                 dose_num = len(valid_records) + 1
                 rule = ScheduleRule.objects.filter(vaccine_id=vaccine_id, dose_number=dose_num).first()
                 product = self._product_for_vaccine(record.vaccine)
@@ -543,82 +544,8 @@ class VaccinationEngine:
             valid_live.append(record)
 
     def _validate_series_history(self, series: Series, history_by_vaccine: Dict[str, List[VaccinationRecord]]) -> List[VaccinationRecord]:
-        from patients.models import VaccinationRecord as VR
-
-        series_vaccine_ids = {link.product.vaccine_id for link in series.series_products.all()}
-        if not series_vaccine_ids:
-            return []
-
-        series_records = []
-        for vaccine_id in series_vaccine_ids:
-            if vaccine_id in history_by_vaccine:
-                series_records.extend([
-                    record for record in history_by_vaccine[vaccine_id]
-                    if not record.invalid_flag
-                ])
-        series_records.sort(key=lambda record: record.date_given)
-
-        valid_records = []
-        for record in series_records:
-            age_at_dose = (record.date_given - self.child.dob).days
-            slot_number = len(valid_records) + 1
-            product = self._product_for_vaccine(record.vaccine)
-
-            if valid_records:
-                previous = valid_records[-1]
-                days_since = (record.date_given - previous.date_given).days
-                if days_since < series.min_valid_interval_days:
-                    self._flag_invalid(
-                        record,
-                        VR.REASON_INTERVAL,
-                        f"Too soon: Must wait {series.min_valid_interval_days} days between {series.name} doses. Only {days_since} days elapsed since last dose.",
-                        decision_source=self.SOURCE_SERIES_RULE,
-                        rule_key=self._series_interval_rule_key(series, slot_number),
-                        series=series,
-                        product=product,
-                        slot_number=slot_number,
-                    )
-                    continue
-
-            candidates = self._series_age_candidates(series, len(valid_records), age_at_dose)
-            candidates = self._filter_series_candidates(series, candidates, valid_records)
-
-            if candidates:
-                matching_candidates = [rule for rule in candidates if rule.product.vaccine_id == record.vaccine.id]
-                if not matching_candidates:
-                    age_months = round(age_at_dose / 30.44, 1)
-                    allowed = ', '.join(sorted({rule.product.vaccine.name for rule in candidates}))
-                    self._flag_invalid(
-                        record,
-                        VR.REASON_WRONG_VACCINE,
-                        f"Wrong vaccine: {record.vaccine.name} was given at {age_months} months, but allowed products for slot {slot_number} are {allowed}.",
-                        decision_source=self.SOURCE_SERIES_RULE,
-                        rule_key=self._series_candidate_rule_key(series, slot_number),
-                        series=series,
-                        product=product,
-                        slot_number=slot_number,
-                    )
-                    continue
-            else:
-                future_rule = self._first_series_future_rule(series, len(valid_records), valid_records, reference_age_days=age_at_dose)
-                if future_rule:
-                    age_months = round(age_at_dose / 30.44, 1)
-                    min_months = round(future_rule.min_age_days / 30.44, 1)
-                    self._flag_invalid(
-                        record,
-                        VR.REASON_TOO_EARLY,
-                        f"Too early: {record.vaccine.name} slot {future_rule.slot_number} requires min age {min_months} months. Child was {age_months} months old.",
-                        decision_source=self.SOURCE_SERIES_RULE,
-                        rule_key=self._series_rule_key(future_rule),
-                        series=series,
-                        product=product,
-                        slot_number=future_rule.slot_number,
-                    )
-                    continue
-
-            valid_records.append(record)
-
-        return valid_records
+        validator = SeriesHistoryValidator(self, history_by_vaccine)
+        return validator.validate(series)
 
     def _recommend_series(self, series: Series) -> Dict[str, Any]:
         result = {
@@ -886,7 +813,7 @@ class VaccinationEngine:
 
         valid_group_records = []
         for index, record in enumerate(group_records):
-            age_at_dose = (record.date_given - self.child.dob).days
+            age_at_dose = self.history.age_at_dose(record)
             slot_number = len(valid_group_records) + 1
             product = self._product_for_vaccine(record.vaccine)
 
