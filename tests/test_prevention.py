@@ -1,7 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 
-from vaccines.models import DependencyRule, GroupRule, Product, ScheduleRule, Series, SeriesProduct, SeriesRule, Vaccine, VaccineGroup
+from vaccines.models import DependencyRule, GroupRule, Product, ScheduleRule, Series, SeriesProduct, SeriesRule, SeriesTransitionRule, Vaccine, VaccineGroup
 
 
 class TestModelValidationPrevention(TestCase):
@@ -144,6 +144,38 @@ class TestModelValidationPrevention(TestCase):
         with self.assertRaises(ValidationError) as cm:
             invalid_rule.full_clean()
         self.assertIn("anchor slots that exist", str(cm.exception))
+
+    def test_transition_rule_requires_destination_slot_coverage(self):
+        vaccine_a = Vaccine.objects.create(name="Transition Slot A")
+        vaccine_b = Vaccine.objects.create(name="Transition Slot B")
+        product_a = Product.objects.create(vaccine=vaccine_a)
+        product_b = Product.objects.create(vaccine=vaccine_b)
+        series = Series.objects.create(name="Transition Slot Coverage")
+        SeriesProduct.objects.create(series=series, product=product_a, priority=0)
+        SeriesProduct.objects.create(series=series, product=product_b, priority=1)
+        SeriesRule.objects.create(
+            series=series,
+            slot_number=1,
+            prior_valid_doses=0,
+            product=product_a,
+            min_age_days=10,
+            recommended_age_days=10,
+            overdue_age_days=20,
+            min_interval_days=0,
+        )
+
+        invalid_transition = SeriesTransitionRule(
+            series=series,
+            from_product=product_a,
+            to_product=product_b,
+            start_slot_number=2,
+            end_slot_number=3,
+            active=True,
+        )
+
+        with self.assertRaises(ValidationError) as cm:
+            invalid_transition.full_clean()
+        self.assertIn("destination product", str(cm.exception))
 
     def test_dependency_rule_direct_cycle_prevention(self):
         vaccine_a = Vaccine.objects.create(name="Cycle Series A")

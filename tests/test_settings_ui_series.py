@@ -51,7 +51,7 @@ class TestSeriesSettingsUI(BaseVaccinationTestCase):
             'products-0-priority': '0',
             'products-1-product': str(self.product_map['DTC'].pk),
             'products-1-priority': '1',
-            'rules-TOTAL_FORMS': '1',
+            'rules-TOTAL_FORMS': '2',
             'rules-INITIAL_FORMS': '0',
             'rules-MIN_NUM_FORMS': '0',
             'rules-MAX_NUM_FORMS': '1000',
@@ -65,6 +65,16 @@ class TestSeriesSettingsUI(BaseVaccinationTestCase):
             'rules-0-min_interval_days': '0',
             'rules-0-dose_amount': '0.5ml',
             'rules-0-notes': 'Starter slot',
+            'rules-1-slot_number': '2',
+            'rules-1-prior_valid_doses': '1',
+            'rules-1-product': str(self.product_map['DTC'].pk),
+            'rules-1-min_age_days': '90',
+            'rules-1-recommended_age_days': '90',
+            'rules-1-overdue_age_days': '120',
+            'rules-1-max_age_days': '',
+            'rules-1-min_interval_days': '28',
+            'rules-1-dose_amount': '0.5ml',
+            'rules-1-notes': 'DTC slot for switch validation',
             'transitions-TOTAL_FORMS': '1',
             'transitions-INITIAL_FORMS': '0',
             'transitions-MIN_NUM_FORMS': '0',
@@ -81,9 +91,9 @@ class TestSeriesSettingsUI(BaseVaccinationTestCase):
         self.assertEqual(response.status_code, 302)
         series = Series.objects.get(code='pneumo')
         self.assertEqual(series.series_products.count(), 2)
-        self.assertEqual(series.rules.count(), 1)
+        self.assertEqual(series.rules.count(), 2)
         self.assertEqual(series.transition_rules.count(), 1)
-        rule = SeriesRule.objects.get(series=series)
+        rule = SeriesRule.objects.get(series=series, slot_number=1)
         self.assertEqual(rule.product.vaccine.name, 'Penta')
         transition = SeriesTransitionRule.objects.get(series=series)
         self.assertEqual(transition.from_product.vaccine.name, 'Penta')
@@ -108,6 +118,16 @@ class TestSeriesSettingsUI(BaseVaccinationTestCase):
             recommended_age_days=60,
             overdue_age_days=75,
             min_interval_days=0,
+            dose_amount='0.5ml',
+        )
+        rule_dtc = series.rules.create(
+            slot_number=2,
+            prior_valid_doses=1,
+            product=self.product_map['DTC'],
+            min_age_days=90,
+            recommended_age_days=90,
+            overdue_age_days=120,
+            min_interval_days=28,
             dose_amount='0.5ml',
         )
         transition = series.transition_rules.create(
@@ -142,8 +162,8 @@ class TestSeriesSettingsUI(BaseVaccinationTestCase):
             'products-1-priority': '1',
             'products-2-product': str(self.product_map['Td'].pk),
             'products-2-priority': '2',
-            'rules-TOTAL_FORMS': '1',
-            'rules-INITIAL_FORMS': '1',
+            'rules-TOTAL_FORMS': '3',
+            'rules-INITIAL_FORMS': '2',
             'rules-MIN_NUM_FORMS': '0',
             'rules-MAX_NUM_FORMS': '1000',
             'rules-0-id': str(rule.pk),
@@ -158,6 +178,28 @@ class TestSeriesSettingsUI(BaseVaccinationTestCase):
             'rules-0-min_interval_days': '0',
             'rules-0-dose_amount': '0.5ml',
             'rules-0-notes': 'Updated starter slot',
+            'rules-1-id': str(rule_dtc.pk),
+            'rules-1-series': str(series.pk),
+            'rules-1-slot_number': '2',
+            'rules-1-prior_valid_doses': '1',
+            'rules-1-product': str(self.product_map['DTC'].pk),
+            'rules-1-min_age_days': '90',
+            'rules-1-recommended_age_days': '90',
+            'rules-1-overdue_age_days': '130',
+            'rules-1-max_age_days': '',
+            'rules-1-min_interval_days': '28',
+            'rules-1-dose_amount': '0.5ml',
+            'rules-1-notes': 'Updated DTC slot',
+            'rules-2-slot_number': '4',
+            'rules-2-prior_valid_doses': '3',
+            'rules-2-product': str(self.product_map['Td'].pk),
+            'rules-2-min_age_days': '365',
+            'rules-2-recommended_age_days': '365',
+            'rules-2-overdue_age_days': '400',
+            'rules-2-max_age_days': '',
+            'rules-2-min_interval_days': '180',
+            'rules-2-dose_amount': '0.5ml',
+            'rules-2-notes': 'Td fallback slot',
             'transitions-TOTAL_FORMS': '2',
             'transitions-INITIAL_FORMS': '1',
             'transitions-MIN_NUM_FORMS': '0',
@@ -226,7 +268,7 @@ class TestSeriesSettingsUI(BaseVaccinationTestCase):
             'products-0-priority': '0',
             'products-1-product': str(self.product_map['DTC'].pk),
             'products-1-priority': '1',
-            'rules-TOTAL_FORMS': '1',
+            'rules-TOTAL_FORMS': '2',
             'rules-INITIAL_FORMS': '0',
             'rules-MIN_NUM_FORMS': '0',
             'rules-MAX_NUM_FORMS': '1000',
@@ -240,6 +282,16 @@ class TestSeriesSettingsUI(BaseVaccinationTestCase):
             'rules-0-min_interval_days': '0',
             'rules-0-dose_amount': '0.5ml',
             'rules-0-notes': 'Starter slot',
+            'rules-1-slot_number': '2',
+            'rules-1-prior_valid_doses': '1',
+            'rules-1-product': str(self.product_map['DTC'].pk),
+            'rules-1-min_age_days': '90',
+            'rules-1-recommended_age_days': '90',
+            'rules-1-overdue_age_days': '120',
+            'rules-1-max_age_days': '',
+            'rules-1-min_interval_days': '28',
+            'rules-1-dose_amount': '0.5ml',
+            'rules-1-notes': 'DTC slot for switch validation',
             'transitions-TOTAL_FORMS': '2',
             'transitions-INITIAL_FORMS': '0',
             'transitions-MIN_NUM_FORMS': '0',
@@ -263,6 +315,54 @@ class TestSeriesSettingsUI(BaseVaccinationTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Active transition rules cannot overlap for the same source, destination, and availability condition.')
         self.assertFalse(Series.objects.filter(code='pneumo').exists())
+
+    def test_series_create_rejects_transition_without_destination_slot_rule(self):
+        response = self.client.post(reverse('vaccines:series_create'), {
+            'name': 'Pneumo Impossible Transition',
+            'code': 'pneumo-impossible-transition',
+            'description': 'Pneumococcal series',
+            'active': 'on',
+            'mixing_policy': Series.MIXING_STRICT,
+            'min_valid_interval_days': '15',
+            'legacy_group': '',
+            'products-TOTAL_FORMS': '2',
+            'products-INITIAL_FORMS': '0',
+            'products-MIN_NUM_FORMS': '0',
+            'products-MAX_NUM_FORMS': '1000',
+            'products-0-product': str(self.product_map['Penta'].pk),
+            'products-0-priority': '0',
+            'products-1-product': str(self.product_map['DTC'].pk),
+            'products-1-priority': '1',
+            'rules-TOTAL_FORMS': '1',
+            'rules-INITIAL_FORMS': '0',
+            'rules-MIN_NUM_FORMS': '0',
+            'rules-MAX_NUM_FORMS': '1000',
+            'rules-0-slot_number': '1',
+            'rules-0-prior_valid_doses': '0',
+            'rules-0-product': str(self.product_map['Penta'].pk),
+            'rules-0-min_age_days': '60',
+            'rules-0-recommended_age_days': '60',
+            'rules-0-overdue_age_days': '75',
+            'rules-0-max_age_days': '',
+            'rules-0-min_interval_days': '0',
+            'rules-0-dose_amount': '0.5ml',
+            'rules-0-notes': 'Starter slot only',
+            'transitions-TOTAL_FORMS': '1',
+            'transitions-INITIAL_FORMS': '0',
+            'transitions-MIN_NUM_FORMS': '0',
+            'transitions-MAX_NUM_FORMS': '1000',
+            'transitions-0-from_product': str(self.product_map['Penta'].pk),
+            'transitions-0-to_product': str(self.product_map['DTC'].pk),
+            'transitions-0-start_slot_number': '2',
+            'transitions-0-end_slot_number': '3',
+            'transitions-0-allow_if_unavailable': '',
+            'transitions-0-active': 'on',
+            'transitions-0-notes': 'No DTC slot exists in this range',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Transition rules must target at least one slot that already allows the destination product.')
+        self.assertFalse(Series.objects.filter(code='pneumo-impossible-transition').exists())
 
     def test_legacy_vaccine_tab_is_read_only(self):
         response = self.client.get(reverse('vaccines:settings_tab', kwargs={'tab': 'vaccines'}))
@@ -302,8 +402,3 @@ class TestSeriesSettingsUI(BaseVaccinationTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'read-only during the series policy migration')
         self.assertEqual(VaccineGroup.objects.count(), group_count)
-
-
-
-
-

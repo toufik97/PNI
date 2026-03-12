@@ -158,6 +158,9 @@
             {{ transition_formset.management_form }}
             {% for tform in transition_formset %}
             <div class="formset-row">
+                {% if tform.non_field_errors %}
+                <ul class="errorlist">{% for e in tform.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                {% endif %}
                 {% if tform.instance.pk %}{{ tform.DELETE }}{% endif %}
                 <div class="row g-2 align-items-start">
                     {% for field in tform.visible_fields %}
@@ -185,4 +188,3 @@
     </form>
 </div>
 {% endblock %}
-
