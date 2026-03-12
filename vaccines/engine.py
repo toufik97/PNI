@@ -765,27 +765,16 @@ class VaccinationEngine:
         rule = valid_rules[-1]
         vaccine_to_give = rule.vaccine_to_give
         product = self._product_for_vaccine(vaccine_to_give)
-        standard_rule = ScheduleRule.objects.filter(
-            vaccine=vaccine_to_give,
-            dose_number=prior_doses + 1,
-        ).first()
 
-        if prior_doses == 0 and standard_rule:
-            target_date = self.child.dob + timedelta(days=standard_rule.recommended_age_days)
-        elif last_dose_date:
+        if last_dose_date:
             interval_date = last_dose_date + timedelta(days=rule.min_interval_days)
-            age_floor = standard_rule.min_age_days if standard_rule else rule.min_age_days
-            age_floor_date = self.child.dob + timedelta(days=age_floor)
+            age_floor_date = self.child.dob + timedelta(days=rule.min_age_days)
             target_date = max(interval_date, age_floor_date)
         else:
             target_date = self.child.dob + timedelta(days=rule.min_age_days)
 
-        dose_val = rule.dose_amount or (standard_rule.dose_amount if standard_rule else None)
-        overdue_age = rule.max_age_days
-        if standard_rule:
-            overdue_age = standard_rule.overdue_age_days if standard_rule.overdue_age_days is not None else standard_rule.recommended_age_days
-
-        overdue_date = self.child.dob + timedelta(days=overdue_age) if overdue_age is not None else target_date
+        dose_val = rule.dose_amount
+        overdue_date = self.child.dob + timedelta(days=rule.max_age_days) if rule.max_age_days is not None else target_date
         rule_key = self._group_rule_key(group, rule, prior_doses + 1)
 
         if self.evaluation_date > overdue_date:
@@ -831,13 +820,3 @@ class VaccinationEngine:
             ))
 
         return result
-
-
-
-
-
-
-
-
-
-
