@@ -1,4 +1,4 @@
-﻿from typing import Dict, List
+from typing import Dict, List
 
 from patients.models import VaccinationRecord
 from vaccines.models import Series
@@ -83,6 +83,23 @@ class SeriesHistoryValidator:
                     )
                     continue
 
+                slot_rules = series.rules.filter(slot_number=slot_number)
+                too_late_rules = [rule for rule in slot_rules if rule.max_age_days is not None and age_at_dose > rule.max_age_days]
+                if too_late_rules:
+                    age_months = round(age_at_dose / 30.44, 1)
+                    self.engine._flag_invalid(
+                        record,
+                        VR.REASON_TOO_LATE,
+                        f"Too late: {record.vaccine.name} given at {age_months} months, but maximum age for this series slot is {round(max(r.max_age_days for r in too_late_rules)/30.44, 1)} months.",
+                        decision_source=self.engine.SOURCE_SERIES_RULE,
+                        rule_key=self.engine._series_candidate_rule_key(series, slot_number),
+                        series=series,
+                        product=product,
+                        slot_number=slot_number,
+                    )
+                    continue
+
             valid_records.append(record)
 
         return valid_records
+

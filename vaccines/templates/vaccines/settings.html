@@ -305,14 +305,8 @@
     {% else %}
     <div class="empty-state"><p class="mb-2">No policy versions configured yet.</p><a href="{% url 'vaccines:policy_version_create' %}" class="btn btn-add">Add Your First Version</a></div>
     {% endif %}
-    {% else %}
-    <div class="info-box">The app is now transitioning toward a full product/series/dependency policy model with versioned releases. Use the steps below when adding new schedules like Pneumo.</div>
-    <div class="guide-step"><strong>1.</strong> Create concrete administered items in <strong>Products</strong>, including whether each one is currently available.</div>
-    <div class="guide-step"><strong>2.</strong> Create or choose a <strong>Policy Version</strong> for the rollout you are editing.</div>
-    <div class="guide-step"><strong>3.</strong> Create the clinical protection track in <strong>Series</strong> and attach it to that version.</div>
-    <div class="guide-step"><strong>4.</strong> Link all allowed products to the series and add slot rules for each product path.</div>
-    <div class="guide-step"><strong>5.</strong> Add transition rules when product switching is clinically allowed or should be limited to stock outages.</div>
-    <div class="guide-step"><strong>6.</strong> Add <strong>Dependencies</strong> for cross-series timing, such as "Pneumo after DTP + 15 days".</div>
+    {% elif active_tab == 'guide' %}
+        {% include "vaccines/guide_content.html" %}
     {% endif %}
 </div>
 {% endblock %}

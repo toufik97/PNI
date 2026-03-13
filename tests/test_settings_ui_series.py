@@ -125,15 +125,14 @@ class TestSeriesSettingsUI(BaseVaccinationTestCase):
         self.assertEqual(transition.to_product.vaccine.name, 'DTC')
         self.assertTrue(transition.allow_if_unavailable)
 
-    def test_series_create_ignores_posted_legacy_group_bridge(self):
+    def test_series_create_ignores_posted_legacy_field(self):
         response = self.client.post(reverse('vaccines:series_create'), {
-            'name': 'Pneumo Legacy Bridge',
-            'code': 'pneumo-legacy-bridge',
+            'name': 'Pneumo No Legacy',
+            'code': 'pneumo-no-legacy',
             'description': 'Pneumococcal series',
             'active': 'on',
             'mixing_policy': Series.MIXING_FLEXIBLE,
             'min_valid_interval_days': '15',
-            'legacy_group': str(self.dtp_group.pk),
             'products-TOTAL_FORMS': '1',
             'products-INITIAL_FORMS': '0',
             'products-MIN_NUM_FORMS': '0',
@@ -161,8 +160,8 @@ class TestSeriesSettingsUI(BaseVaccinationTestCase):
         })
 
         self.assertEqual(response.status_code, 302)
-        series = Series.objects.get(code='pneumo-legacy-bridge')
-        self.assertIsNone(series.legacy_group)
+        series = Series.objects.get(code='pneumo-no-legacy')
+        self.assertTrue(series.active)
 
     def test_series_edit_updates_transition_rules(self):
         series = Series.objects.create(
@@ -428,41 +427,4 @@ class TestSeriesSettingsUI(BaseVaccinationTestCase):
         self.assertContains(response, 'Transition rules must target at least one slot that already allows the destination product.')
         self.assertFalse(Series.objects.filter(code='pneumo-impossible-transition').exists())
 
-    def test_legacy_vaccine_tab_is_read_only(self):
-        response = self.client.get(reverse('vaccines:settings_tab', kwargs={'tab': 'vaccines'}))
 
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Legacy vaccines are now read-only during the migration.')
-        self.assertNotContains(response, '+ Add Vaccine')
-        self.assertNotContains(response, reverse('vaccines:vaccine_edit', kwargs={'pk': self.penta.pk}))
-
-    def test_legacy_group_tab_is_read_only(self):
-        response = self.client.get(reverse('vaccines:settings_tab', kwargs={'tab': 'groups'}))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Legacy groups are now read-only during the migration.')
-        self.assertNotContains(response, '+ Add Group')
-        self.assertNotContains(response, reverse('vaccines:group_edit', kwargs={'pk': self.dtp_group.pk}))
-
-    def test_legacy_vaccine_create_redirects_without_writing(self):
-        vaccine_count = Vaccine.objects.count()
-
-        response = self.client.post(reverse('vaccines:vaccine_create'), {
-            'name': 'Legacy New',
-            'live': '',
-        }, follow=True)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'read-only during the series policy migration')
-        self.assertEqual(Vaccine.objects.count(), vaccine_count)
-
-    def test_legacy_group_create_redirects_without_writing(self):
-        group_count = VaccineGroup.objects.count()
-
-        response = self.client.post(reverse('vaccines:group_create'), {
-            'name': 'Legacy Group',
-        }, follow=True)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'read-only during the series policy migration')
-        self.assertEqual(VaccineGroup.objects.count(), group_count)

@@ -294,27 +294,61 @@ class DependencyRule(models.Model):
                 raise ValidationError("Dependency rules can only reference anchor slots that exist in the anchor series.")
 
             if self.block_if_anchor_missing:
-                reciprocal_rules = DependencyRule.objects.filter(
-                    dependent_series_id=self.anchor_series_id,
-                    anchor_series_id=self.dependent_series_id,
-                    block_if_anchor_missing=True,
-                    active=True,
-                ).exclude(pk=self.pk)
-                for reciprocal_rule in reciprocal_rules:
-                    dependent_slot_matches = (
-                        self.dependent_slot_number is None
-                        or reciprocal_rule.anchor_slot_number is None
-                        or self.dependent_slot_number == reciprocal_rule.anchor_slot_number
+                # Transitive cycle detection
+                if self.is_transitive_cycle(self.dependent_series, self.anchor_series):
+                    raise ValidationError(
+                        "Dependency rules cannot create a blocking cycle across multiple series slots."
                     )
-                    anchor_slot_matches = (
-                        self.anchor_slot_number is None
-                        or reciprocal_rule.dependent_slot_number is None
-                        or self.anchor_slot_number == reciprocal_rule.dependent_slot_number
-                    )
-                    if dependent_slot_matches and anchor_slot_matches:
-                        raise ValidationError(
-                            "Dependency rules cannot create a direct blocking cycle between two series slots."
-                        )
+
+    def is_transitive_cycle(self, dependent, anchor):
+        """Standard DFS to find if there is a path from dependent to anchor."""
+        visited = {dependent.id}
+        stack = [dependent]
+        
+        while stack:
+            current = stack.pop()
+            if current.id == anchor.id:
+                return True
+            
+            # Find all rules where 'current' is the ANCHOR (blocking something else)
+            # Actually we want to see if we can reach 'anchor' from 'dependent'
+            # But wait, the rule is dependent -> anchor.
+            # A cycle is dependent -> anchor -> ... -> dependent.
+            # So we check if there's already a path from anchor to dependent.
+            
+        # Let's use a more robust helper
+        return self._has_path(anchor, dependent)
+
+    def _has_path(self, start_series, target_series):
+        visited = set()
+        stack = [start_series.id]
+        
+        while stack:
+            current_id = stack.pop()
+            if current_id == target_series.id:
+                return True
+            
+            if current_id in visited:
+                continue
+            visited.add(current_id)
+            
+            # Follow the dependency chain: if current_id depends on something, 
+            # we want to follow THAT something.
+            # Wait, no. A cycle exists if target is already reachable from start? 
+            # If we add B -> A, we check if A -> ... -> B already exists.
+            # A -> ... -> B means A depends on something that depends on B.
+            # So from current_node, we look for rules where current_node is the DEPENDENT.
+            next_ids = DependencyRule.objects.filter(
+                dependent_series_id=current_id,
+                block_if_anchor_missing=True,
+                active=True
+            ).values_list('anchor_series_id', flat=True)
+            
+            for nid in next_ids:
+                if nid not in visited:
+                    stack.append(nid)
+        return False
+
 
 
 class GlobalConstraintRule(models.Model):

@@ -1,0 +1,129 @@
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm border-0" style="background: #f0f7ff;">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-primary text-white rounded-circle p-2 me-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                        <i class="bi bi-diagram-3-fill"></i>1
+                    </div>
+                    <h5 class="card-title mb-0" style="color: #204a87; font-weight: 700;">Products</h5>
+                </div>
+                <p class="card-text small text-muted">A <strong>Product</strong> is the concrete thing you stick in the arm (e.g., "Penta" or "DTC"). Products define <strong>availability</strong> and live/dead status.</p>
+                <ul class="small ps-3 mb-0">
+                    <li>Link to Legacy Vaccines</li>
+                    <li>Track current stock/availability</li>
+                    <li>Define live status for spacing</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm border-0" style="background: #eefaf3;">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-success text-white rounded-circle p-2 me-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                        <i class="bi bi-stack"></i>2
+                    </div>
+                    <h5 class="card-title mb-0" style="color: #2f855a; font-weight: 700;">Series</h5>
+                </div>
+                <p class="card-text small text-muted">A <strong>Series</strong> is a clinical goal (e.g., "DTP Protection"). It groups multiple products and defines the track rules.</p>
+                <ul class="small ps-3 mb-0">
+                    <li>Manage slot numbers (1, 2, 3...)</li>
+                    <li>Define mixing policies (Strict/Flexible)</li>
+                    <li>Version your clinical logic</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm border-0" style="background: #fff8f0;">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-warning text-white rounded-circle p-2 me-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                        <i class="bi bi-list-check"></i>3
+                    </div>
+                    <h5 class="card-title mb-0" style="color: #c05621; font-weight: 700;">Rules</h5>
+                </div>
+                <p class="card-text small text-muted"><strong>Rules</strong> define the "When" and "Where". Each slot has specific age floors, targets, and intervals.</p>
+                <ul class="small ps-3 mb-0">
+                    <li>Age floors (Min Age)</li>
+                    <li>Recommended dates</li>
+                    <li>Overdue (Missing) thresholds</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-5">
+    <h4 style="font-weight: 700; color: #204a87;" class="mb-4">How It Works: The Decision Engine</h4>
+    <div class="info-box">
+        The PNI engine doesn't just look for "the next dose". It evaluates all active series for a child and determines which slots are <strong>eligible</strong>, <strong>due</strong>, <strong>upcoming</strong>, or <strong>blocked</strong>.
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-lg-7">
+            <h5 class="fw-bold"><i class="bi bi-search me-2"></i>Slot Resolution Path</h5>
+            <ol class="mt-3">
+                <li class="mb-3">
+                    <strong>Filter by Age:</strong> For each series, identify the next unfinished slot (e.g., Slot 2). Look for rules matching the child's current age.
+                </li>
+                <li class="mb-3">
+                    <strong>Availability Check:</strong> If multiple products are valid for the current age (e.g., Penta and DTC), the engine prioritizes <strong>Available</strong> products.
+                </li>
+                <li class="mb-3">
+                    <strong>Continuity Check:</strong> If the child started with Product X, <strong>Transition Rules</strong> determine if switching to Product Y is allowed (due to age or outages).
+                </li>
+                <li class="mb-3">
+                    <strong>Dependency Evaluation:</strong> Even if a dose is due by age, it might be <strong>Blocked</strong> until another series reaches a specific slot (e.g., "Wait for DTP1").
+                </li>
+            </ol>
+        </div>
+        <div class="col-lg-5">
+            <div class="card bg-light border-0">
+                <div class="card-body">
+                    <h6 class="fw-bold mb-3">Status Definitions</h6>
+                    <div class="mb-2"><span class="badge bg-success me-2">Due Today</span> Recommended age met and all constraints clear.</div>
+                    <div class="mb-2"><span class="badge bg-info text-dark me-2">Upcoming</span> Not yet age-eligible, or waiting for an interval.</div>
+                    <div class="mb-2"><span class="badge bg-danger me-2">Missing</span> Past the "overdue" age threshold without a record.</div>
+                    <div class="mb-2"><span class="badge bg-secondary me-2">Blocked</span> Clinically ready, but waiting for a Dependency or Stock.</div>
+                    <div class="mb-2"><span class="badge bg-warning text-dark me-2">Invalid</span> Given too early or at a wrong interval.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-5">
+    <h4 style="font-weight: 700; color: #204a87;" class="mb-4">Tutorial: Adding a New Vaccine (e.g. Pneumo)</h4>
+    <div class="entity-card card">
+        <div class="card-body">
+            <div class="step-container">
+                <div class="guide-step">
+                    <strong>Phase 1: Defining Products</strong>
+                    <p class="mb-0 mt-2">Go to the <strong>Products</strong> tab. Create products for each brand (e.g., "PCV13", "PPSV23"). Mark if they are currently in stock. Stock status can be changed anytime without editing the clinical policy.</p>
+                </div>
+                <div class="guide-step">
+                    <strong>Phase 2: Creating the Track</strong>
+                    <p class="mb-0 mt-2">Go to <strong>Series</strong> and create "Pneumo Series". Set the <strong>Mixing Policy</strong> to "Flexible" if brands can be interchanged, or "Strict" if you must finish with what you started.</p>
+                </div>
+                <div class="guide-step">
+                    <strong>Phase 3: Slot Rules</strong>
+                    <p class="mb-0 mt-2">Inside the Series, add rules for Slot 1, 2, and 3. Each rule links a product to an age window (e.g., Slot 1 at 2 months). <strong>Tip:</strong> If Slot 1 can be either PCV13 or PCV15, add TWO rules for slot 1.</p>
+                </div>
+                <div class="guide-step">
+                    <strong>Phase 4: Safety Spacing</strong>
+                    <p class="mb-0 mt-2">If Pneumo must wait for a DTP dose, go to <strong>Dependencies</strong>. Add a rule: <em>Dependent Series: Pneumo / Anchor: DTP / Offset: 14 days</em>. This ensures the scheduler never double-books them too close.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-5 mb-5">
+    <h4 style="font-weight: 700; color: #204a87;" class="mb-4">Transitioning from Legacy</h4>
+    <div class="warn-box">
+        <strong>Important:</strong> The old "Schedule Rules" and "Vaccine Groups" have been decommissioned. All legacy logic has been migrated into the <strong>Series</strong> model. 
+        Legacy "Vaccines" (e.g. Penta) are now linked 1:1 with "Products".
+    </div>
+</div>

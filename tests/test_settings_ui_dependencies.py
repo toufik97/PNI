@@ -119,7 +119,7 @@ class TestDependencySettingsUI(BaseVaccinationTestCase):
         })
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Dependency rules cannot create a direct blocking cycle between two series slots.')
+        self.assertContains(response, 'Dependency rules cannot create a blocking cycle across multiple series slots.')
         self.assertEqual(DependencyRule.objects.filter(dependent_series=rota, anchor_series=pneumo).count(), 0)
 
     def test_dependency_create_rejects_transitive_blocking_cycle(self):

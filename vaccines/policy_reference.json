@@ -271,7 +271,7 @@
                     "product": "RR",
                     "min_age_days": 270,
                     "recommended_age_days": 270,
-                    "overdue_age_days": 365,
+                    "overdue_age_days": 270,
                     "max_age_days": null,
                     "min_interval_days": 0
                 },
@@ -303,7 +303,7 @@
                     "min_age_days": 0,
                     "recommended_age_days": 0,
                     "overdue_age_days": 30,
-                    "max_age_days": 365,
+                    "max_age_days": null,
                     "min_interval_days": 0,
                     "dose_amount": "0.1ml"
                 }
