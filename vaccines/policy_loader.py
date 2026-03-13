@@ -1,6 +1,6 @@
 from django.db.models import Q
 
-from vaccines.models import PolicyVersion, Series, Vaccine, VaccineGroup
+from vaccines.models import PolicyVersion, Series, Vaccine
 
 
 class PolicyLoader:
@@ -28,5 +28,3 @@ class PolicyLoader:
             )
         )
 
-    def get_vaccine_groups(self):
-        return VaccineGroup.objects.prefetch_related('vaccines', 'rules').all()

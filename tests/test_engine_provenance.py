@@ -1,4 +1,4 @@
-﻿from datetime import date
+from datetime import date
 
 from vaccines.engine import VaccinationEngine
 from vaccines.models import DependencyRule, Product, Series, SeriesProduct, SeriesRule, Vaccine
@@ -21,17 +21,7 @@ class TestEngineProvenance(BaseVaccinationTestCase):
         self.assertEqual(penta_item['slot_number'], 1)
         self.assertIn('due today', penta_item['message'])
 
-    def test_upcoming_details_keep_schedule_rule_provenance(self):
-        child = self.make_child('RR Upcoming', age_days=200)
 
-        result = self.evaluate(child)
-
-        rr_detail = next(item for item in result['upcoming_details'] if item['vaccine'].name == 'RR')
-        self.assertEqual(rr_detail['decision_source'], VaccinationEngine.SOURCE_SCHEDULE_RULE)
-        self.assertEqual(rr_detail['decision_type'], VaccinationEngine.DECISION_UPCOMING)
-        self.assertEqual(rr_detail['product_code'], self.product_map['RR'].code)
-        self.assertTrue(rr_detail['rule_key'].startswith(f'schedule:{self.rr.id}:'))
-        self.assertEqual((rr_detail['vaccine'], rr_detail['target_date'], rr_detail['dose_number']), next(item for item in result['upcoming'] if item[0].name == 'RR'))
 
     def test_invalid_history_records_reason_and_rule_source(self):
         child = self.make_child('Early Penta', age_days=7)

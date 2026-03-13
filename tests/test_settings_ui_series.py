@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 from django.urls import reverse
 
-from vaccines.models import PolicyVersion, Product, Series, SeriesRule, SeriesTransitionRule, Vaccine, VaccineGroup
+from vaccines.models import PolicyVersion, Product, Series, SeriesRule, SeriesTransitionRule, Vaccine
 from .base import BaseVaccinationTestCase
 
 

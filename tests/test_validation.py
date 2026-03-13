@@ -82,10 +82,10 @@ class TestMaxAgeValidation(BaseVaccinationTestCase):
 
     """Doses given after max_age must be strictly flagged with REASON_TOO_LATE."""
 
-    def test_rr_dose_max_age_enforced_via_schedule_rule(self):
+    def test_rr_dose_max_age_enforced_via_series_rule(self):
         """Standard vaccine given after max_age is flagged too_late."""
-        from vaccines.models import ScheduleRule
-        rr_rule = ScheduleRule.objects.get(vaccine=self.rr, dose_number=1)
+        from vaccines.models import SeriesRule
+        rr_rule = SeriesRule.objects.get(product__vaccine__name='RR', slot_number=1)
         rr_rule.max_age_days = 365  # Max age 12 months for dose 1
         rr_rule.save()
 

@@ -2,39 +2,16 @@ from django import forms
 from django.db import transaction
 
 from .models import (
-    CatchupRule,
     DependencyRule,
     GlobalConstraintRule,
-    GroupRule,
     PolicyVersion,
     Product,
-    ScheduleRule,
     Series,
     SeriesProduct,
     SeriesRule,
     SeriesTransitionRule,
     Vaccine,
-    VaccineGroup,
 )
-
-
-class VaccineForm(forms.ModelForm):
-    class Meta:
-        model = Vaccine
-        fields = ['name', 'live', 'description']
-        widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Penta, BCG, MMR'}),
-            'live': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Optional description of this vaccine'}),
-        }
-        labels = {
-            'name': 'Vaccine Name',
-            'live': 'Live Attenuated Vaccine',
-            'description': 'Description',
-        }
-        help_texts = {
-            'live': 'Check if this is a live vaccine (e.g., BCG, MMR, OPV). Live vaccines require a 28-day interval between each other.',
-        }
 
 
 class ProductForm(forms.Form):
@@ -157,77 +134,11 @@ class PolicyVersionForm(forms.ModelForm):
         self.fields['code'].required = False
 
 
-class ScheduleRuleForm(forms.ModelForm):
-    class Meta:
-        model = ScheduleRule
-        fields = ['dose_number', 'min_age_days', 'recommended_age_days', 'overdue_age_days', 'max_age_days', 'min_interval_days', 'dose_amount']
-        widgets = {
-            'dose_number': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
-            'min_age_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'e.g., 42'}),
-            'recommended_age_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'e.g., 42'}),
-            'max_age_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'Optional'}),
-            'min_interval_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'e.g., 28'}),
-            'overdue_age_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'Optional'}),
-            'dose_amount': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., 0.05ml'}),
-        }
-
-
-ScheduleRuleFormSet = forms.inlineformset_factory(Vaccine, ScheduleRule, form=ScheduleRuleForm, extra=1, can_delete=True)
-
-
-class CatchupRuleForm(forms.ModelForm):
-    class Meta:
-        model = CatchupRule
-        fields = ['min_age_days', 'max_age_days', 'prior_doses', 'doses_required', 'min_interval_days', 'dose_amount']
-        widgets = {
-            'min_age_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'e.g., 365'}),
-            'max_age_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'e.g., 1825'}),
-            'prior_doses': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
-            'doses_required': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
-            'min_interval_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'e.g., 28'}),
-            'dose_amount': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., 0.1ml'}),
-        }
-
-
-CatchupRuleFormSet = forms.inlineformset_factory(Vaccine, CatchupRule, form=CatchupRuleForm, extra=1, can_delete=True)
-
-
-class VaccineGroupForm(forms.ModelForm):
-    class Meta:
-        model = VaccineGroup
-        fields = ['name', 'vaccines', 'min_valid_interval_days']
-        widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., DTP Family'}),
-            'vaccines': forms.CheckboxSelectMultiple(),
-            'min_valid_interval_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'e.g., 28'}),
-        }
-
-
-class GroupRuleForm(forms.ModelForm):
-    class Meta:
-        model = GroupRule
-        fields = ['prior_doses', 'min_age_days', 'max_age_days', 'vaccine_to_give', 'min_interval_days', 'dose_amount']
-        widgets = {
-            'prior_doses': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
-            'min_age_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'e.g., 42'}),
-            'max_age_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'Optional'}),
-            'vaccine_to_give': forms.Select(attrs={'class': 'form-select'}),
-            'min_interval_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'e.g., 28'}),
-            'dose_amount': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., 0.1ml'}),
-        }
-
-
-GroupRuleFormSet = forms.inlineformset_factory(VaccineGroup, GroupRule, form=GroupRuleForm, extra=1, can_delete=True)
-
 
 class SeriesForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['code'].required = False
-        self.fields['legacy_group'].queryset = VaccineGroup.objects.order_by('name')
-        self.fields['legacy_group'].required = False
-        self.fields['legacy_group'].disabled = True
-        self.fields['legacy_group'].help_text = 'Legacy group linkage is now read-only migration metadata and is no longer used for new policy edits.'
         self.fields['policy_version'].queryset = PolicyVersion.objects.order_by('-is_active', 'name')
         active_version = PolicyVersion.get_active()
         if not self.instance.pk and active_version:
@@ -235,7 +146,7 @@ class SeriesForm(forms.ModelForm):
 
     class Meta:
         model = Series
-        fields = ['name', 'code', 'description', 'active', 'policy_version', 'mixing_policy', 'min_valid_interval_days', 'legacy_group']
+        fields = ['name', 'code', 'description', 'active', 'policy_version', 'mixing_policy', 'min_valid_interval_days']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Pneumo'}),
             'code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Optional slug code'}),
@@ -244,7 +155,6 @@ class SeriesForm(forms.ModelForm):
             'policy_version': forms.Select(attrs={'class': 'form-select'}),
             'mixing_policy': forms.Select(attrs={'class': 'form-select'}),
             'min_valid_interval_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'e.g., 28'}),
-            'legacy_group': forms.Select(attrs={'class': 'form-select'}),
         }
 
 
@@ -400,3 +310,44 @@ class DependencyRuleForm(forms.ModelForm):
         series_queryset = Series.objects.select_related('policy_version').order_by('policy_version__name', 'name')
         self.fields['dependent_series'].queryset = series_queryset
         self.fields['anchor_series'].queryset = series_queryset
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if not cleaned_data:
+            return cleaned_data
+
+        if not cleaned_data.get('block_if_anchor_missing') or not cleaned_data.get('active'):
+            return cleaned_data
+
+        dependent_series = cleaned_data.get('dependent_series')
+        anchor_series = cleaned_data.get('anchor_series')
+        
+        if not dependent_series or not anchor_series:
+            return cleaned_data
+
+        visited = set()
+        
+        def has_path(current_node, target_node):
+            if current_node == target_node:
+                return True
+            visited.add(current_node)
+            
+            dependencies = DependencyRule.objects.filter(
+                dependent_series_id=current_node,
+                block_if_anchor_missing=True,
+                active=True
+            )
+            if self.instance and self.instance.pk:
+                dependencies = dependencies.exclude(pk=self.instance.pk)
+                
+            for dep in dependencies:
+                next_node = dep.anchor_series_id
+                if next_node not in visited:
+                    if has_path(next_node, target_node):
+                        return True
+            return False
+            
+        if has_path(anchor_series.id, dependent_series.id):
+            raise forms.ValidationError("Dependency rules cannot create a blocking cycle across multiple series slots.")
+            
+        return cleaned_data

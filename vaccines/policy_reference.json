@@ -1,530 +1,347 @@
 {
-    "vaccines":  [
-                     {
-                         "name":  "Penta",
-                         "live":  false
-                     },
-                     {
-                         "name":  "DTC",
-                         "live":  false
-                     },
-                     {
-                         "name":  "Td",
-                         "live":  false
-                     },
-                     {
-                         "name":  "RR",
-                         "live":  true
-                     },
-                     {
-                         "name":  "BCG",
-                         "live":  true
-                     },
-                     {
-                         "name":  "Prevenar13",
-                         "live":  false,
-                         "manufacturer":  "Pfizer"
-                     },
-                     {
-                         "name":  "Primovax",
-                         "live":  false,
-                         "manufacturer":  "Acme"
-                     }
-                 ],
-    "schedule_rules":  [
-                           {
-                               "vaccine":  "RR",
-                               "rules":  [
-                                             {
-                                                 "dose_number":  1,
-                                                 "min_age_days":  270,
-                                                 "recommended_age_days":  270,
-                                                 "min_interval_days":  0
-                                             },
-                                             {
-                                                 "dose_number":  2,
-                                                 "min_age_days":  540,
-                                                 "recommended_age_days":  540,
-                                                 "min_interval_days":  28
-                                             }
-                                         ]
-                           },
-                           {
-                               "vaccine":  "Penta",
-                               "rules":  [
-                                             {
-                                                 "dose_number":  1,
-                                                 "min_age_days":  53,
-                                                 "recommended_age_days":  60,
-                                                 "min_interval_days":  0
-                                             },
-                                             {
-                                                 "dose_number":  2,
-                                                 "min_age_days":  83,
-                                                 "recommended_age_days":  90,
-                                                 "min_interval_days":  28
-                                             },
-                                             {
-                                                 "dose_number":  3,
-                                                 "min_age_days":  113,
-                                                 "recommended_age_days":  120,
-                                                 "min_interval_days":  28
-                                             }
-                                         ]
-                           },
-                           {
-                               "vaccine":  "DTC",
-                               "rules":  [
-                                             {
-                                                 "dose_number":  1,
-                                                 "min_age_days":  540,
-                                                 "recommended_age_days":  540,
-                                                 "min_interval_days":  180
-                                             },
-                                             {
-                                                 "dose_number":  2,
-                                                 "min_age_days":  1825,
-                                                 "recommended_age_days":  1825,
-                                                 "min_interval_days":  1285
-                                             }
-                                         ]
-                           },
-                           {
-                               "vaccine":  "Td",
-                               "rules":  [
-                                             {
-                                                 "dose_number":  1,
-                                                 "min_age_days":  2555,
-                                                 "recommended_age_days":  2555,
-                                                 "min_interval_days":  0
-                                             }
-                                         ]
-                           },
-                           {
-                               "vaccine":  "BCG",
-                               "rules":  [
-                                             {
-                                                 "dose_number":  1,
-                                                 "min_age_days":  0,
-                                                 "recommended_age_days":  0,
-                                                 "overdue_age_days":  30,
-                                                 "dose_amount":  "0.05ml",
-                                                 "min_interval_days":  0
-                                             }
-                                         ]
-                           }
-                       ],
-    "catchup_rules":  [
-                          {
-                              "vaccine":  "BCG",
-                              "rules":  [
-                                            {
-                                                "min_age_days":  365,
-                                                "max_age_days":  1825,
-                                                "prior_doses":  0,
-                                                "doses_required":  1,
-                                                "min_interval_days":  0,
-                                                "dose_amount":  "0.1ml"
-                                            }
-                                        ]
-                          },
-                          {
-                              "vaccine":  "Penta",
-                              "rules":  [
-                                            {
-                                                "min_age_days":  365,
-                                                "max_age_days":  1096,
-                                                "prior_doses":  0,
-                                                "doses_required":  2,
-                                                "min_interval_days":  28,
-                                                "dose_amount":  "0.5ml"
-                                            }
-                                        ]
-                          }
-                      ],
-    "groups":  [
-                   {
-                       "name":  "DTP Family",
-                       "min_valid_interval_days":  28,
-                       "vaccines":  [
-                                        "Penta",
-                                        "DTC",
-                                        "Td"
-                                    ],
-                       "rules":  [
-                                     {
-                                         "prior_doses":  0,
-                                         "min_age_days":  0,
-                                         "max_age_days":  364,
-                                         "vaccine_to_give":  "Penta",
-                                         "min_interval_days":  0
-                                     },
-                                     {
-                                         "prior_doses":  0,
-                                         "min_age_days":  365,
-                                         "max_age_days":  1094,
-                                         "vaccine_to_give":  "Penta",
-                                         "min_interval_days":  0
-                                     },
-                                     {
-                                         "prior_doses":  0,
-                                         "min_age_days":  1095,
-                                         "max_age_days":  2554,
-                                         "vaccine_to_give":  "DTC",
-                                         "min_interval_days":  0
-                                     },
-                                     {
-                                         "prior_doses":  0,
-                                         "min_age_days":  2555,
-                                         "max_age_days":  null,
-                                         "vaccine_to_give":  "Td",
-                                         "min_interval_days":  0
-                                     },
-                                     {
-                                         "prior_doses":  1,
-                                         "min_age_days":  0,
-                                         "max_age_days":  539,
-                                         "vaccine_to_give":  "Penta",
-                                         "min_interval_days":  28
-                                     },
-                                     {
-                                         "prior_doses":  1,
-                                         "min_age_days":  540,
-                                         "max_age_days":  1094,
-                                         "vaccine_to_give":  "Penta",
-                                         "min_interval_days":  28
-                                     },
-                                     {
-                                         "prior_doses":  1,
-                                         "min_age_days":  1095,
-                                         "max_age_days":  2554,
-                                         "vaccine_to_give":  "DTC",
-                                         "min_interval_days":  28
-                                     },
-                                     {
-                                         "prior_doses":  1,
-                                         "min_age_days":  2555,
-                                         "max_age_days":  null,
-                                         "vaccine_to_give":  "Td",
-                                         "min_interval_days":  28
-                                     },
-                                     {
-                                         "prior_doses":  2,
-                                         "min_age_days":  0,
-                                         "max_age_days":  539,
-                                         "vaccine_to_give":  "Penta",
-                                         "min_interval_days":  28
-                                     },
-                                     {
-                                         "prior_doses":  2,
-                                         "min_age_days":  540,
-                                         "max_age_days":  1094,
-                                         "vaccine_to_give":  "Penta",
-                                         "min_interval_days":  28
-                                     },
-                                     {
-                                         "prior_doses":  2,
-                                         "min_age_days":  1095,
-                                         "max_age_days":  2554,
-                                         "vaccine_to_give":  "DTC",
-                                         "min_interval_days":  28
-                                     },
-                                     {
-                                         "prior_doses":  2,
-                                         "min_age_days":  2555,
-                                         "max_age_days":  null,
-                                         "vaccine_to_give":  "Td",
-                                         "min_interval_days":  28
-                                     },
-                                     {
-                                         "prior_doses":  3,
-                                         "min_age_days":  540,
-                                         "max_age_days":  null,
-                                         "vaccine_to_give":  "DTC",
-                                         "min_interval_days":  180
-                                     },
-                                     {
-                                         "prior_doses":  3,
-                                         "min_age_days":  2555,
-                                         "max_age_days":  null,
-                                         "vaccine_to_give":  "Td",
-                                         "min_interval_days":  180
-                                     },
-                                     {
-                                         "prior_doses":  4,
-                                         "min_age_days":  1825,
-                                         "max_age_days":  null,
-                                         "vaccine_to_give":  "DTC",
-                                         "min_interval_days":  1285
-                                     },
-                                     {
-                                         "prior_doses":  4,
-                                         "min_age_days":  2555,
-                                         "max_age_days":  null,
-                                         "vaccine_to_give":  "Td",
-                                         "min_interval_days":  365
-                                     }
-                                 ]
-                   }
-               ],
-    "series":  [
-                   {
-                       "name":  "DTP Family",
-                       "min_valid_interval_days":  28,
-                       "mixing_policy":  "flexible",
-                       "products":  [
-                                        "Penta",
-                                        "DTC",
-                                        "Td"
-                                    ],
-                       "rules":  [
-                                     {
-                                         "slot_number":  1,
-                                         "prior_valid_doses":  0,
-                                         "product":  "Penta",
-                                         "min_age_days":  53,
-                                         "recommended_age_days":  60,
-                                         "overdue_age_days":  60,
-                                         "max_age_days":  364,
-                                         "min_interval_days":  0
-                                     },
-                                     {
-                                         "slot_number":  1,
-                                         "prior_valid_doses":  0,
-                                         "product":  "Penta",
-                                         "min_age_days":  365,
-                                         "recommended_age_days":  365,
-                                         "overdue_age_days":  365,
-                                         "max_age_days":  1094,
-                                         "min_interval_days":  0
-                                     },
-                                     {
-                                         "slot_number":  1,
-                                         "prior_valid_doses":  0,
-                                         "product":  "DTC",
-                                         "min_age_days":  1095,
-                                         "recommended_age_days":  1095,
-                                         "overdue_age_days":  1095,
-                                         "max_age_days":  2554,
-                                         "min_interval_days":  0
-                                     },
-                                     {
-                                         "slot_number":  1,
-                                         "prior_valid_doses":  0,
-                                         "product":  "Td",
-                                         "min_age_days":  2555,
-                                         "recommended_age_days":  2555,
-                                         "overdue_age_days":  2555,
-                                         "max_age_days":  null,
-                                         "min_interval_days":  0
-                                     },
-                                     {
-                                         "slot_number":  2,
-                                         "prior_valid_doses":  1,
-                                         "product":  "Penta",
-                                         "min_age_days":  83,
-                                         "recommended_age_days":  90,
-                                         "overdue_age_days":  90,
-                                         "max_age_days":  539,
-                                         "min_interval_days":  28
-                                     },
-                                     {
-                                         "slot_number":  2,
-                                         "prior_valid_doses":  1,
-                                         "product":  "Penta",
-                                         "min_age_days":  540,
-                                         "recommended_age_days":  540,
-                                         "overdue_age_days":  540,
-                                         "max_age_days":  1094,
-                                         "min_interval_days":  28
-                                     },
-                                     {
-                                         "slot_number":  2,
-                                         "prior_valid_doses":  1,
-                                         "product":  "DTC",
-                                         "min_age_days":  1825,
-                                         "recommended_age_days":  1825,
-                                         "overdue_age_days":  1825,
-                                         "max_age_days":  2554,
-                                         "min_interval_days":  28
-                                     },
-                                     {
-                                         "slot_number":  2,
-                                         "prior_valid_doses":  1,
-                                         "product":  "Td",
-                                         "min_age_days":  2555,
-                                         "recommended_age_days":  2555,
-                                         "overdue_age_days":  2555,
-                                         "max_age_days":  null,
-                                         "min_interval_days":  28
-                                     },
-                                     {
-                                         "slot_number":  3,
-                                         "prior_valid_doses":  2,
-                                         "product":  "Penta",
-                                         "min_age_days":  113,
-                                         "recommended_age_days":  120,
-                                         "overdue_age_days":  120,
-                                         "max_age_days":  539,
-                                         "min_interval_days":  28
-                                     },
-                                     {
-                                         "slot_number":  3,
-                                         "prior_valid_doses":  2,
-                                         "product":  "Penta",
-                                         "min_age_days":  540,
-                                         "recommended_age_days":  540,
-                                         "overdue_age_days":  540,
-                                         "max_age_days":  1094,
-                                         "min_interval_days":  28
-                                     },
-                                     {
-                                         "slot_number":  3,
-                                         "prior_valid_doses":  2,
-                                         "product":  "DTC",
-                                         "min_age_days":  1095,
-                                         "recommended_age_days":  1095,
-                                         "overdue_age_days":  1095,
-                                         "max_age_days":  2554,
-                                         "min_interval_days":  28
-                                     },
-                                     {
-                                         "slot_number":  3,
-                                         "prior_valid_doses":  2,
-                                         "product":  "Td",
-                                         "min_age_days":  2555,
-                                         "recommended_age_days":  2555,
-                                         "overdue_age_days":  2555,
-                                         "max_age_days":  null,
-                                         "min_interval_days":  28
-                                     },
-                                     {
-                                         "slot_number":  4,
-                                         "prior_valid_doses":  3,
-                                         "product":  "DTC",
-                                         "min_age_days":  540,
-                                         "recommended_age_days":  540,
-                                         "overdue_age_days":  540,
-                                         "max_age_days":  null,
-                                         "min_interval_days":  180
-                                     },
-                                     {
-                                         "slot_number":  4,
-                                         "prior_valid_doses":  3,
-                                         "product":  "Td",
-                                         "min_age_days":  2555,
-                                         "recommended_age_days":  2555,
-                                         "overdue_age_days":  2555,
-                                         "max_age_days":  null,
-                                         "min_interval_days":  180
-                                     },
-                                     {
-                                         "slot_number":  5,
-                                         "prior_valid_doses":  4,
-                                         "product":  "DTC",
-                                         "min_age_days":  1825,
-                                         "recommended_age_days":  1825,
-                                         "overdue_age_days":  1825,
-                                         "max_age_days":  null,
-                                         "min_interval_days":  1285
-                                     },
-                                     {
-                                         "slot_number":  5,
-                                         "prior_valid_doses":  4,
-                                         "product":  "Td",
-                                         "min_age_days":  2555,
-                                         "recommended_age_days":  2555,
-                                         "overdue_age_days":  2555,
-                                         "max_age_days":  null,
-                                         "min_interval_days":  365
-                                     }
-                                 ]
-                   },
-                   {
-                       "name":  "Pneumo",
-                       "optional":  true,
-                       "min_valid_interval_days":  28,
-                       "mixing_policy":  "strict",
-                       "products":  [
-                                        "Prevenar13",
-                                        "Primovax"
-                                    ],
-                       "rules":  [
-                                     {
-                                         "slot_number":  1,
-                                         "prior_valid_doses":  0,
-                                         "product":  "Prevenar13",
-                                         "min_age_days":  60,
-                                         "recommended_age_days":  60,
-                                         "overdue_age_days":  90,
-                                         "max_age_days":  null,
-                                         "min_interval_days":  0
-                                     },
-                                     {
-                                         "slot_number":  1,
-                                         "prior_valid_doses":  0,
-                                         "product":  "Primovax",
-                                         "min_age_days":  75,
-                                         "recommended_age_days":  75,
-                                         "overdue_age_days":  105,
-                                         "max_age_days":  null,
-                                         "min_interval_days":  0
-                                     },
-                                     {
-                                         "slot_number":  2,
-                                         "prior_valid_doses":  1,
-                                         "product":  "Prevenar13",
-                                         "min_age_days":  120,
-                                         "recommended_age_days":  120,
-                                         "overdue_age_days":  150,
-                                         "max_age_days":  null,
-                                         "min_interval_days":  56
-                                     },
-                                     {
-                                         "slot_number":  2,
-                                         "prior_valid_doses":  1,
-                                         "product":  "Primovax",
-                                         "min_age_days":  135,
-                                         "recommended_age_days":  135,
-                                         "overdue_age_days":  165,
-                                         "max_age_days":  null,
-                                         "min_interval_days":  60
-                                     }
-                                 ]
-                   }
-               ],
-    "transitions":  [
-                        {
-                            "series":  "Pneumo",
-                            "from_product":  "Prevenar13",
-                            "to_product":  "Primovax",
-                            "start_slot_number":  2,
-                            "end_slot_number":  null,
-                            "allow_if_unavailable":  true,
-                            "active":  true,
-                            "notes":  "Allow Pneumo switching after slot 1 only when the started product is unavailable."
-                        },
-                        {
-                            "series":  "Pneumo",
-                            "from_product":  "Primovax",
-                            "to_product":  "Prevenar13",
-                            "start_slot_number":  2,
-                            "end_slot_number":  null,
-                            "allow_if_unavailable":  true,
-                            "active":  true,
-                            "notes":  "Allow Pneumo switching after slot 1 only when the started product is unavailable."
-                        }
-                    ],
-    "dependencies":  [
-                         {
-                             "dependent_series":  "Pneumo",
-                             "dependent_slot_number":  1,
-                             "anchor_series":  "DTP Family",
-                             "anchor_slot_number":  1,
-                             "min_offset_days":  15,
-                             "block_if_anchor_missing":  true,
-                             "active":  true,
-                             "notes":  "Pneumo starts at least 15 days after the first DTP dose."
-                         }
-                     ]
+    "vaccines": [
+        {
+            "name": "Penta",
+            "live": false
+        },
+        {
+            "name": "DTC",
+            "live": false
+        },
+        {
+            "name": "Td",
+            "live": false
+        },
+        {
+            "name": "RR",
+            "live": true
+        },
+        {
+            "name": "BCG",
+            "live": true
+        },
+        {
+            "name": "Prevenar13",
+            "live": false,
+            "manufacturer": "Pfizer"
+        },
+        {
+            "name": "Primovax",
+            "live": false,
+            "manufacturer": "Acme"
+        }
+    ],
+    "series": [
+        {
+            "name": "DTP Family",
+            "min_valid_interval_days": 28,
+            "mixing_policy": "flexible",
+            "products": [
+                "Penta",
+                "DTC",
+                "Td"
+            ],
+            "rules": [
+                {
+                    "slot_number": 1,
+                    "prior_valid_doses": 0,
+                    "product": "Penta",
+                    "min_age_days": 53,
+                    "recommended_age_days": 60,
+                    "overdue_age_days": 60,
+                    "max_age_days": 364,
+                    "min_interval_days": 0
+                },
+                {
+                    "slot_number": 1,
+                    "prior_valid_doses": 0,
+                    "product": "Penta",
+                    "min_age_days": 365,
+                    "recommended_age_days": 365,
+                    "overdue_age_days": 365,
+                    "max_age_days": 1094,
+                    "min_interval_days": 0
+                },
+                {
+                    "slot_number": 1,
+                    "prior_valid_doses": 0,
+                    "product": "DTC",
+                    "min_age_days": 1095,
+                    "recommended_age_days": 1095,
+                    "overdue_age_days": 1095,
+                    "max_age_days": 2554,
+                    "min_interval_days": 0
+                },
+                {
+                    "slot_number": 1,
+                    "prior_valid_doses": 0,
+                    "product": "Td",
+                    "min_age_days": 2555,
+                    "recommended_age_days": 2555,
+                    "overdue_age_days": 2555,
+                    "max_age_days": null,
+                    "min_interval_days": 0
+                },
+                {
+                    "slot_number": 2,
+                    "prior_valid_doses": 1,
+                    "product": "Penta",
+                    "min_age_days": 83,
+                    "recommended_age_days": 90,
+                    "overdue_age_days": 90,
+                    "max_age_days": 539,
+                    "min_interval_days": 28
+                },
+                {
+                    "slot_number": 2,
+                    "prior_valid_doses": 1,
+                    "product": "Penta",
+                    "min_age_days": 540,
+                    "recommended_age_days": 540,
+                    "overdue_age_days": 540,
+                    "max_age_days": 1094,
+                    "min_interval_days": 28
+                },
+                {
+                    "slot_number": 2,
+                    "prior_valid_doses": 1,
+                    "product": "DTC",
+                    "min_age_days": 1825,
+                    "recommended_age_days": 1825,
+                    "overdue_age_days": 1825,
+                    "max_age_days": 2554,
+                    "min_interval_days": 28
+                },
+                {
+                    "slot_number": 2,
+                    "prior_valid_doses": 1,
+                    "product": "Td",
+                    "min_age_days": 2555,
+                    "recommended_age_days": 2555,
+                    "overdue_age_days": 2555,
+                    "max_age_days": null,
+                    "min_interval_days": 28
+                },
+                {
+                    "slot_number": 3,
+                    "prior_valid_doses": 2,
+                    "product": "Penta",
+                    "min_age_days": 113,
+                    "recommended_age_days": 120,
+                    "overdue_age_days": 120,
+                    "max_age_days": 539,
+                    "min_interval_days": 28
+                },
+                {
+                    "slot_number": 3,
+                    "prior_valid_doses": 2,
+                    "product": "Penta",
+                    "min_age_days": 540,
+                    "recommended_age_days": 540,
+                    "overdue_age_days": 540,
+                    "max_age_days": 1094,
+                    "min_interval_days": 28
+                },
+                {
+                    "slot_number": 3,
+                    "prior_valid_doses": 2,
+                    "product": "DTC",
+                    "min_age_days": 1095,
+                    "recommended_age_days": 1095,
+                    "overdue_age_days": 1095,
+                    "max_age_days": 2554,
+                    "min_interval_days": 28
+                },
+                {
+                    "slot_number": 3,
+                    "prior_valid_doses": 2,
+                    "product": "Td",
+                    "min_age_days": 2555,
+                    "recommended_age_days": 2555,
+                    "overdue_age_days": 2555,
+                    "max_age_days": null,
+                    "min_interval_days": 28
+                },
+                {
+                    "slot_number": 4,
+                    "prior_valid_doses": 3,
+                    "product": "DTC",
+                    "min_age_days": 540,
+                    "recommended_age_days": 540,
+                    "overdue_age_days": 540,
+                    "max_age_days": null,
+                    "min_interval_days": 180
+                },
+                {
+                    "slot_number": 4,
+                    "prior_valid_doses": 3,
+                    "product": "Td",
+                    "min_age_days": 2555,
+                    "recommended_age_days": 2555,
+                    "overdue_age_days": 2555,
+                    "max_age_days": null,
+                    "min_interval_days": 180
+                },
+                {
+                    "slot_number": 5,
+                    "prior_valid_doses": 4,
+                    "product": "DTC",
+                    "min_age_days": 1825,
+                    "recommended_age_days": 1825,
+                    "overdue_age_days": 1825,
+                    "max_age_days": null,
+                    "min_interval_days": 1285
+                },
+                {
+                    "slot_number": 5,
+                    "prior_valid_doses": 4,
+                    "product": "Td",
+                    "min_age_days": 2555,
+                    "recommended_age_days": 2555,
+                    "overdue_age_days": 2555,
+                    "max_age_days": null,
+                    "min_interval_days": 365
+                }
+            ]
+        },
+        {
+            "name": "Pneumo",
+            "optional": true,
+            "min_valid_interval_days": 28,
+            "mixing_policy": "strict",
+            "products": [
+                "Prevenar13",
+                "Primovax"
+            ],
+            "rules": [
+                {
+                    "slot_number": 1,
+                    "prior_valid_doses": 0,
+                    "product": "Prevenar13",
+                    "min_age_days": 60,
+                    "recommended_age_days": 60,
+                    "overdue_age_days": 90,
+                    "max_age_days": null,
+                    "min_interval_days": 0
+                },
+                {
+                    "slot_number": 1,
+                    "prior_valid_doses": 0,
+                    "product": "Primovax",
+                    "min_age_days": 75,
+                    "recommended_age_days": 75,
+                    "overdue_age_days": 105,
+                    "max_age_days": null,
+                    "min_interval_days": 0
+                },
+                {
+                    "slot_number": 2,
+                    "prior_valid_doses": 1,
+                    "product": "Prevenar13",
+                    "min_age_days": 120,
+                    "recommended_age_days": 120,
+                    "overdue_age_days": 150,
+                    "max_age_days": null,
+                    "min_interval_days": 56
+                },
+                {
+                    "slot_number": 2,
+                    "prior_valid_doses": 1,
+                    "product": "Primovax",
+                    "min_age_days": 135,
+                    "recommended_age_days": 135,
+                    "overdue_age_days": 165,
+                    "max_age_days": null,
+                    "min_interval_days": 60
+                }
+            ]
+        },
+        {
+            "name": "RR Series",
+            "optional": false,
+            "min_valid_interval_days": 28,
+            "mixing_policy": "strict",
+            "products": [
+                "RR"
+            ],
+            "rules": [
+                {
+                    "slot_number": 1,
+                    "prior_valid_doses": 0,
+                    "product": "RR",
+                    "min_age_days": 270,
+                    "recommended_age_days": 270,
+                    "overdue_age_days": 365,
+                    "max_age_days": null,
+                    "min_interval_days": 0
+                },
+                {
+                    "slot_number": 2,
+                    "prior_valid_doses": 1,
+                    "product": "RR",
+                    "min_age_days": 540,
+                    "recommended_age_days": 540,
+                    "overdue_age_days": 600,
+                    "max_age_days": null,
+                    "min_interval_days": 28
+                }
+            ]
+        },
+        {
+            "name": "BCG Series",
+            "optional": false,
+            "min_valid_interval_days": 28,
+            "mixing_policy": "strict",
+            "products": [
+                "BCG"
+            ],
+            "rules": [
+                {
+                    "slot_number": 1,
+                    "prior_valid_doses": 0,
+                    "product": "BCG",
+                    "min_age_days": 0,
+                    "recommended_age_days": 0,
+                    "overdue_age_days": 30,
+                    "max_age_days": 365,
+                    "min_interval_days": 0,
+                    "dose_amount": "0.1ml"
+                }
+            ]
+        }
+    ],
+    "transitions": [
+        {
+            "series": "Pneumo",
+            "from_product": "Prevenar13",
+            "to_product": "Primovax",
+            "start_slot_number": 2,
+            "end_slot_number": null,
+            "allow_if_unavailable": true,
+            "active": true,
+            "notes": "Allow Pneumo switching after slot 1 only when the started product is unavailable."
+        },
+        {
+            "series": "Pneumo",
+            "from_product": "Primovax",
+            "to_product": "Prevenar13",
+            "start_slot_number": 2,
+            "end_slot_number": null,
+            "allow_if_unavailable": true,
+            "active": true,
+            "notes": "Allow Pneumo switching after slot 1 only when the started product is unavailable."
+        }
+    ],
+    "dependencies": [
+        {
+            "dependent_series": "Pneumo",
+            "dependent_slot_number": 1,
+            "anchor_series": "DTP Family",
+            "anchor_slot_number": 1,
+            "min_offset_days": 15,
+            "block_if_anchor_missing": true,
+            "active": true,
+            "notes": "Pneumo starts at least 15 days after the first DTP dose."
+        }
+    ]
 }

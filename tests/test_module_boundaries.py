@@ -5,7 +5,7 @@ from vaccines.dependencies import DependencyEvaluator
 from vaccines.engine import VaccinationEngine
 from vaccines.global_constraints import LiveVaccineConstraintService
 from vaccines.history_normalizer import HistoryNormalizer
-from vaccines.models import DependencyRule, PolicyVersion, Product, ScheduleRule, Series, SeriesProduct, SeriesRule, Vaccine
+from vaccines.models import DependencyRule, PolicyVersion, Product, Series, SeriesProduct, SeriesRule, Vaccine
 from vaccines.policy_loader import PolicyLoader
 from vaccines.recommender import SeriesRecommender
 from vaccines.series_validator import SeriesHistoryValidator

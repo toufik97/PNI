@@ -4,32 +4,21 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
 from .forms import (
-    CatchupRuleFormSet,
     DependencyRuleForm,
     GlobalConstraintRuleForm,
-    GroupRuleFormSet,
     PolicyVersionForm,
     ProductForm,
-    ScheduleRuleFormSet,
     SeriesForm,
     SeriesProductFormSet,
     SeriesRuleFormSet,
     SeriesTransitionRuleFormSet,
-    VaccineForm,
-    VaccineGroupForm,
 )
-from .models import DependencyRule, GlobalConstraintRule, PolicyVersion, Product, Series, Vaccine, VaccineGroup
+from .models import DependencyRule, GlobalConstraintRule, PolicyVersion, Product, Series, Vaccine
 
 
-LEGACY_TABS = {'vaccines', 'groups'}
 NEW_TABS = {'products', 'series', 'dependencies', 'constraints', 'versions', 'guide'}
-ALL_TABS = LEGACY_TABS.union(NEW_TABS)
-LEGACY_POLICY_READ_ONLY = True
+ALL_TABS = NEW_TABS
 
-
-def _redirect_legacy_policy_read_only(request, tab):
-    messages.warning(request, 'Legacy vaccine and group configuration is read-only during the series policy migration.')
-    return redirect('vaccines:settings_tab', tab=tab)
 
 
 def _table_exists(model):
@@ -53,8 +42,6 @@ def vaccine_settings(request, tab=None):
     active_policy_version = PolicyVersion.get_active()
     constraints_available = _global_constraints_available()
 
-    vaccines = Vaccine.objects.prefetch_related('schedule_rules', 'catchup_rules').all()
-    groups = VaccineGroup.objects.prefetch_related('vaccines', 'rules').all()
     products = Product.objects.select_related('vaccine').prefetch_related('series_memberships').all()
     series = Series.objects.select_related('policy_version').prefetch_related(
         'series_products__product__vaccine',
@@ -84,8 +71,6 @@ def vaccine_settings(request, tab=None):
     policy_versions = PolicyVersion.objects.order_by('-is_active', 'name')
 
     context = {
-        'vaccines': vaccines,
-        'groups': groups,
         'products': products,
         'series_list': series,
         'dependencies': dependencies,
@@ -93,7 +78,6 @@ def vaccine_settings(request, tab=None):
         'policy_versions': policy_versions,
         'active_policy_version': active_policy_version,
         'active_tab': active_tab,
-        'legacy_policy_read_only': LEGACY_POLICY_READ_ONLY,
         'global_constraints_available': constraints_available,
     }
     return render(request, 'vaccines/settings.html', context)
@@ -356,29 +340,3 @@ def global_constraint_delete(request, pk):
     return render(request, 'vaccines/confirm_delete.html', {'object': constraint, 'object_type': 'Global Constraint', 'cancel_href': reverse('vaccines:settings_tab', kwargs={'tab': 'constraints'})})
 
 
-# Legacy Vaccine CRUD
-
-def vaccine_create(request):
-    return _redirect_legacy_policy_read_only(request, 'vaccines')
-
-
-def vaccine_edit(request, pk):
-    return _redirect_legacy_policy_read_only(request, 'vaccines')
-
-
-def vaccine_delete(request, pk):
-    return _redirect_legacy_policy_read_only(request, 'vaccines')
-
-
-# Legacy Group CRUD
-
-def group_create(request):
-    return _redirect_legacy_policy_read_only(request, 'groups')
-
-
-def group_edit(request, pk):
-    return _redirect_legacy_policy_read_only(request, 'groups')
-
-
-def group_delete(request, pk):
-    return _redirect_legacy_policy_read_only(request, 'groups')

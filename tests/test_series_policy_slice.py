@@ -1,5 +1,4 @@
 from vaccines.engine import VaccinationEngine
-from vaccines.models import ScheduleRule
 from .base import BaseVaccinationTestCase
 
 

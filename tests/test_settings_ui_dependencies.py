@@ -121,3 +121,41 @@ class TestDependencySettingsUI(BaseVaccinationTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Dependency rules cannot create a direct blocking cycle between two series slots.')
         self.assertEqual(DependencyRule.objects.filter(dependent_series=rota, anchor_series=pneumo).count(), 0)
+
+    def test_dependency_create_rejects_transitive_blocking_cycle(self):
+        pneumo = self.create_series(series_name='Pneumo Support', vaccine_name='Pneumo Support')
+        rota = self.create_series(series_name='Rota Support', vaccine_name='Rota Support')
+        measles = self.create_series(series_name='Measles Support', vaccine_name='Measles Support')
+        DependencyRule.objects.create(
+            dependent_series=pneumo,
+            dependent_slot_number=1,
+            anchor_series=rota,
+            anchor_slot_number=1,
+            min_offset_days=0,
+            block_if_anchor_missing=True,
+            active=True,
+        )
+        DependencyRule.objects.create(
+            dependent_series=rota,
+            dependent_slot_number=1,
+            anchor_series=measles,
+            anchor_slot_number=1,
+            min_offset_days=0,
+            block_if_anchor_missing=True,
+            active=True,
+        )
+
+        response = self.client.post(reverse('vaccines:dependency_create'), {
+            'dependent_series': str(measles.pk),
+            'dependent_slot_number': '1',
+            'anchor_series': str(pneumo.pk),
+            'anchor_slot_number': '1',
+            'min_offset_days': '0',
+            'block_if_anchor_missing': 'on',
+            'active': 'on',
+            'notes': 'Would complete a three-series deadlock',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Dependency rules cannot create a blocking cycle across multiple series slots.')
+        self.assertEqual(DependencyRule.objects.filter(dependent_series=measles, anchor_series=pneumo).count(), 0)

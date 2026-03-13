@@ -1,7 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 
-from vaccines.models import DependencyRule, GroupRule, Product, ScheduleRule, Series, SeriesProduct, SeriesRule, SeriesTransitionRule, Vaccine, VaccineGroup
+from vaccines.models import DependencyRule, Product, Series, SeriesProduct, SeriesRule, SeriesTransitionRule, Vaccine
 
 
 class TestModelValidationPrevention(TestCase):
@@ -229,3 +229,79 @@ class TestModelValidationPrevention(TestCase):
         with self.assertRaises(ValidationError) as cm:
             cyclical_rule.full_clean()
         self.assertIn("direct blocking cycle", str(cm.exception))
+
+    def test_dependency_rule_transitive_cycle_prevention(self):
+        vaccine_a = Vaccine.objects.create(name="Transitive Series A")
+        vaccine_b = Vaccine.objects.create(name="Transitive Series B")
+        vaccine_c = Vaccine.objects.create(name="Transitive Series C")
+        product_a = Product.objects.create(vaccine=vaccine_a)
+        product_b = Product.objects.create(vaccine=vaccine_b)
+        product_c = Product.objects.create(vaccine=vaccine_c)
+        series_a = Series.objects.create(name="Transitive A")
+        series_b = Series.objects.create(name="Transitive B")
+        series_c = Series.objects.create(name="Transitive C")
+        SeriesProduct.objects.create(series=series_a, product=product_a, priority=0)
+        SeriesProduct.objects.create(series=series_b, product=product_b, priority=0)
+        SeriesProduct.objects.create(series=series_c, product=product_c, priority=0)
+        SeriesRule.objects.create(
+            series=series_a,
+            slot_number=1,
+            prior_valid_doses=0,
+            product=product_a,
+            min_age_days=10,
+            recommended_age_days=10,
+            overdue_age_days=20,
+            min_interval_days=0,
+        )
+        SeriesRule.objects.create(
+            series=series_b,
+            slot_number=1,
+            prior_valid_doses=0,
+            product=product_b,
+            min_age_days=10,
+            recommended_age_days=10,
+            overdue_age_days=20,
+            min_interval_days=0,
+        )
+        SeriesRule.objects.create(
+            series=series_c,
+            slot_number=1,
+            prior_valid_doses=0,
+            product=product_c,
+            min_age_days=10,
+            recommended_age_days=10,
+            overdue_age_days=20,
+            min_interval_days=0,
+        )
+        DependencyRule.objects.create(
+            dependent_series=series_a,
+            dependent_slot_number=1,
+            anchor_series=series_b,
+            anchor_slot_number=1,
+            min_offset_days=0,
+            block_if_anchor_missing=True,
+            active=True,
+        )
+        DependencyRule.objects.create(
+            dependent_series=series_b,
+            dependent_slot_number=1,
+            anchor_series=series_c,
+            anchor_slot_number=1,
+            min_offset_days=0,
+            block_if_anchor_missing=True,
+            active=True,
+        )
+
+        cyclical_rule = DependencyRule(
+            dependent_series=series_c,
+            dependent_slot_number=1,
+            anchor_series=series_a,
+            anchor_slot_number=1,
+            min_offset_days=0,
+            block_if_anchor_missing=True,
+            active=True,
+        )
+
+        with self.assertRaises(ValidationError) as cm:
+            cyclical_rule.full_clean()
+        self.assertIn("blocking cycle across multiple series slots", str(cm.exception))
