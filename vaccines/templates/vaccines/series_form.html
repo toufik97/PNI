@@ -97,86 +97,107 @@
             {% endfor %}
         </div>
 
-        <div class="form-section">
-            <h5>Linked Products</h5>
+        <div class="form-section" id="products-section">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="mb-0">Linked Products</h5>
+                <button type="button" class="btn btn-sm btn-outline-primary add-formset-row" data-prefix="products">
+                    <i class="bi bi-plus-lg"></i> Add Product
+                </button>
+            </div>
             <p class="text-muted" style="font-size:0.85rem;">Attach the products that can be used in this series. Lower priority values appear first in the series definition.</p>
             {{ product_formset.management_form }}
-            {% for pform in product_formset %}
-            <div class="formset-row">
-                {% if pform.instance.pk %}{{ pform.DELETE }}{% endif %}
-                <div class="row g-2 align-items-start">
-                    {% for field in pform.visible_fields %}
-                    {% if field.name != 'DELETE' %}
-                    <div class="col-md">
-                        <label class="form-label">{{ field.label }}</label>
-                        {{ field }}
-                        {% if field.help_text %}<div class="help-inline">{{ field.help_text }}</div>{% endif %}
-                        {% if field.errors %}<ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            <div id="products-list">
+                {% for pform in product_formset %}
+                <div class="formset-row">
+                    {% if pform.instance.pk %}{{ pform.DELETE }}{% endif %}
+                    <div class="row g-2 align-items-start">
+                        {% for field in pform.visible_fields %}
+                        {% if field.name != 'DELETE' %}
+                        <div class="col-md">
+                            <label class="form-label">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}<div class="help-inline">{{ field.help_text }}</div>{% endif %}
+                            {% if field.errors %}<ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                        </div>
+                        {% endif %}
+                        {% endfor %}
                     </div>
-                    {% endif %}
-                    {% endfor %}
+                    {% for hidden in pform.hidden_fields %}{{ hidden }}{% endfor %}
                 </div>
-                {% for hidden in pform.hidden_fields %}{{ hidden }}{% endfor %}
+                {% endfor %}
             </div>
-            {% endfor %}
             {% if product_formset.non_form_errors %}
             <ul class="errorlist">{% for e in product_formset.non_form_errors %}<li>{{ e }}</li>{% endfor %}</ul>
             {% endif %}
         </div>
 
-        <div class="form-section">
-            <h5>Slot Rules</h5>
+        <div class="form-section" id="rules-section">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="mb-0">Slot Rules</h5>
+                <button type="button" class="btn btn-sm btn-outline-primary add-formset-row" data-prefix="rules">
+                    <i class="bi bi-plus-lg"></i> Add Slot Rule
+                </button>
+            </div>
             <p class="text-muted" style="font-size:0.85rem;">Each rule says which product is valid for a given slot, age window, and interval floor.</p>
             {{ rule_formset.management_form }}
-            {% for rform in rule_formset %}
-            <div class="formset-row">
-                {% if rform.instance.pk %}{{ rform.DELETE }}{% endif %}
-                <div class="row g-2">
-                    {% for field in rform.visible_fields %}
-                    {% if field.name != 'DELETE' %}
-                    <div class="col-md-3">
-                        <label class="form-label">{{ field.label }}</label>
-                        {{ field }}
-                        {% if field.help_text %}<div class="help-inline">{{ field.help_text }}</div>{% endif %}
-                        {% if field.errors %}<ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            <div id="rules-list">
+                {% for rform in rule_formset %}
+                <div class="formset-row">
+                    {% if rform.instance.pk %}{{ rform.DELETE }}{% endif %}
+                    <div class="row g-2">
+                        {% for field in rform.visible_fields %}
+                        {% if field.name != 'DELETE' %}
+                        <div class="col-md-3">
+                            <label class="form-label">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}<div class="help-inline">{{ field.help_text }}</div>{% endif %}
+                            {% if field.errors %}<ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                        </div>
+                        {% endif %}
+                        {% endfor %}
                     </div>
-                    {% endif %}
-                    {% endfor %}
+                    {% for hidden in rform.hidden_fields %}{{ hidden }}{% endfor %}
                 </div>
-                {% for hidden in rform.hidden_fields %}{{ hidden }}{% endfor %}
+                {% endfor %}
             </div>
-            {% endfor %}
             {% if rule_formset.non_form_errors %}
             <ul class="errorlist">{% for e in rule_formset.non_form_errors %}<li>{{ e }}</li>{% endfor %}</ul>
             {% endif %}
         </div>
 
 
-        <div class="form-section">
-            <h5>Transition Rules</h5>
+        <div class="form-section" id="transitions-section">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="mb-0">Transition Rules</h5>
+                <button type="button" class="btn btn-sm btn-outline-primary add-formset-row" data-prefix="transitions">
+                    <i class="bi bi-plus-lg"></i> Add Transition Rule
+                </button>
+            </div>
             <p class="text-muted" style="font-size:0.85rem;">Define when the series can switch from one product to another, including slot ranges and stock-driven fallback rules.</p>
             {{ transition_formset.management_form }}
-            {% for tform in transition_formset %}
-            <div class="formset-row">
-                {% if tform.non_field_errors %}
-                <ul class="errorlist">{% for e in tform.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>
-                {% endif %}
-                {% if tform.instance.pk %}{{ tform.DELETE }}{% endif %}
-                <div class="row g-2 align-items-start">
-                    {% for field in tform.visible_fields %}
-                    {% if field.name != 'DELETE' %}
-                    <div class="col-md-3">
-                        <label class="form-label">{{ field.label }}</label>
-                        {{ field }}
-                        {% if field.help_text %}<div class="help-inline">{{ field.help_text }}</div>{% endif %}
-                        {% if field.errors %}<ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
-                    </div>
+            <div id="transitions-list">
+                {% for tform in transition_formset %}
+                <div class="formset-row">
+                    {% if tform.non_field_errors %}
+                    <ul class="errorlist">{% for e in tform.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>
                     {% endif %}
-                    {% endfor %}
+                    {% if tform.instance.pk %}{{ tform.DELETE }}{% endif %}
+                    <div class="row g-2 align-items-start">
+                        {% for field in tform.visible_fields %}
+                        {% if field.name != 'DELETE' %}
+                        <div class="col-md-3">
+                            <label class="form-label">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}<div class="help-inline">{{ field.help_text }}</div>{% endif %}
+                            {% if field.errors %}<ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% for hidden in tform.hidden_fields %}{{ hidden }}{% endfor %}
                 </div>
-                {% for hidden in tform.hidden_fields %}{{ hidden }}{% endfor %}
+                {% endfor %}
             </div>
-            {% endfor %}
             {% if transition_formset.non_form_errors %}
             <ul class="errorlist">{% for e in transition_formset.non_form_errors %}<li>{{ e }}</li>{% endfor %}</ul>
             {% endif %}
@@ -187,4 +208,79 @@
         </div>
     </form>
 </div>
+
+<!-- Formset Empty Templates -->
+<div id="products-template" style="display:none;">
+    <div class="formset-row">
+        <div class="row g-2 align-items-start">
+            {% for field in product_formset.empty_form.visible_fields %}
+            <div class="col-md">
+                <label class="form-label">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}<div class="help-inline">{{ field.help_text }}</div>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% for hidden in product_formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
+    </div>
+</div>
+
+<div id="rules-template" style="display:none;">
+    <div class="formset-row">
+        <div class="row g-2">
+            {% for field in rule_formset.empty_form.visible_fields %}
+            <div class="col-md-3">
+                <label class="form-label">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}<div class="help-inline">{{ field.help_text }}</div>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% for hidden in rule_formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
+    </div>
+</div>
+
+<div id="transitions-template" style="display:none;">
+    <div class="formset-row">
+        <div class="row g-2 align-items-start">
+            {% for field in transition_formset.empty_form.visible_fields %}
+            <div class="col-md-3">
+                <label class="form-label">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}<div class="help-inline">{{ field.help_text }}</div>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% for hidden in transition_formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const addButtons = document.querySelectorAll('.add-formset-row');
+        
+        addButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const prefix = this.dataset.prefix;
+                const template = document.getElementById(`${prefix}-template`).innerHTML;
+                const list = document.getElementById(`${prefix}-list`);
+                const totalForms = document.getElementById(`id_${prefix}-TOTAL_FORMS`);
+                
+                const formCount = parseInt(totalForms.value);
+                const newRowHtml = template.replace(/__prefix__/g, formCount);
+                
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = newRowHtml;
+                const newRow = tempDiv.firstElementChild;
+                
+                list.appendChild(newRow);
+                totalForms.value = formCount + 1;
+                
+                // Optional: focus first input in new row
+                const firstInput = newRow.querySelector('input, select, textarea');
+                if (firstInput) firstInput.focus();
+            });
+        });
+    });
+</script>
 {% endblock %}

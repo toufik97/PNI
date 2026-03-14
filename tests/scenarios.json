@@ -336,5 +336,93 @@
     ],
     "expected_invalid": [],
     "comment": "Gap of 28 days met. RR Dose 1 valid. Child at 600d is overdue for RR Dose 2 (540d)."
+  },
+  {
+    "name": "PCV: PrimoVax Track (starts at Slot 2)",
+    "age_days": 130,
+    "history": [
+      {
+        "vax": "Primovax",
+        "days_ago": 60
+      }
+    ],
+    "expected_due": [
+      "Penta",
+      "Primovax"
+    ]
+  },
+  {
+    "name": "PCV: Prevenar Infant Standard Track (0 doses)",
+    "age_days": 60,
+    "history": [],
+    "expected_due": [
+      "Penta",
+      "BCG",
+      "Prevenar13"
+    ]
+  },
+  {
+    "name": "PCV: Prevenar Dynamic Booster (Late D2)",
+    "age_days": 365,
+    "history": [
+      {
+        "vax": "Prevenar13",
+        "days_ago": 305
+      },
+      {
+        "vax": "Prevenar13",
+        "days_ago": 60
+      }
+    ],
+    "expected_due": [],
+    "expected_upcoming": [
+      "Prevenar13"
+    ],
+    "comment": "D1 at 60d, D2 at 305d old (60 days ago). Booster (D3) needs 6 months interval from D2, so not due at 365. Due at 305+180=485."
+  },
+  {
+    "name": "PCV: Catch-up 15mo (needs exactly 2 doses of Prevenar)",
+    "age_days": 450,
+    "history": [],
+    "expected_due": [
+      "Prevenar13",
+      "Penta",
+      "RR"
+    ]
+  },
+  {
+    "name": "PCV: Catch-up 15mo Dose 2 (needs exactly 2 doses of Prevenar/PrimoVax)",
+    "age_days": 510,
+    "history": [
+      {
+        "vax": "Prevenar13",
+        "days_ago": 60
+      }
+    ],
+    "expected_due": [
+      "Prevenar13"
+    ]
+  },
+  {
+    "name": "PCV Guardrail: Penta given today blocks PrimoVax D2 for 15d",
+    "age_days": 130,
+    "history": [
+      {
+        "vax": "Penta",
+        "days_ago": 70
+      },
+      {
+        "vax": "Primovax",
+        "days_ago": 60
+      },
+      {
+        "vax": "Penta",
+        "days_ago": 0
+      }
+    ],
+    "expected_due": [],
+    "expected_upcoming": [
+      "Primovax"
+    ]
   }
 ]

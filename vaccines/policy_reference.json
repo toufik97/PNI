@@ -221,18 +221,20 @@
                     "min_age_days": 60,
                     "recommended_age_days": 60,
                     "overdue_age_days": 90,
-                    "max_age_days": null,
-                    "min_interval_days": 0
+                    "max_age_days": 1824,
+                    "min_interval_days": 0,
+                    "dose_amount": "0.5ml"
                 },
                 {
                     "slot_number": 1,
                     "prior_valid_doses": 0,
                     "product": "Primovax",
-                    "min_age_days": 75,
-                    "recommended_age_days": 75,
+                    "min_age_days": 70,
+                    "recommended_age_days": 70,
                     "overdue_age_days": 105,
-                    "max_age_days": null,
-                    "min_interval_days": 0
+                    "max_age_days": 1824,
+                    "min_interval_days": 0,
+                    "dose_amount": "0.5ml"
                 },
                 {
                     "slot_number": 2,
@@ -241,18 +243,64 @@
                     "min_age_days": 120,
                     "recommended_age_days": 120,
                     "overdue_age_days": 150,
-                    "max_age_days": null,
-                    "min_interval_days": 56
+                    "max_age_days": 1824,
+                    "min_interval_days": 56,
+                    "dose_amount": "0.5ml"
                 },
                 {
                     "slot_number": 2,
                     "prior_valid_doses": 1,
                     "product": "Primovax",
-                    "min_age_days": 135,
-                    "recommended_age_days": 135,
+                    "min_age_days": 126,
+                    "recommended_age_days": 126,
                     "overdue_age_days": 165,
-                    "max_age_days": null,
-                    "min_interval_days": 60
+                    "max_age_days": 1824,
+                    "min_interval_days": 56,
+                    "dose_amount": "0.5ml"
+                },
+                {
+                    "slot_number": 3,
+                    "prior_valid_doses": 2,
+                    "product": "Prevenar13",
+                    "min_age_days": 365,
+                    "recommended_age_days": 365,
+                    "overdue_age_days": 425,
+                    "max_age_days": 1824,
+                    "min_interval_days": 180,
+                    "dose_amount": "0.5ml"
+                },
+                {
+                    "slot_number": 3,
+                    "prior_valid_doses": 2,
+                    "product": "Primovax",
+                    "min_age_days": 180,
+                    "recommended_age_days": 180,
+                    "overdue_age_days": 210,
+                    "max_age_days": 364,
+                    "min_interval_days": 56,
+                    "dose_amount": "0.5ml"
+                },
+                {
+                    "slot_number": 3,
+                    "prior_valid_doses": 2,
+                    "product": "Primovax",
+                    "min_age_days": 365,
+                    "recommended_age_days": 365,
+                    "overdue_age_days": 425,
+                    "max_age_days": 1824,
+                    "min_interval_days": 56,
+                    "dose_amount": "0.5ml"
+                },
+                {
+                    "slot_number": 4,
+                    "prior_valid_doses": 3,
+                    "product": "Primovax",
+                    "min_age_days": 365,
+                    "recommended_age_days": 365,
+                    "overdue_age_days": 425,
+                    "max_age_days": 1824,
+                    "min_interval_days": 180,
+                    "dose_amount": "0.5ml"
                 }
             ]
         },
@@ -281,7 +329,7 @@
                     "product": "RR",
                     "min_age_days": 540,
                     "recommended_age_days": 540,
-                    "overdue_age_days": 600,
+                    "overdue_age_days": 540,
                     "max_age_days": null,
                     "min_interval_days": 28
                 }
@@ -303,6 +351,17 @@
                     "min_age_days": 0,
                     "recommended_age_days": 0,
                     "overdue_age_days": 30,
+                    "max_age_days": null,
+                    "min_interval_days": 0,
+                    "dose_amount": "0.05ml"
+                },
+                {
+                    "slot_number": 1,
+                    "prior_valid_doses": 0,
+                    "product": "BCG",
+                    "min_age_days": 365,
+                    "recommended_age_days": 365,
+                    "overdue_age_days": 365,
                     "max_age_days": null,
                     "min_interval_days": 0,
                     "dose_amount": "0.1ml"
@@ -335,13 +394,11 @@
     "dependencies": [
         {
             "dependent_series": "Pneumo",
-            "dependent_slot_number": 1,
             "anchor_series": "DTP Family",
-            "anchor_slot_number": 1,
             "min_offset_days": 15,
-            "block_if_anchor_missing": true,
+            "block_if_anchor_missing": false,
             "active": true,
-            "notes": "Pneumo starts at least 15 days after the first DTP dose."
+            "notes": "PrimoVax must be spaced 15 days from any DTP dose. (Requires engine support for specific product blocking, currently applied to whole series)."
         }
     ]
 }

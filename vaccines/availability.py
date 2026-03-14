@@ -25,9 +25,9 @@ class AvailabilityResolver:
             states,
             key=lambda state: (
                 state['target_date'],
-                -state['rule'].min_age_days,
                 0 if state['last_product_match'] else 1,
                 state['priority'],
+                -state['rule'].min_age_days,
                 state['rule'].product.vaccine.name,
             ),
         )[0]
@@ -39,9 +39,9 @@ class AvailabilityResolver:
         return sorted(
             states,
             key=lambda state: (
-                -state['rule'].min_age_days,
                 0 if state['last_product_match'] else 1,
                 state['priority'],
+                -state['rule'].min_age_days,
                 state['rule'].product.vaccine.name,
             ),
         )[0]

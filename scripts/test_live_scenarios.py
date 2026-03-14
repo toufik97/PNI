@@ -62,7 +62,7 @@ def run_live_scenarios():
                 actual_due = sorted([d['vaccine'].name for d in result['due_today']])
                 expected_due = sorted(scenario.get('expected_due', []))
 
-                actual_missing = sorted([v.name for v in result['missing_doses']])
+                actual_missing = sorted([d['vaccine'].name for d in result['missing_doses']])
                 expected_missing = sorted(scenario.get('expected_missing', []))
 
                 # 4. Compare

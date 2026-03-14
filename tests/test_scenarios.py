@@ -8,6 +8,7 @@ class TestDynamicScenarios(BaseVaccinationTestCase):
     Dynamically loads scenarios from scenarios.json and runs them
     against the vaccination engine.
     """
+    optional_series_names = ('Pneumo',)
 
     @classmethod
     def generate_tests(cls):

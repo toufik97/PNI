@@ -24,6 +24,8 @@ Since the individual `DTC` schedule rule only defines 2 doses, the history valid
 ### Recommended Fix
 Update `_validate_history` to **skip** any vaccine that belongs to a `VaccineGroup`. Create a specialized `_validate_group_history` method that uses the `GroupRule` sequence to validate past doses instead.
 
+**Status**: ✅ Resolved. The entire engine has been refactored (Series Policy Redesign) to evaluate doses primarily via abstract `Series` (e.g., DTP Series) and its `SeriesRule`s rather than looking up individual vaccine `ScheduleRule`s. History validation now uses `SeriesHistoryValidator` which correctly checks the safety floors and validation logic for any number of valid doses that a Series dictates, rendering the "Rule not found" issue obsolete.
+
 ---
 
 ## [GAP-001] Reporting Ambiguity: Vial vs. Protection

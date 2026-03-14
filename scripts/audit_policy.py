@@ -2,14 +2,17 @@ import os
 import sys
 import json
 import django
-from datetime import timedelta
+from datetime import date
 
 # Set up Django environment
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'vaxapp.settings')
 django.setup()
 
-from vaccines.models import Vaccine, ScheduleRule, CatchupRule, VaccineGroup, GroupRule
+from vaccines.models import (
+    Vaccine, Product, Series, SeriesProduct, SeriesRule, 
+    SeriesTransitionRule, DependencyRule, PolicyVersion
+)
 
 def audit_policy(sync=False):
     # Absolute path to policy file relative to this script
@@ -22,175 +25,175 @@ def audit_policy(sync=False):
     with open(policy_path, 'r') as f:
         policy = json.load(f)
 
+    active_version = PolicyVersion.get_active()
     print("\n" + "="*80)
-    print("VACCINATION POLICY AUDIT")
+    print(f"VACCINATION SERIES POLICY AUDIT (Active Version: {active_version.name if active_version else 'None'})")
     print("="*80)
 
-    # 1. Audit Vaccines
-    print("\n[1] VACCINES")
+    # 1. Audit Vaccines & Products
+    print("\n[1] VACCINES & PRODUCTS")
     print("-" * 40)
     for v_data in policy['vaccines']:
         name = v_data['name']
         live = v_data['live']
+        manufacturer = v_data.get('manufacturer')
+        
         try:
             v_obj = Vaccine.objects.get(name=name)
-            status = "MATCH" if v_obj.live == live else f"MISMATCH (DB: {v_obj.live}, Expected: {live})"
+            status = "MATCH" if v_obj.live == live else f"MISMATCH (Live DB: {v_obj.live}, Expected: {live})"
             print(f"{name:15} | {status}")
             if sync and v_obj.live != live:
                 v_obj.live = live
                 v_obj.save()
-                print(f"  -> FIXED: Updated {name} live={live}")
+            
+            # Ensure Product exists
+            p_obj, created = Product.objects.get_or_create(vaccine=v_obj)
+            if created:
+                print(f"  -> FIXED: Created Product for {name}")
+            if manufacturer and p_obj.manufacturer != manufacturer:
+                 print(f"  -> MISMATCH: Manufacturer DB={p_obj.manufacturer}, Expected={manufacturer}")
+                 if sync:
+                     p_obj.manufacturer = manufacturer
+                     p_obj.save()
+
         except Vaccine.DoesNotExist:
             print(f"{name:15} | MISSING")
             if sync:
-                Vaccine.objects.create(name=name, live=live)
-                print(f"  -> FIXED: Created {name}")
+                v_obj = Vaccine.objects.create(name=name, live=live)
+                Product.objects.create(vaccine=v_obj, manufacturer=manufacturer)
+                print(f"  -> FIXED: Created Vaccine and Product for {name}")
 
-    # 2. Audit Schedule Rules
-    print("\n[2] SCHEDULE RULES")
+    # 2. Audit Series
+    print("\n[2] SERIES & SERIES RULES")
     print("-" * 40)
-    for sr_data in policy['schedule_rules']:
-        v_name = sr_data['vaccine']
-        print(f"\nVaccine: {v_name}")
+    for s_data in policy['series']:
+        s_name = s_data['name']
+        print(f"\nSeries: {s_name}")
         try:
-            v_obj = Vaccine.objects.get(name=v_name)
-            for expected_rule in sr_data['rules']:
-                dose_num = expected_rule['dose_number']
-                actual_rule = ScheduleRule.objects.filter(vaccine=v_obj, dose_number=dose_num).first()
-                
-                if not actual_rule:
-                    print(f"  Dose {dose_num:2} | MISSING")
+            s_obj = Series.objects.get(name=s_name)
+            # Check basic fields
+            if s_obj.min_valid_interval_days != s_data.get('min_valid_interval_days', 28):
+                print(f"  Interval mismatch: DB={s_obj.min_valid_interval_days}, Expected={s_data.get('min_valid_interval_days', 28)}")
+                if sync: 
+                    s_obj.min_valid_interval_days = s_data.get('min_valid_interval_days', 28)
+                    s_obj.save()
+
+            # Audit Products in Series
+            expected_products = s_data.get('products', [])
+            actual_products = [sp.product.vaccine.name for sp in s_obj.series_products.all()]
+            for p_name in expected_products:
+                if p_name not in actual_products:
+                    print(f"  Product MISSING: {p_name}")
                     if sync:
-                        ScheduleRule.objects.create(vaccine=v_obj, **expected_rule)
-                        print(f"    -> FIXED: Created Dose {dose_num}")
-                else:
-                    differences = []
-                    for key, val in expected_rule.items():
-                        actual_val = getattr(actual_rule, key)
-                        if actual_val != val:
-                            differences.append(f"{key}: DB={actual_val}, Expected={val}")
-                    
-                    if not differences:
-                        print(f"  Dose {dose_num:2} | MATCH")
-                    else:
-                        print(f"  Dose {dose_num:2} | MISMATCH")
-                        for diff in differences:
-                            print(f"    - {diff}")
-                        if sync:
-                            for key, val in expected_rule.items():
-                                setattr(actual_rule, key, val)
-                            actual_rule.save()
-                            print(f"    -> FIXED: Updated Dose {dose_num}")
-        except Vaccine.DoesNotExist:
-            print(f"  {v_name:15} | Vaccine itself missing, cannot audit rules.")
+                        p_obj = Product.objects.get(vaccine__name=p_name)
+                        SeriesProduct.objects.create(series=s_obj, product=p_obj)
+                        print(f"    -> FIXED: Added {p_name} to series")
 
-    # 3. Audit Catch-up Rules
-    print("\n[3] CATCH-UP RULES")
-    print("-" * 40)
-    for cr_data in policy['catchup_rules']:
-        v_name = cr_data['vaccine']
-        print(f"\nVaccine: {v_name}")
-        try:
-            v_obj = Vaccine.objects.get(name=v_name)
-            for expected_rule in cr_data['rules']:
-                # Find matching rule by logic fields
-                actual_rule = CatchupRule.objects.filter(
-                    vaccine=v_obj,
-                    min_age_days=expected_rule['min_age_days'],
-                    max_age_days=expected_rule['max_age_days'],
-                    prior_doses=expected_rule['prior_doses']
+            # Audit Rules
+            for i, r_data in enumerate(s_data['rules']):
+                # Finding a unique match for a rule is tricky, we'll use slot, prior_doses, and product
+                p_obj = Product.objects.get(vaccine__name=r_data['product'])
+                actual_rule = SeriesRule.objects.filter(
+                    series=s_obj,
+                    slot_number=r_data['slot_number'],
+                    prior_valid_doses=r_data['prior_valid_doses'],
+                    product=p_obj,
+                    min_age_days=r_data['min_age_days']
                 ).first()
 
                 if not actual_rule:
-                    print(f"  Rule {expected_rule['min_age_days']}-{expected_rule['max_age_days']}d | MISSING")
+                    print(f"  Rule S:{r_data['slot_number']} P:{r_data['prior_valid_doses']} V:{r_data['product']} | MISSING")
                     if sync:
-                        CatchupRule.objects.create(vaccine=v_obj, **expected_rule)
+                        SeriesRule.objects.create(series=s_obj, product=p_obj, **{k: v for k, v in r_data.items() if k != 'product'})
                         print(f"    -> FIXED: Created Rule")
                 else:
-                    differences = []
-                    for key, val in expected_rule.items():
+                    diffs = []
+                    for key, val in r_data.items():
+                        if key == 'product': continue
                         actual_val = getattr(actual_rule, key)
                         if actual_val != val:
-                            differences.append(f"{key}: DB={actual_val}, Expected={val}")
+                            diffs.append(f"{key}: DB={actual_val}, Expected={val}")
                     
-                    if not differences:
-                        print(f"  Rule {expected_rule['min_age_days']}-{expected_rule['max_age_days']}d | MATCH")
-                    else:
-                        print(f"  Rule {expected_rule['min_age_days']}-{expected_rule['max_age_days']}d | MISMATCH")
-                        for diff in differences:
-                            print(f"    - {diff}")
+                    if diffs:
+                        print(f"  Rule S:{r_data['slot_number']} P:{r_data['prior_valid_doses']} V:{r_data['product']} | MISMATCH")
+                        for d in diffs: print(f"    - {d}")
                         if sync:
-                            for key, val in expected_rule.items():
+                            for key, val in r_data.items():
+                                if key == 'product': continue
                                 setattr(actual_rule, key, val)
                             actual_rule.save()
                             print(f"    -> FIXED: Updated Rule")
-        except Vaccine.DoesNotExist:
-            print(f"  {v_name:15} | Vaccine missing.")
 
-    # 4. Audit Groups
-    print("\n[4] VACCINE GROUPS")
-    print("-" * 40)
-    for g_data in policy['groups']:
-        g_name = g_data['name']
-        try:
-            g_obj = VaccineGroup.objects.get(name=g_name)
-            status = "MATCH" if g_obj.min_valid_interval_days == g_data['min_valid_interval_days'] else "MISMATCH"
-            print(f"{g_name:15} | {status}")
-            
-            # Audit Group Rules
-            for expected_rule in g_data['rules']:
-                v_to_give = Vaccine.objects.get(name=expected_rule['vaccine_to_give'])
-                actual_rule = GroupRule.objects.filter(
-                    group=g_obj,
-                    prior_doses=expected_rule['prior_doses'],
-                    min_age_days=expected_rule['min_age_days']
-                ).first()
-
-                if not actual_rule:
-                    print(f"  Rule P:{expected_rule['prior_doses']} A:{expected_rule['min_age_days']} | MISSING")
-                    if sync:
-                        params = {k: v for k, v in expected_rule.items() if k != 'vaccine_to_give'}
-                        GroupRule.objects.create(group=g_obj, vaccine_to_give=v_to_give, **params)
-                        print(f"    -> FIXED: Created Group Rule")
-                else:
-                    differences = []
-                    if actual_rule.vaccine_to_give.id != v_to_give.id:
-                        differences.append(f"vaccine: DB={actual_rule.vaccine_to_give.name}, Expected={v_to_give.name}")
-                    
-                    for key, val in expected_rule.items():
-                        if key == 'vaccine_to_give': continue
-                        actual_val = getattr(actual_rule, key)
-                        if actual_val != val:
-                            differences.append(f"{key}: DB={actual_val}, Expected={val}")
-
-                    if not differences:
-                        # print(f"  Rule P:{expected_rule['prior_doses']} A:{expected_rule['min_age_days']} | MATCH")
-                        pass
-                    else:
-                        print(f"  Rule P:{expected_rule['prior_doses']} A:{expected_rule['min_age_days']} | MISMATCH")
-                        for diff in differences:
-                            print(f"    - {diff}")
-                        if sync:
-                            for key, val in expected_rule.items():
-                                if key == 'vaccine_to_give':
-                                    actual_rule.vaccine_to_give = v_to_give
-                                else:
-                                    setattr(actual_rule, key, val)
-                            actual_rule.save()
-                            print(f"    -> FIXED: Updated Group Rule")
-
-        except VaccineGroup.DoesNotExist:
-            print(f"{g_name:15} | MISSING")
+        except Series.DoesNotExist:
+            print(f"{s_name:15} | MISSING")
             if sync:
-                g_obj = VaccineGroup.objects.create(name=g_name, min_valid_interval_days=g_data['min_valid_interval_days'])
-                v_objs = [Vaccine.objects.get(name=name) for name in g_data['vaccines']]
-                g_obj.vaccines.set(v_objs)
-                print(f"  -> FIXED: Created Group {g_name}")
+                s_obj = Series.objects.create(name=s_name, min_valid_interval_days=s_data.get('min_valid_interval_days', 28))
+                print(f"  -> FIXED: Created Series {s_name}. Rerun sync to add products/rules.")
+
+    # 3. Transitions
+    print("\n[3] TRANSITIONS")
+    print("-" * 40)
+    for t_data in policy.get('transitions', []):
+        try:
+            s_obj = Series.objects.get(name=t_data['series'])
+            to_p = Product.objects.get(vaccine__name=t_data['to_product'])
+            from_p = Product.objects.get(vaccine__name=t_data['from_product']) if t_data.get('from_product') else None
+            
+            actual_t = SeriesTransitionRule.objects.filter(
+                series=s_obj,
+                from_product=from_p,
+                to_product=to_p,
+                start_slot_number=t_data.get('start_slot_number')
+            ).first()
+
+            if not actual_t:
+                print(f"  Transition {t_data['series']}: {t_data.get('from_product', 'Any')} -> {t_data['to_product']} | MISSING")
+                if sync:
+                    SeriesTransitionRule.objects.create(
+                        series=s_obj,
+                        from_product=from_p,
+                        to_product=to_p,
+                        start_slot_number=t_data.get('start_slot_number'),
+                        end_slot_number=t_data.get('end_slot_number'),
+                        allow_if_unavailable=t_data.get('allow_if_unavailable', False)
+                    )
+                    print(f"    -> FIXED: Created Transition")
+        except (Series.DoesNotExist, Product.DoesNotExist):
+            print(f"  Transition for {t_data.get('series')} | Series or Product missing")
+
+    # 4. Dependencies
+    print("\n[4] DEPENDENCIES")
+    print("-" * 40)
+    for d_data in policy.get('dependencies', []):
+        try:
+            dep_s = Series.objects.get(name=d_data['dependent_series'])
+            anc_s = Series.objects.get(name=d_data['anchor_series'])
+            
+            actual_d = DependencyRule.objects.filter(
+                dependent_series=dep_s,
+                dependent_slot_number=d_data.get('dependent_slot_number'),
+                anchor_series=anc_s,
+                anchor_slot_number=d_data.get('anchor_slot_number'),
+                min_offset_days=d_data['min_offset_days']
+            ).first()
+
+            if not actual_d:
+                print(f"  Dependency: {d_data['dependent_series']} slot {d_data.get('dependent_slot_number')} after {d_data['anchor_series']} | MISSING")
+                if sync:
+                    DependencyRule.objects.create(
+                        dependent_series=dep_s,
+                        dependent_slot_number=d_data.get('dependent_slot_number'),
+                        anchor_series=anc_s,
+                        anchor_slot_number=d_data.get('anchor_slot_number'),
+                        min_offset_days=d_data['min_offset_days'],
+                        block_if_anchor_missing=d_data.get('block_if_anchor_missing', True)
+                    )
+                    print(f"    -> FIXED: Created Dependency")
+        except Series.DoesNotExist:
+             print(f"  Dependency | Series missing")
 
     print("\nAudit Complete.")
 
 if __name__ == "__main__":
     is_sync = "--sync" in sys.argv
     audit_policy(sync=is_sync)
-    if is_sync:
-        print("\nAll policies have been synchronized with the Source of Truth.")
