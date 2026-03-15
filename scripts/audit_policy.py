@@ -156,7 +156,7 @@ def audit_policy(sync=False):
                 ).first()
 
                 if not actual_rule:
-                    print(f"  Rule S:{r_data['slot_number']} P:{r_data['prior_valid_doses']} V:{r_data['product']} | MISSING")
+                    print(f"  Rule S:{r_data['slot_number']} P:{r_data['prior_valid_doses']} V:{r_data['product']} C:{r_data.get('category', 'routine')} | MISSING")
                     if sync:
                         SeriesRule.objects.create(series=s_obj, product=p_obj, **{k: v for k, v in r_data.items() if k != 'product'})
                         print(f"    -> FIXED: Created Rule")
@@ -169,7 +169,7 @@ def audit_policy(sync=False):
                             diffs.append(f"{key}: DB={actual_val}, Expected={val}")
                     
                     if diffs:
-                        print(f"  Rule S:{r_data['slot_number']} P:{r_data['prior_valid_doses']} V:{r_data['product']} | MISMATCH")
+                        print(f"  Rule S:{r_data['slot_number']} P:{r_data['prior_valid_doses']} V:{r_data['product']} C:{r_data.get('category', 'routine')} | MISMATCH")
                         for d in diffs: print(f"    - {d}")
                         if sync:
                             for key, val in r_data.items():

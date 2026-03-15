@@ -211,6 +211,7 @@ class VaccinationEngine:
         blocking_constraints: Optional[List[Dict[str, Any]]] = None,
         warning_constraints: Optional[List[Dict[str, Any]]] = None,
         unavailable: bool = False,
+        category: Optional[str] = None,
     ) -> Dict[str, Any]:
         item = {
             'vaccine': vaccine,
@@ -229,6 +230,7 @@ class VaccinationEngine:
             'product_name': product.vaccine.name if product else vaccine.name,
             'blocking_constraints': list(blocking_constraints or []),
             'warning_constraints': list(warning_constraints or []),
+            'rule_category': category,
         }
         if target_date is not None:
             item['target_date'] = target_date
@@ -368,6 +370,7 @@ class VaccinationEngine:
             product=state['rule'].product,
             warning_constraints=state.get('warning_constraints'),
             unavailable=unavailable,
+            category=state['rule'].category,
         )
 
     def _state_to_missing_item(self, series: Series, state):
@@ -383,6 +386,7 @@ class VaccinationEngine:
             series=series,
             product=state['rule'].product,
             warning_constraints=state.get('warning_constraints'),
+            category=state['rule'].category,
         )
 
     def _state_to_upcoming_item(self, series: Series, state):
@@ -400,6 +404,7 @@ class VaccinationEngine:
             target_date=state['target_date'],
             blocking_constraints=state['blocking_constraints'],
             warning_constraints=state.get('warning_constraints'),
+            category=state['rule'].category,
         )
 
     def _state_to_blocked_item(self, series: Series, state):
@@ -417,6 +422,7 @@ class VaccinationEngine:
             product=state['rule'].product,
             target_date=state['target_date'],
             blocking_constraints=state['blocking_constraints'],
+            category=state['rule'].category,
         )
         item['reasons'] = reasons
         return item

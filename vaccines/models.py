@@ -134,9 +134,24 @@ class SeriesProduct(models.Model):
 
 
 class SeriesRule(models.Model):
+    CATEGORY_ROUTINE = 'routine'
+    CATEGORY_CATCHUP = 'catchup'
+    CATEGORY_SPECIAL = 'special'
+    CATEGORY_CHOICES = [
+        (CATEGORY_ROUTINE, 'Routine (Standard Schedule)'),
+        (CATEGORY_CATCHUP, 'Catch-up (Late Vaccination)'),
+        (CATEGORY_SPECIAL, 'Special Case (Clinical Variations)'),
+    ]
+
     series = models.ForeignKey(Series, on_delete=models.CASCADE, related_name='rules')
     slot_number = models.PositiveIntegerField(help_text="1 for first dose slot, 2 for second, etc.")
     prior_valid_doses = models.PositiveIntegerField(help_text="Number of valid series doses already received")
+    category = models.CharField(
+        max_length=20,
+        choices=CATEGORY_CHOICES,
+        default=CATEGORY_ROUTINE,
+        help_text="Categorize this rule for UI grouping and clinical context."
+    )
     min_age_days = models.PositiveIntegerField(help_text="Minimum age in days for this slot rule")
     recommended_age_days = models.PositiveIntegerField(help_text="Target age in days for this slot rule")
     overdue_age_days = models.PositiveIntegerField(null=True, blank=True, help_text="Age in days when the slot becomes missing")
@@ -147,7 +162,26 @@ class SeriesRule(models.Model):
     notes = models.TextField(blank=True, null=True)
 
     class Meta:
-        ordering = ['series', 'prior_valid_doses', 'min_age_days', 'slot_number']
+        ordering = ['series', 'prior_valid_doses', 'category', 'min_age_days', 'slot_number']
+
+    @property
+    def human_summary(self):
+        def days_to_human(days):
+            if days is None: return "End"
+            if days == 0: return "Birth"
+            if days % 365 == 0: return f"{days // 365}y"
+            if days % 30 == 0: return f"{days // 30}m"
+            if days % 7 == 0: return f"{days // 7}w"
+            return f"{days}d"
+        
+        age_range = f"{days_to_human(self.min_age_days)}"
+        if self.max_age_days:
+            age_range += f" to {days_to_human(self.max_age_days)}"
+        else:
+            age_range += "+"
+
+        interval = f" (min {days_to_human(self.min_interval_days)} interval)" if self.min_interval_days > 0 else ""
+        return f"{self.product.vaccine.name} @ {age_range}{interval}"
 
     def __str__(self):
         return (

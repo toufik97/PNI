@@ -4,234 +4,273 @@
 
 {% block content %}
 <style>
+    :root {
+        --primary-blue: #204a87;
+        --secondary-green: #2f855a;
+        --routine-bg: #ebf8ff;
+        --routine-border: #bee3f8;
+        --catchup-bg: #fffaf0;
+        --catchup-border: #feebc8;
+        --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
     .form-header {
-        background: linear-gradient(135deg, #204a87 0%, #2f855a 100%);
+        background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-green) 100%);
         color: white;
         border-radius: 12px;
         padding: 1.5rem 2rem;
-        margin-bottom: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--card-shadow);
     }
 
-    .form-section {
+    .slot-card {
         background: white;
-        border: 1px solid #dbe4ee;
-        border-radius: 10px;
-        padding: 1.25rem 1.5rem;
-        margin-bottom: 1.25rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        overflow: hidden;
+        box-shadow: var(--card-shadow);
     }
 
-    .form-section h5 {
+    .slot-card-header {
+        background: #f8fafc;
+        padding: 1rem 1.5rem;
+        border-bottom: 2px solid #edf2f7;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .slot-card-header h4 {
+        margin: 0;
+        color: var(--primary-blue);
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .rule-group {
+        padding: 1rem 1.5rem;
+    }
+
+    .rule-category-header {
+        font-size: 0.85rem;
         font-weight: 700;
-        color: #204a87;
-        margin-bottom: 1rem;
-        padding-bottom: 0.5rem;
+        text-transform: uppercase;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.25rem;
         border-bottom: 2px solid #eef3f8;
     }
 
+    .category-routine .rule-category-header { color: #2b6cb0; border-color: #bee3f8; }
+    .category-catchup .rule-category-header { color: #c05621; border-color: #feebc8; }
+    .category-special .rule-category-header { color: #553c9a; border-color: #e9d8fd; }
+
     .formset-row {
-        background: #f7fafc;
-        border: 1px solid #dbe4ee;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
         border-radius: 8px;
-        padding: 0.85rem 1rem;
-        margin-bottom: 0.75rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        transition: all 0.2s;
     }
 
-    .help-inline {
-        font-size: 0.75rem;
+    .formset-row:hover {
+        border-color: #cbd5e0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .category-routine .formset-row { background: var(--routine-bg); border-color: var(--routine-border); }
+    .category-catchup .formset-row { background: var(--catchup-bg); border-color: var(--catchup-border); }
+
+    .age-conversion-helper {
+        font-size: 0.7rem;
         color: #718096;
-        margin-top: 0.15rem;
+        margin-top: 0.25rem;
+        display: block;
     }
 
-    .errorlist {
-        color: #c53030;
-        font-size: 0.85rem;
-        list-style: none;
-        padding: 0;
-        margin: 0.25rem 0 0;
-    }
-
-    .btn-save {
-        background: linear-gradient(135deg, #204a87 0%, #2f855a 100%);
-        color: white;
-        border: none;
-        border-radius: 8px;
-        padding: 0.6rem 2rem;
+    .unit-badge {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: #edf2f7;
+        cursor: pointer;
+        margin-right: 4px;
         font-weight: 600;
     }
 
-    .btn-back {
-        color: #4a5568;
-        text-decoration: none;
-        font-weight: 500;
+    .unit-badge:hover { background: #e2e8f0; }
+
+    .btn-save {
+        background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-green) 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.8rem 2.5rem;
+        font-weight: 700;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
     }
 
     .delete-row-btn {
         color: #e53e3e;
         cursor: pointer;
-        opacity: 0.6;
-        transition: opacity 0.2s;
+        opacity: 0.7;
+        transition: all 0.2s;
         border: none;
         background: transparent;
-        padding: 0;
-        font-size: 1.1rem;
+        padding: 4px;
+        border-radius: 4px;
     }
 
     .delete-row-btn:hover {
         opacity: 1;
+        background: #fff5f5;
+        color: #c53030;
     }
 
-    .formset-row.marked-for-delete {
-        opacity: 0.4;
-        background-color: #fff5f5;
-        border-color: #feb2b2;
+    .marked-for-delete {
+        opacity: 0.3 !important;
+        filter: grayscale(1);
         pointer-events: none;
     }
 
-    .formset-row.marked-for-delete .delete-row-btn {
-        pointer-events: auto;
+    .form-section {
+        background: white;
+        border: 1px solid #dbe4ee;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .age-input-group { position: relative; }
+    
+    .slot-meta-pill {
+        background: #e2e8f0;
         color: #4a5568;
+        padding: 2px 10px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
     }
 </style>
 
 <div class="pt-3">
     <div class="form-header">
-        <h2 class="mb-0">{{ title }}</h2>
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="mb-1">{{ title }}</h2>
+                <p class="mb-0 opacity-75">Define vaccination schedules, routine windows, and catch-up logic.</p>
+            </div>
+            <div class="text-end">
+                <a href="{% url 'vaccines:settings_tab' 'series' %}" class="btn btn-outline-light btn-sm">Cancel</a>
+            </div>
+        </div>
     </div>
 
-    <form method="post" novalidate>
+    <form method="post" novalidate id="series-main-form">
         {% csrf_token %}
 
+        <!-- Core Info -->
         <div class="form-section">
-            <h5>Series Information</h5>
-            {% for field in form %}
-            <div class="mb-3">
-                <label for="{{ field.id_for_label }}" class="form-label fw-semibold">{{ field.label }}</label>
-                {% if field.field.widget.input_type == 'checkbox' %}
-                <div class="form-check">
+            <h5 class="fw-bold mb-3 text-primary"><i class="bi bi-info-circle-fill me-2"></i>General Information</h5>
+            <div class="row">
+                {% for field in form %}
+                <div class="col-md-{% if field.name == 'description' %}12{% else %}4{% endif %} mb-3">
+                    <label for="{{ field.id_for_label }}" class="form-label fw-bold small text-uppercase">{{ field.label }}</label>
+                    {% if field.field.widget.input_type == 'checkbox' %}
+                    <div class="form-check form-switch pb-2">
+                        {{ field }}
+                        <label class="form-check-label ms-2" for="{{ field.id_for_label }}">{{ field.help_text }}</label>
+                    </div>
+                    {% else %}
                     {{ field }}
-                    <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.help_text }}</label>
+                    {% if field.help_text %}<div class="form-text small">{{ field.help_text }}</div>{% endif %}
+                    {% endif %}
+                    {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors|striptags }}</div>{% endif %}
                 </div>
-                {% else %}
-                {{ field }}
-                {% if field.help_text %}
-                <div class="help-inline">{{ field.help_text }}</div>
-                {% endif %}
-                {% endif %}
-                {% if field.errors %}
-                <ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>
-                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Products -->
+        <div class="form-section">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0 text-primary"><i class="bi bi-box-seam-fill me-2"></i>Vaccine Products</h5>
+                <button type="button" class="btn btn-sm btn-primary add-formset-row" data-prefix="products">
+                    <i class="bi bi-plus-lg"></i> Add Product
+                </button>
+            </div>
+            {{ product_formset.management_form }}
+            <div id="products-list" class="row">
+                {% for pform in product_formset %}
+                <div class="col-md-6">
+                    <div class="formset-row">
+                        <div class="d-flex justify-content-end mb-1">
+                            <button type="button" class="delete-row-btn"><i class="bi bi-trash"></i></button>
+                            <div style="display:none;">{{ pform.DELETE }}</div>
+                        </div>
+                        <div class="row g-2">
+                            {% for field in pform.visible_fields %}
+                            {% if field.name != 'DELETE' %}
+                            <div class="col-sm">
+                                <label class="form-label small fw-bold">{{ field.label }}</label>
+                                {{ field }}
+                            </div>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                        {% for hidden in pform.hidden_fields %}{{ hidden }}{% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Rules (The big one) -->
+        <h5 class="fw-bold mb-3 text-secondary px-2"><i class="bi bi-calendar-check-fill me-2"></i>Clinical Schedule (Slot Rules)</h5>
+        {{ rule_formset.management_form }}
+        <div id="slot-cards-container">
+            <!-- Dynamically populated by JS -->
+        </div>
+
+        <!-- Hidden container for standard row-based template -->
+        <div id="rules-list" style="display:none;">
+            {% for rform in rule_formset %}
+            <div class="formset-row rule-form-instance">
+                {% for field in rform.visible_fields %}
+                <div class="field-container" data-field-name="{{ field.name }}">
+                    {{ field }}
+                    {% if field.errors %}<div class="text-danger small">{{ field.errors|striptags }}</div>{% endif %}
+                </div>
+                {% endfor %}
+                {% for hidden in rform.hidden_fields %}{{ hidden }}{% endfor %}
             </div>
             {% endfor %}
         </div>
 
-        <div class="form-section" id="products-section">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <h5 class="mb-0">Linked Products</h5>
-                <button type="button" class="btn btn-sm btn-outline-primary add-formset-row" data-prefix="products">
-                    <i class="bi bi-plus-lg"></i> Add Product
+        <!-- Transitions -->
+        <div class="form-section mt-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0 text-primary"><i class="bi bi-arrow-left-right me-2"></i>Product Transition Logic</h5>
+                <button type="button" class="btn btn-sm btn-primary add-formset-row" data-prefix="transitions">
+                    <i class="bi bi-plus-lg"></i> Add Rule
                 </button>
             </div>
-            <p class="text-muted" style="font-size:0.85rem;">Attach the products that can be used in this series. Lower priority values appear first in the series definition.</p>
-            {{ product_formset.management_form }}
-            <div id="products-list">
-                {% for pform in product_formset %}
-                <div class="formset-row">
-                    <div class="d-flex justify-content-end mb-1">
-                        <button type="button" class="delete-row-btn" title="Remove row">
-                            <i class="bi bi-trash-fill"></i>
-                        </button>
-                        <div style="display:none;">{{ pform.DELETE }}</div>
-                    </div>
-                    <div class="row g-2 align-items-start">
-                        {% for field in pform.visible_fields %}
-                        {% if field.name != 'DELETE' %}
-                        <div class="col-md">
-                            <label class="form-label">{{ field.label }}</label>
-                            {{ field }}
-                            {% if field.help_text %}<div class="help-inline">{{ field.help_text }}</div>{% endif %}
-                            {% if field.errors %}<ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
-                        </div>
-                        {% endif %}
-                        {% endfor %}
-                    </div>
-                    {% for hidden in pform.hidden_fields %}{{ hidden }}{% endfor %}
-                </div>
-                {% endfor %}
-            </div>
-            {% if product_formset.non_form_errors %}
-            <ul class="errorlist">{% for e in product_formset.non_form_errors %}<li>{{ e }}</li>{% endfor %}</ul>
-            {% endif %}
-        </div>
-
-        <div class="form-section" id="rules-section">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <h5 class="mb-0">Slot Rules</h5>
-                <button type="button" class="btn btn-sm btn-outline-primary add-formset-row" data-prefix="rules">
-                    <i class="bi bi-plus-lg"></i> Add Slot Rule
-                </button>
-            </div>
-            <p class="text-muted" style="font-size:0.85rem;">Each rule says which product is valid for a given slot, age window, and interval floor.</p>
-            {{ rule_formset.management_form }}
-            <div id="rules-list">
-                {% for rform in rule_formset %}
-                <div class="formset-row">
-                    <div class="d-flex justify-content-end mb-1">
-                        <button type="button" class="delete-row-btn" title="Remove row">
-                            <i class="bi bi-trash-fill"></i>
-                        </button>
-                        <div style="display:none;">{{ rform.DELETE }}</div>
-                    </div>
-                    <div class="row g-2">
-                        {% for field in rform.visible_fields %}
-                        {% if field.name != 'DELETE' %}
-                        <div class="col-md-3">
-                            <label class="form-label">{{ field.label }}</label>
-                            {{ field }}
-                            {% if field.help_text %}<div class="help-inline">{{ field.help_text }}</div>{% endif %}
-                            {% if field.errors %}<ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
-                        </div>
-                        {% endif %}
-                        {% endfor %}
-                    </div>
-                    {% for hidden in rform.hidden_fields %}{{ hidden }}{% endfor %}
-                </div>
-                {% endfor %}
-            </div>
-            {% if rule_formset.non_form_errors %}
-            <ul class="errorlist">{% for e in rule_formset.non_form_errors %}<li>{{ e }}</li>{% endfor %}</ul>
-            {% endif %}
-        </div>
-
-
-        <div class="form-section" id="transitions-section">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <h5 class="mb-0">Transition Rules</h5>
-                <button type="button" class="btn btn-sm btn-outline-primary add-formset-row" data-prefix="transitions">
-                    <i class="bi bi-plus-lg"></i> Add Transition Rule
-                </button>
-            </div>
-            <p class="text-muted" style="font-size:0.85rem;">Define when the series can switch from one product to another, including slot ranges and stock-driven fallback rules.</p>
             {{ transition_formset.management_form }}
             <div id="transitions-list">
                 {% for tform in transition_formset %}
                 <div class="formset-row">
-                    {% if tform.non_field_errors %}
-                    <ul class="errorlist">{% for e in tform.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>
-                    {% endif %}
                     <div class="d-flex justify-content-end mb-1">
-                        <button type="button" class="delete-row-btn" title="Remove row">
-                            <i class="bi bi-trash-fill"></i>
-                        </button>
+                        <button type="button" class="delete-row-btn"><i class="bi bi-trash"></i></button>
                         <div style="display:none;">{{ tform.DELETE }}</div>
                     </div>
-                    <div class="row g-2 align-items-start">
+                    <div class="row g-3">
                         {% for field in tform.visible_fields %}
                         {% if field.name != 'DELETE' %}
-                        <div class="col-md-3">
-                            <label class="form-label">{{ field.label }}</label>
+                        <div class="col-md">
+                            <label class="form-label small fw-bold">{{ field.label }}</label>
                             {{ field }}
-                            {% if field.help_text %}<div class="help-inline">{{ field.help_text }}</div>{% endif %}
-                            {% if field.errors %}<ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
                         </div>
                         {% endif %}
                         {% endfor %}
@@ -240,56 +279,43 @@
                 </div>
                 {% endfor %}
             </div>
-            {% if transition_formset.non_form_errors %}
-            <ul class="errorlist">{% for e in transition_formset.non_form_errors %}<li>{{ e }}</li>{% endfor %}</ul>
-            {% endif %}
         </div>
-        <div class="d-flex justify-content-between align-items-center">
-            <a href="{% url 'vaccines:settings_tab' 'series' %}" class="btn-back">Back to Settings</a>
-            <button type="submit" class="btn btn-save">{{ submit_label }}</button>
+
+        <div class="d-flex justify-content-between align-items-center py-4">
+            <a href="{% url 'vaccines:settings_tab' 'series' %}" class="btn btn-link text-muted"><i class="bi bi-arrow-left me-1"></i> Back to Series List</a>
+            <button type="submit" class="btn btn-save shadow-sm">{{ submit_label }}</button>
         </div>
     </form>
 </div>
 
-<!-- Formset Empty Templates -->
+<!-- TEMPLATES -->
 <div id="products-template" style="display:none;">
-    <div class="formset-row">
-        <div class="d-flex justify-content-end mb-1">
-            <button type="button" class="delete-row-btn" title="Remove row">
-                <i class="bi bi-x-circle-fill"></i>
-            </button>
-            <div style="display:none;">{{ product_formset.empty_form.DELETE }}</div>
-        </div>
-        <div class="row g-2 align-items-start">
-            {% for field in product_formset.empty_form.visible_fields %}
-            <div class="col-md">
-                <label class="form-label">{{ field.label }}</label>
-                {{ field }}
-                {% if field.help_text %}<div class="help-inline">{{ field.help_text }}</div>{% endif %}
+    <div class="col-md-6">
+        <div class="formset-row">
+            <div class="d-flex justify-content-end mb-1">
+                <button type="button" class="delete-row-btn"><i class="bi bi-x-lg"></i></button>
+                <div style="display:none;">{{ product_formset.empty_form.DELETE }}</div>
             </div>
-            {% endfor %}
+            <div class="row g-2">
+                {% for field in product_formset.empty_form.visible_fields %}
+                <div class="col-sm">
+                    <label class="form-label small fw-bold">{{ field.label }}</label>
+                    {{ field }}
+                </div>
+                {% endfor %}
+            </div>
+            {% for hidden in product_formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
         </div>
-        {% for hidden in product_formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
     </div>
 </div>
 
 <div id="rules-template" style="display:none;">
-    <div class="formset-row">
-        <div class="d-flex justify-content-end mb-1">
-            <button type="button" class="delete-row-btn" title="Remove row">
-                <i class="bi bi-x-circle-fill"></i>
-            </button>
-            <div style="display:none;">{{ rule_formset.empty_form.DELETE }}</div>
+    <div class="formset-row rule-form-instance">
+        {% for field in rule_formset.empty_form.visible_fields %}
+        <div class="field-container" data-field-name="{{ field.name }}">
+            {{ field }}
         </div>
-        <div class="row g-2">
-            {% for field in rule_formset.empty_form.visible_fields %}
-            <div class="col-md-3">
-                <label class="form-label">{{ field.label }}</label>
-                {{ field }}
-                {% if field.help_text %}<div class="help-inline">{{ field.help_text }}</div>{% endif %}
-            </div>
-            {% endfor %}
-        </div>
+        {% endfor %}
         {% for hidden in rule_formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
     </div>
 </div>
@@ -297,17 +323,14 @@
 <div id="transitions-template" style="display:none;">
     <div class="formset-row">
         <div class="d-flex justify-content-end mb-1">
-            <button type="button" class="delete-row-btn" title="Remove row">
-                <i class="bi bi-x-circle-fill"></i>
-            </button>
+            <button type="button" class="delete-row-btn"><i class="bi bi-x-lg"></i></button>
             <div style="display:none;">{{ transition_formset.empty_form.DELETE }}</div>
         </div>
-        <div class="row g-2 align-items-start">
+        <div class="row g-3">
             {% for field in transition_formset.empty_form.visible_fields %}
-            <div class="col-md-3">
-                <label class="form-label">{{ field.label }}</label>
+            <div class="col-md">
+                <label class="form-label small fw-bold">{{ field.label }}</label>
                 {{ field }}
-                {% if field.help_text %}<div class="help-inline">{{ field.help_text }}</div>{% endif %}
             </div>
             {% endfor %}
         </div>
@@ -315,13 +338,211 @@
     </div>
 </div>
 
+<!-- JS SCRIPT -->
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Add row functionality
+        const rulesList = document.getElementById('rules-list');
+        const cardsContainer = document.getElementById('slot-cards-container');
+        const totalRulesCount = document.getElementById('id_rules-TOTAL_FORMS');
+
+        // Age Unit Conversion Utility
+        function setupAgeHelpers(row) {
+            const ageInputs = row.querySelectorAll('.age-input');
+            ageInputs.forEach(input => {
+                const helper = document.createElement('span');
+                helper.className = 'age-conversion-helper';
+                input.parentNode.appendChild(helper);
+
+                const updateHelper = () => {
+                    const days = parseInt(input.value);
+                    if (isNaN(days)) {
+                        helper.innerHTML = '&nbsp;';
+                        return;
+                    }
+                    const weeks = (days / 7).toFixed(1);
+                    const months = (days / 30.44).toFixed(1);
+                    const years = (days / 365.25).toFixed(1);
+                    
+                    let text = [];
+                    if (days >= 7 && days < 90) text.push(`<span class="unit-badge" data-val="${days/7}">~${weeks}w</span>`);
+                    if (days >= 28 && days < 730) text.push(`<span class="unit-badge" data-val="${days/30.44}">~${months}m</span>`);
+                    if (days >= 365) text.push(`<span class="unit-badge" data-val="${days/365.25}">~${years}y</span>`);
+                    
+                    helper.innerHTML = text.join(' ');
+                };
+                
+                input.addEventListener('input', updateHelper);
+                updateHelper();
+            });
+        }
+
+        // Build the Grouped UI
+        function refreshGroupedUI() {
+            cardsContainer.innerHTML = '';
+            const forms = Array.from(rulesList.querySelectorAll('.rule-form-instance'));
+            
+            // Group by slot
+            const groups = {};
+            forms.forEach((form, index) => {
+                const slotInput = form.querySelector('.slot-number-input');
+                const slot = slotInput.value || 'New';
+                if (!groups[slot]) groups[slot] = [];
+                groups[slot].push({ form, index });
+            });
+
+            // Sort slots numerically
+            const sortedSlots = Object.keys(groups).sort((a, b) => {
+                if (a === 'New') return 1;
+                if (b === 'New') return -1;
+                return parseInt(a) - parseInt(b);
+            });
+
+            sortedSlots.forEach(slot => {
+                const slotCard = document.createElement('div');
+                slotCard.className = 'slot-card';
+                slotCard.dataset.slot = slot;
+                
+                const header = document.createElement('div');
+                header.className = 'slot-card-header';
+                header.innerHTML = `
+                    <div class="d-flex align-items-center">
+                        <h4>Dose ${slot}</h4>
+                        <span class="ms-3 slot-meta-pill">Prior Doses: ${slot === 'New' ? '?' : parseInt(slot)-1}</span>
+                    </div>
+                `;
+                
+                const addRuleBtn = document.createElement('button');
+                addRuleBtn.type = 'button';
+                addRuleBtn.className = 'btn btn-outline-primary btn-sm';
+                addRuleBtn.innerHTML = '<i class="bi bi-plus"></i> Add Age-variant / Catch-up';
+                addRuleBtn.onclick = () => addNewRuleToSlot(slot);
+                header.appendChild(addRuleBtn);
+                
+                slotCard.appendChild(header);
+
+                // Categories container
+                const body = document.createElement('div');
+                body.className = 'rule-groups-container';
+                
+                ['routine', 'catchup', 'special'].forEach(cat => {
+                    const catGroup = document.createElement('div');
+                    catGroup.className = `rule-group category-${cat}`;
+                    catGroup.innerHTML = `<div class="rule-category-header">${cat} path</div>`;
+                    const list = document.createElement('div');
+                    list.className = 'category-list';
+                    catGroup.appendChild(list);
+                    body.appendChild(catGroup);
+                });
+                
+                slotCard.appendChild(body);
+                cardsContainer.appendChild(slotCard);
+
+                // Distribute forms into category lists
+                groups[slot].forEach(({form}) => {
+                    const category = form.querySelector('.rule-category-select').value || 'routine';
+                    const list = slotCard.querySelector(`.category-${category} .category-list`);
+                    
+                    // Style the form row for the card view
+                    const row = document.createElement('div');
+                    row.className = 'formset-row';
+                    if (form.querySelector('input[name$="-DELETE"]').checked) row.classList.add('marked-for-delete');
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.type = 'button';
+                    deleteBtn.className = 'delete-row-btn float-end';
+                    deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
+                    deleteBtn.onclick = () => toggleDelete(form, row);
+                    row.appendChild(deleteBtn);
+
+                    const grid = document.createElement('div');
+                    grid.className = 'row g-3';
+                    
+                    const fieldOrder = ['category', 'product', 'min_age_days', 'recommended_age_days', 'overdue_age_days', 'max_age_days', 'min_interval_days', 'dose_amount'];
+                    fieldOrder.forEach(name => {
+                        const fieldCont = form.querySelector(`[data-field-name="${name}"]`);
+                        if (!fieldCont) return;
+                        
+                        const col = document.createElement('div');
+                        col.className = (name === 'product' || name === 'category') ? 'col-md-3' : 'col-md';
+                        
+                        const label = document.createElement('label');
+                        label.className = 'form-label small fw-bold text-muted mb-1';
+                        label.innerText = fieldCont.querySelector('label')?.innerText || name.replace(/_/g, ' ');
+                        
+                        col.appendChild(label);
+                        col.appendChild(fieldCont.cloneNode(true));
+                        
+                        // Link clones back to actual form inputs so they stay in sync
+                        const originalInput = fieldCont.querySelector('input, select, textarea');
+                        const cloneInput = col.querySelector('input, select, textarea');
+                        
+                        cloneInput.oninput = (e) => {
+                            originalInput.value = e.target.value;
+                            if (name === 'category') refreshGroupedUI(); // Re-sort on category change
+                        };
+                        cloneInput.onchange = cloneInput.oninput;
+
+                        grid.appendChild(col);
+                    });
+
+                    row.appendChild(grid);
+                    list.appendChild(row);
+                    setupAgeHelpers(row);
+                });
+
+                // Hide empty categories
+                ['routine', 'catchup', 'special'].forEach(cat => {
+                    const list = slotCard.querySelector(`.category-${cat} .category-list`);
+                    if (list.children.length === 0) {
+                        slotCard.querySelector(`.category-${cat}`).style.display = 'none';
+                    }
+                });
+            });
+            
+            // Append an "Add New Slot" card if there are slots
+            const lastSlot = sortedSlots.filter(s => s !== 'New').pop() || 0;
+            const addSlotCard = document.createElement('div');
+            addSlotCard.className = 'text-center py-4 mb-5';
+            addSlotCard.innerHTML = `
+                <button type="button" class="btn btn-outline-secondary" onclick="addNewRuleToSlot(${parseInt(lastSlot)+1})">
+                    <i class="bi bi-plus-circle me-1"></i> Start Dose ${parseInt(lastSlot)+1}
+                </button>
+            `;
+            cardsContainer.appendChild(addSlotCard);
+        }
+
+        function toggleDelete(originalForm, uiRow) {
+            const checkbox = originalForm.querySelector('input[name$="-DELETE"]');
+            checkbox.checked = !checkbox.checked;
+            uiRow.classList.toggle('marked-for-delete', checkbox.checked);
+        }
+
+        function addNewRuleToSlot(slot) {
+            const template = document.getElementById('rules-template').innerHTML;
+            const count = parseInt(totalRulesCount.value);
+            const newHtml = template.replace(/__prefix__/g, count);
+            
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = newHtml;
+            const newForm = tempDiv.firstElementChild;
+            
+            // Set defaults for the new rule
+            newForm.querySelector('.slot-number-input').value = slot;
+            newForm.querySelector('input[name$="-prior_valid_doses"]').value = Math.max(0, parseInt(slot) - 1);
+            
+            rulesList.appendChild(newForm);
+            totalRulesCount.value = count + 1;
+            
+            refreshGroupedUI();
+        }
+
+        // Generic add handler for other formsets
         const addButtons = document.querySelectorAll('.add-formset-row');
         addButtons.forEach(btn => {
             btn.addEventListener('click', function() {
                 const prefix = this.dataset.prefix;
+                if (prefix === 'rules') return; // Handled specially
+
                 const template = document.getElementById(`${prefix}-template`).innerHTML;
                 const list = document.getElementById(`${prefix}-list`);
                 const totalForms = document.getElementById(`id_${prefix}-TOTAL_FORMS`);
@@ -334,52 +555,28 @@
                 const newRow = tempDiv.firstElementChild;
                 
                 list.appendChild(newRow);
-                totalForms.value = formCount + 1;
+                totalRulesCount.value = formCount + 1; // Wait, this should be prefix-TOTAL_FORMS
+                document.getElementById(`id_${prefix}-TOTAL_FORMS`).value = formCount + 1;
                 
-                // Add event listener to the new delete button
                 attachDeleteHandler(newRow);
-                
-                // Optional: focus first input in new row
-                const firstInput = newRow.querySelector('input, select, textarea');
-                if (firstInput) firstInput.focus();
             });
         });
 
-        // Delete row functionality
         function attachDeleteHandler(row) {
-            const deleteBtn = row.querySelector('.delete-row-btn');
-            if (!deleteBtn) return;
-
-            deleteBtn.addEventListener('click', function() {
-                const checkbox = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
-                const isNew = !row.querySelector('input[name$="-id"]')?.value;
-
-                if (isNew) {
-                    // It's a newly added row, just remove it from DOM
-                    // Also decrement TOTAL_FORMS if we want to stay clean (though Django handles it)
-                    row.remove();
-                } else {
-                    // It's an existing row, toggle the DELETE checkbox and UI state
-                    if (checkbox) {
-                        checkbox.checked = !checkbox.checked;
-                        if (checkbox.checked) {
-                            row.classList.add('marked-for-delete');
-                            deleteBtn.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i>';
-                            deleteBtn.title = 'Undo Remove';
-                        } else {
-                            row.classList.remove('marked-for-delete');
-                            deleteBtn.innerHTML = '<i class="bi bi-trash-fill"></i>';
-                            deleteBtn.title = 'Remove row';
-                        }
-                    }
-                }
-            });
+            const btn = row.querySelector('.delete-row-btn');
+            if (btn) {
+                btn.onclick = () => {
+                    const checkbox = row.querySelector('input[name$="-DELETE"]');
+                    checkbox.checked = !checkbox.checked;
+                    row.classList.toggle('marked-for-delete', checkbox.checked);
+                };
+            }
         }
 
-        // Attach handlers to existing rows
-        document.querySelectorAll('.formset-row').forEach(row => {
-            attachDeleteHandler(row);
-        });
+        document.querySelectorAll('.formset-row').forEach(attachDeleteHandler);
+
+        // Initial build
+        refreshGroupedUI();
     });
 </script>
 {% endblock %}

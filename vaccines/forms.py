@@ -218,16 +218,17 @@ SeriesProductFormSet = forms.inlineformset_factory(Series, SeriesProduct, form=S
 class SeriesRuleForm(forms.ModelForm):
     class Meta:
         model = SeriesRule
-        fields = ['slot_number', 'prior_valid_doses', 'product', 'min_age_days', 'recommended_age_days', 'overdue_age_days', 'max_age_days', 'min_interval_days', 'dose_amount', 'notes']
+        fields = ['slot_number', 'prior_valid_doses', 'category', 'product', 'min_age_days', 'recommended_age_days', 'overdue_age_days', 'max_age_days', 'min_interval_days', 'dose_amount', 'notes']
         widgets = {
-            'slot_number': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
+            'slot_number': forms.NumberInput(attrs={'class': 'form-control slot-number-input', 'min': 1}),
             'prior_valid_doses': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
+            'category': forms.Select(attrs={'class': 'form-select rule-category-select'}),
             'product': forms.Select(attrs={'class': 'form-select'}),
-            'min_age_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'e.g., 60'}),
-            'recommended_age_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'e.g., 75'}),
-            'overdue_age_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'Optional'}),
-            'max_age_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'Optional'}),
-            'min_interval_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'e.g., 28'}),
+            'min_age_days': forms.NumberInput(attrs={'class': 'form-control age-input', 'min': 0, 'placeholder': 'e.g., 60'}),
+            'recommended_age_days': forms.NumberInput(attrs={'class': 'form-control age-input', 'min': 0, 'placeholder': 'e.g., 75'}),
+            'overdue_age_days': forms.NumberInput(attrs={'class': 'form-control age-input', 'min': 0, 'placeholder': 'Optional'}),
+            'max_age_days': forms.NumberInput(attrs={'class': 'form-control age-input', 'min': 0, 'placeholder': 'Optional'}),
+            'min_interval_days': forms.NumberInput(attrs={'class': 'form-control age-input', 'min': 0, 'placeholder': 'e.g., 28'}),
             'dose_amount': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Optional dose amount'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Optional notes'}),
         }
