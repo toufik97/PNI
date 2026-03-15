@@ -6,6 +6,9 @@ from django.utils.text import slugify
 class Vaccine(models.Model):
     name = models.CharField(max_length=100, unique=True, help_text="e.g., Penta, BCG, MMR")
     live = models.BooleanField(default=False, help_text="Is this a live attenuated vaccine?")
+    display_name = models.CharField(max_length=200, blank=True, null=True, help_text="Full human-readable name, e.g. 'Pentavalent (DTP + HBV + Hib)'")
+    protects_against = models.TextField(blank=True, null=True, help_text="Comma-separated disease list shown in UI")
+    clinical_notes = models.TextField(blank=True, null=True, help_text="Contextual notes like catch-up rules or admin guidance")
     compatible_live_vaccines = models.ManyToManyField(
         'self',
         blank=True,
@@ -263,6 +266,10 @@ class DependencyRule(models.Model):
         default=True,
         help_text="If enabled, the dependent slot stays blocked until the anchor slot exists",
     )
+    is_coadmin = models.BooleanField(
+        default=False,
+        help_text="If enabled, missing anchor generates a co-administration warning instead of a block (block_if_anchor_missing should typically be false)",
+    )
     active = models.BooleanField(default=True)
     notes = models.TextField(blank=True, null=True)
 
@@ -395,4 +402,4 @@ class GlobalConstraintRule(models.Model):
         rule = query.order_by('-id').first()
         if rule:
             return rule.min_spacing_days
-        return 28
+        return 0

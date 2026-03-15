@@ -35,15 +35,9 @@
                         <select name="vaccine_id" class="form-select" required>
                             <option value="">Select Vaccine...</option>
                             {% for v in vaccines %}
-                            {% if v.id in due_ids %}
-                            <option value="{{ v.id }}" class="fw-bold text-success">
-                                {{ v.name }} (Due)
+                            <option value="{{ v.id }}" {% if v.id in due_ids %}class="fw-bold text-success"{% endif %}>
+                                {{ v.display_name|default:v.name }} {% if v.id in due_ids %}(Due){% endif %}
                             </option>
-                            {% else %}
-                            <option value="{{ v.id }}">
-                                {{ v.name }}
-                            </option>
-                            {% endif %}
                             {% endfor %}
                         </select>
                     </div>
@@ -83,13 +77,33 @@
                         {% if eval.due_today %}
                         <ul class="list-group">
                             {% for due_info in eval.due_today %}
-                            <li
-                                class="list-group-item list-group-item-danger d-flex justify-content-between align-items-center">
-                                 {{ due_info.vaccine.name }}
-                                 {% if due_info.dose_number %}(Dose {{ due_info.dose_number }}){% endif %}
-                                 {% if due_info.dose_amount %}
-                                 <span class="badge bg-light text-danger">{{ due_info.dose_amount }}</span>
-                                 {% endif %}
+                            <li class="list-group-item list-group-item-danger">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="flex-grow-1">
+                                        <div class="fw-bold">{{ due_info.vaccine.display_name|default:due_info.vaccine.name }}</div>
+                                        <div class="small">{% if due_info.dose_number %}Dose {{ due_info.dose_number }}{% endif %}</div>
+                                        
+                                        {% if due_info.vaccine.protects_against %}
+                                        <small class="text-muted d-block"><i class="bi bi-shield-check me-1"></i>Protects: {{ due_info.vaccine.protects_against }}</small>
+                                        {% endif %}
+
+                                        {% if due_info.warning_constraints %}
+                                        <div class="mt-1">
+                                            {% for warning in due_info.warning_constraints %}
+                                            <small class="text-warning-emphasis d-block"><i class="bi bi-exclamation-triangle-fill me-1"></i>{{ warning.message }}</small>
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-end">
+                                        {% if due_info.dose_amount %}
+                                        <span class="badge bg-light text-danger d-block mb-1">{{ due_info.dose_amount }}</span>
+                                        {% endif %}
+                                        {% if due_info.vaccine.clinical_notes %}
+                                        <span class="badge bg-light text-secondary" title="{{ due_info.vaccine.clinical_notes }}"><i class="bi bi-info-circle"></i> Notes</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
                             </li>
                             {% endfor %}
                         </ul>
@@ -103,8 +117,20 @@
                         <ul class="list-group">
                             {% for m_info in eval.missing_doses %}
                             <li class="list-group-item list-group-item-warning">
-                                {{ m_info.vaccine.name }}
-                                {% if m_info.dose_number %}(Dose {{ m_info.dose_number }}){% endif %}
+                                <div class="fw-bold">{{ m_info.vaccine.display_name|default:m_info.vaccine.name }}</div>
+                                <div class="small">{% if m_info.dose_number %}Dose {{ m_info.dose_number }}{% endif %}</div>
+                                
+                                {% if m_info.vaccine.clinical_notes %}
+                                <div class="small mt-1 text-muted italic"><i class="bi bi-journal-text me-1"></i>{{ m_info.vaccine.clinical_notes }}</div>
+                                {% endif %}
+
+                                {% if m_info.warning_constraints %}
+                                <div class="mt-1">
+                                    {% for warning in m_info.warning_constraints %}
+                                    <small class="text-warning-emphasis d-block"><i class="bi bi-exclamation-triangle-fill me-1"></i>{{ warning.message }}</small>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
                             </li>
                             {% endfor %}
                         </ul>
@@ -118,10 +144,14 @@
                 <h6>Upcoming / Next Appointment</h6>
                 {% if eval.next_appointment %}
                 <p class="mb-0 fs-5"><strong>{{ eval.next_appointment|date:"F j, Y" }}</strong></p>
-                <small class="text-muted">
+                <small class="text-muted list-unstyled">
                     {% for up_info in eval.upcoming %}
                     {% if up_info.1 == eval.next_appointment %}
-                     {{ up_info.0.name }}{% if up_info.2 %} (Dose {{ up_info.2 }}){% endif %}{% if not forloop.last %}, {% endif %}
+                    <li class="mb-1">
+                        <i class="bi bi-arrow-right-short"></i>
+                        <strong>{{ up_info.0.display_name|default:up_info.0.name }}</strong>
+                        {% if up_info.2 %} (Dose {{ up_info.2 }}){% endif %}
+                    </li>
                     {% endif %}
                     {% endfor %}
                 </small>
@@ -148,26 +178,45 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for r in records %}
-                            <tr class="{% if r.invalid_flag %}table-danger{% endif %}">
-                                <td>{{ r.date_given|date:"M d, Y" }}</td>
-                                <td><strong>{{ r.vaccine.name }}</strong></td>
+                            {% regroup records by date_given as records_by_date %}
+                            {% for date_group in records_by_date %}
+                            <tr class="table-secondary">
+                                <td colspan="4" class="fw-bold">
+                                    <i class="bi bi-calendar-event me-2"></i>
+                                    {{ date_group.grouper|date:"F j, Y" }}
+                                    <small class="text-muted ms-2">({{ date_group.list|length }} dose{{ date_group.list|length|pluralize }})</small>
+                                </td>
+                            </tr>
+                            {% for r in date_group.list %}
+                            <tr class="{% if r.invalid_flag %}table-danger{% endif %} border-start border-4 {% if r.invalid_flag %}border-danger{% else %}border-success{% endif %}">
+                                <td class="ps-4">
+                                    <small class="text-muted d-block">Administered</small>
+                                    {{ r.date_given|date:"M d, Y" }}
+                                </td>
+                                <td>
+                                    <strong>{{ r.vaccine.name }}</strong>
+                                    {% if r.vaccine.display_name %}
+                                    <div class="small text-muted">{{ r.vaccine.display_name }}</div>
+                                    {% endif %}
+                                </td>
                                 <td>
                                     {% if r.invalid_flag %}
                                     <span class="badge bg-danger">Invalid</span>
+                                    <div class="small text-danger mt-1">{{ r.get_invalid_reason_display }}</div>
                                     {% else %}
-                                    <span class="badge bg-success">Valid</span>
+                                    <span class="badge bg-success">Valid Dosage</span>
                                     {% endif %}
                                     {% if r.administered_elsewhere %}
                                     <span class="badge bg-info text-dark">External</span>
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if r.notes %}<small class="d-block text-danger">{{ r.notes }}</small>{% endif %}
+                                    {% if r.notes %}<small class="d-block text-danger"><i class="bi bi-info-circle me-1"></i>{{ r.notes }}</small>{% endif %}
                                     <small class="text-muted">Site: {{ r.administer_site|default:"-" }} | Lot: {{
                                         r.lot_number|default:"-" }}</small>
                                 </td>
                             </tr>
+                            {% endfor %}
                             {% empty %}
                             <tr>
                                 <td colspan="4" class="text-center py-4 text-muted">No vaccination records found.</td>

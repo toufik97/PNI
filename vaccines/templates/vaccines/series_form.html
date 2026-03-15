@@ -64,6 +64,33 @@
         text-decoration: none;
         font-weight: 500;
     }
+
+    .delete-row-btn {
+        color: #e53e3e;
+        cursor: pointer;
+        opacity: 0.6;
+        transition: opacity 0.2s;
+        border: none;
+        background: transparent;
+        padding: 0;
+        font-size: 1.1rem;
+    }
+
+    .delete-row-btn:hover {
+        opacity: 1;
+    }
+
+    .formset-row.marked-for-delete {
+        opacity: 0.4;
+        background-color: #fff5f5;
+        border-color: #feb2b2;
+        pointer-events: none;
+    }
+
+    .formset-row.marked-for-delete .delete-row-btn {
+        pointer-events: auto;
+        color: #4a5568;
+    }
 </style>
 
 <div class="pt-3">
@@ -109,7 +136,12 @@
             <div id="products-list">
                 {% for pform in product_formset %}
                 <div class="formset-row">
-                    {% if pform.instance.pk %}{{ pform.DELETE }}{% endif %}
+                    <div class="d-flex justify-content-end mb-1">
+                        <button type="button" class="delete-row-btn" title="Remove row">
+                            <i class="bi bi-trash-fill"></i>
+                        </button>
+                        <div style="display:none;">{{ pform.DELETE }}</div>
+                    </div>
                     <div class="row g-2 align-items-start">
                         {% for field in pform.visible_fields %}
                         {% if field.name != 'DELETE' %}
@@ -143,7 +175,12 @@
             <div id="rules-list">
                 {% for rform in rule_formset %}
                 <div class="formset-row">
-                    {% if rform.instance.pk %}{{ rform.DELETE }}{% endif %}
+                    <div class="d-flex justify-content-end mb-1">
+                        <button type="button" class="delete-row-btn" title="Remove row">
+                            <i class="bi bi-trash-fill"></i>
+                        </button>
+                        <div style="display:none;">{{ rform.DELETE }}</div>
+                    </div>
                     <div class="row g-2">
                         {% for field in rform.visible_fields %}
                         {% if field.name != 'DELETE' %}
@@ -181,7 +218,12 @@
                     {% if tform.non_field_errors %}
                     <ul class="errorlist">{% for e in tform.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>
                     {% endif %}
-                    {% if tform.instance.pk %}{{ tform.DELETE }}{% endif %}
+                    <div class="d-flex justify-content-end mb-1">
+                        <button type="button" class="delete-row-btn" title="Remove row">
+                            <i class="bi bi-trash-fill"></i>
+                        </button>
+                        <div style="display:none;">{{ tform.DELETE }}</div>
+                    </div>
                     <div class="row g-2 align-items-start">
                         {% for field in tform.visible_fields %}
                         {% if field.name != 'DELETE' %}
@@ -212,6 +254,12 @@
 <!-- Formset Empty Templates -->
 <div id="products-template" style="display:none;">
     <div class="formset-row">
+        <div class="d-flex justify-content-end mb-1">
+            <button type="button" class="delete-row-btn" title="Remove row">
+                <i class="bi bi-x-circle-fill"></i>
+            </button>
+            <div style="display:none;">{{ product_formset.empty_form.DELETE }}</div>
+        </div>
         <div class="row g-2 align-items-start">
             {% for field in product_formset.empty_form.visible_fields %}
             <div class="col-md">
@@ -227,6 +275,12 @@
 
 <div id="rules-template" style="display:none;">
     <div class="formset-row">
+        <div class="d-flex justify-content-end mb-1">
+            <button type="button" class="delete-row-btn" title="Remove row">
+                <i class="bi bi-x-circle-fill"></i>
+            </button>
+            <div style="display:none;">{{ rule_formset.empty_form.DELETE }}</div>
+        </div>
         <div class="row g-2">
             {% for field in rule_formset.empty_form.visible_fields %}
             <div class="col-md-3">
@@ -242,6 +296,12 @@
 
 <div id="transitions-template" style="display:none;">
     <div class="formset-row">
+        <div class="d-flex justify-content-end mb-1">
+            <button type="button" class="delete-row-btn" title="Remove row">
+                <i class="bi bi-x-circle-fill"></i>
+            </button>
+            <div style="display:none;">{{ transition_formset.empty_form.DELETE }}</div>
+        </div>
         <div class="row g-2 align-items-start">
             {% for field in transition_formset.empty_form.visible_fields %}
             <div class="col-md-3">
@@ -257,8 +317,8 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Add row functionality
         const addButtons = document.querySelectorAll('.add-formset-row');
-        
         addButtons.forEach(btn => {
             btn.addEventListener('click', function() {
                 const prefix = this.dataset.prefix;
@@ -276,10 +336,49 @@
                 list.appendChild(newRow);
                 totalForms.value = formCount + 1;
                 
+                // Add event listener to the new delete button
+                attachDeleteHandler(newRow);
+                
                 // Optional: focus first input in new row
                 const firstInput = newRow.querySelector('input, select, textarea');
                 if (firstInput) firstInput.focus();
             });
+        });
+
+        // Delete row functionality
+        function attachDeleteHandler(row) {
+            const deleteBtn = row.querySelector('.delete-row-btn');
+            if (!deleteBtn) return;
+
+            deleteBtn.addEventListener('click', function() {
+                const checkbox = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+                const isNew = !row.querySelector('input[name$="-id"]')?.value;
+
+                if (isNew) {
+                    // It's a newly added row, just remove it from DOM
+                    // Also decrement TOTAL_FORMS if we want to stay clean (though Django handles it)
+                    row.remove();
+                } else {
+                    // It's an existing row, toggle the DELETE checkbox and UI state
+                    if (checkbox) {
+                        checkbox.checked = !checkbox.checked;
+                        if (checkbox.checked) {
+                            row.classList.add('marked-for-delete');
+                            deleteBtn.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i>';
+                            deleteBtn.title = 'Undo Remove';
+                        } else {
+                            row.classList.remove('marked-for-delete');
+                            deleteBtn.innerHTML = '<i class="bi bi-trash-fill"></i>';
+                            deleteBtn.title = 'Remove row';
+                        }
+                    }
+                }
+            });
+        }
+
+        // Attach handlers to existing rows
+        document.querySelectorAll('.formset-row').forEach(row => {
+            attachDeleteHandler(row);
         });
     });
 </script>

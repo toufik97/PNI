@@ -67,3 +67,29 @@ All analytics and "Completion" badges in the UI must be calculated at the **Grou
  ---
  
  *(Add new bugs below this line)*
+
+## [BUG-003] Overlapping Series Recommendations (The "Penta 1 and Penta 2" Contradiction)
+**Date Identified:** 2026-03-15
+**Component:** `vaccines/engine.py` -> `_normalize_due_items()`
+
+### Description
+The engine correctly evaluates each `Series` independently. However, some vaccines (like combination vaccines e.g. **Penta**) satisfy the requirements of multiple series simultaneously. 
+
+Currently, if a child is due for their first Hepatitis B shot (HB Series Slot 2) and their first DTP shot (DTP Family Slot 1) on the same day, the engine will natively output both recommendations to the UI:
+1. `Upcoming: Penta (Slot 1)`  *(from DTP)*
+2. `Upcoming: Penta (Slot 2)`  *(from HB)*
+
+This causes the exact same physical product to appear twice in the "Upcoming" or "Due Today" lists, often with conflicting "Dose Numbers" (since the internal `slot_number` of the series dictates the label, rather than the child's actual history with that specific vial).
+
+### Impact
+- **User Confusion:** Healthcare workers see two identical vaccines required on the same day with contradictory dose numbers (e.g., "Penta 1" and "Penta 2").
+- **Reporting:** Simple count-based analytics of the "Upcoming" list would double-count combination vaccines.
+
+### Potential Fixes / Architectural Considerations (Resolved)
+1. **Engine Output Deduplication (Implemented):**
+   Added a normalization pass in `_normalize_due_items` that groups all `decision_item`s by `vaccine` and `target_date`. If multiple series ask for the same vaccine on the same day, they are merged.
+2. **True Physical Dose Number:**
+   Implemented `_true_dose_number()` which calculates the dose label based on actual valid history rather than series slot number, preventing "Penta 1 and Penta 2" contradictions.
+
+**Status**: ✅ Resolved (2026-03-15). Cross-series deduplication and physical dose numbering implemented in `engine.py`.
+---

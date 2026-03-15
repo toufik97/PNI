@@ -2,53 +2,96 @@
     "vaccines": [
         {
             "name": "Penta",
-            "live": false
+            "live": false,
+            "display_name": "Pentavalent (DTP + HBV + Hib)",
+            "protects_against": "Diphtheria, Tetanus, Pertussis, Hepatitis B, Hib",
+            "clinical_notes": "Covers HB series doses 2-4 for infants under 12 months. Do not use as standalone HB for children over 1 year."
         },
         {
             "name": "DTC",
-            "live": false
+            "live": false,
+            "display_name": "Diphtheria, Tetanus, Pertussis",
+            "protects_against": "Diphtheria, Tetanus, Pertussis",
+            "clinical_notes": "For children 3-7 years old."
         },
         {
             "name": "Td",
-            "live": false
+            "live": false,
+            "display_name": "Tetanus, Diphtheria",
+            "protects_against": "Tetanus, Diphtheria",
+            "clinical_notes": "For children over 7 years old."
         },
         {
             "name": "RR",
             "live": true,
-            "compatible_with": ["VPO"]
+            "compatible_with": [
+                "VPO"
+            ],
+            "display_name": "Measles, Rubella",
+            "protects_against": "Measles, Rubella",
+            "clinical_notes": "Routine live vaccine. First dose at 9 months."
         },
         {
             "name": "BCG",
             "live": true,
-            "compatible_with": ["VPO"]
+            "compatible_with": [
+                "VPO"
+            ],
+            "display_name": "Bacille Calmette-Guérin",
+            "protects_against": "Tuberculosis",
+            "clinical_notes": "Birth dose. Use 0.05ml for infants under 1 year, 0.1ml for children over 1 year."
         },
         {
             "name": "Prevenar13",
             "live": false,
-            "manufacturer": "Pfizer"
+            "manufacturer": "Pfizer",
+            "display_name": "Pneumococcal Conjugate (PCV13)",
+            "protects_against": "Pneumococcal disease (13 strains)",
+            "clinical_notes": "Primary infant PCV track."
         },
         {
             "name": "Primovax",
             "live": false,
-            "manufacturer": "Acme"
+            "manufacturer": "Acme",
+            "display_name": "Pneumococcal (Alternative)",
+            "protects_against": "Pneumococcal disease",
+            "clinical_notes": "Alternative PCV track starting at dose 2. Requires 15d interval from DTP doses."
         },
         {
             "name": "Rotasil",
             "live": true,
-            "compatible_with": ["VPO"]
+            "compatible_with": [
+                "VPO"
+            ],
+            "display_name": "Rotavirus (Rotasil)",
+            "protects_against": "Rotavirus",
+            "clinical_notes": "Oral live vaccine. Only valid for children under 2 years old."
         },
         {
             "name": "VPO",
             "live": true,
-            "compatible_with": ["BCG", "Rotasil", "RR"]
+            "compatible_with": [
+                "BCG",
+                "Rotasil",
+                "RR"
+            ],
+            "display_name": "Oral Poliovirus",
+            "protects_against": "Polio",
+            "clinical_notes": "Oral live vaccine. Birth dose VPO 0 must be given with BCG."
         },
         {
             "name": "HB",
-            "live": false
+            "live": false,
+            "display_name": "Hepatitis B (standalone)",
+            "protects_against": "Hepatitis B",
+            "clinical_notes": "HB0 birth dose. Standalone doses for catch-up are only valid for children over 12 months."
         },
         {
             "name": "VPI",
-            "live": false
+            "live": false,
+            "display_name": "Inactivated Poliovirus",
+            "protects_against": "Polio",
+            "clinical_notes": "Injectable polio vaccine."
         }
     ],
     "series": [
@@ -535,11 +578,12 @@
                     "slot_number": 2,
                     "prior_valid_doses": 1,
                     "product": "HB",
-                    "min_age_days": 53,
-                    "recommended_age_days": 60,
-                    "overdue_age_days": 60,
+                    "min_age_days": 365,
+                    "recommended_age_days": 365,
+                    "overdue_age_days": 365,
                     "max_age_days": null,
-                    "min_interval_days": 28
+                    "min_interval_days": 28,
+                    "notes": "HB standalone catch-up allowed after 1 year"
                 },
                 {
                     "slot_number": 2,
@@ -556,12 +600,12 @@
                     "slot_number": 2,
                     "prior_valid_doses": 0,
                     "product": "HB",
-                    "min_age_days": 53,
-                    "recommended_age_days": 60,
-                    "overdue_age_days": 60,
+                    "min_age_days": 365,
+                    "recommended_age_days": 365,
+                    "overdue_age_days": 365,
                     "max_age_days": null,
                     "min_interval_days": 0,
-                    "notes": "HB catch-up for infants starting late (HB0 skipped)"
+                    "notes": "HB standalone catch-up allowed after 1 year (HB0 skipped)"
                 },
                 {
                     "slot_number": 3,
@@ -577,11 +621,12 @@
                     "slot_number": 3,
                     "prior_valid_doses": 2,
                     "product": "HB",
-                    "min_age_days": 83,
-                    "recommended_age_days": 90,
-                    "overdue_age_days": 90,
+                    "min_age_days": 365,
+                    "recommended_age_days": 365,
+                    "overdue_age_days": 365,
                     "max_age_days": null,
-                    "min_interval_days": 28
+                    "min_interval_days": 28,
+                    "notes": "HB standalone catch-up allowed after 1 year"
                 },
                 {
                     "slot_number": 3,
@@ -598,12 +643,12 @@
                     "slot_number": 3,
                     "prior_valid_doses": 1,
                     "product": "HB",
-                    "min_age_days": 83,
-                    "recommended_age_days": 90,
-                    "overdue_age_days": 90,
+                    "min_age_days": 365,
+                    "recommended_age_days": 365,
+                    "overdue_age_days": 365,
                     "max_age_days": null,
                     "min_interval_days": 28,
-                    "notes": "Catchup track for slot 3"
+                    "notes": "HB standalone catch-up allowed after 1 year"
                 },
                 {
                     "slot_number": 4,
@@ -619,11 +664,12 @@
                     "slot_number": 4,
                     "prior_valid_doses": 3,
                     "product": "HB",
-                    "min_age_days": 113,
-                    "recommended_age_days": 120,
-                    "overdue_age_days": 120,
+                    "min_age_days": 365,
+                    "recommended_age_days": 365,
+                    "overdue_age_days": 365,
                     "max_age_days": null,
-                    "min_interval_days": 28
+                    "min_interval_days": 28,
+                    "notes": "HB standalone catch-up allowed after 1 year"
                 },
                 {
                     "slot_number": 4,
@@ -640,12 +686,12 @@
                     "slot_number": 4,
                     "prior_valid_doses": 2,
                     "product": "HB",
-                    "min_age_days": 113,
-                    "recommended_age_days": 120,
-                    "overdue_age_days": 120,
+                    "min_age_days": 365,
+                    "recommended_age_days": 365,
+                    "overdue_age_days": 365,
                     "max_age_days": null,
                     "min_interval_days": 28,
-                    "notes": "Catchup track for slot 4"
+                    "notes": "HB standalone catch-up allowed after 1 year"
                 }
             ]
         },
@@ -730,9 +776,10 @@
             "anchor_series": "DTP Family",
             "anchor_slot_number": 1,
             "min_offset_days": 0,
-            "block_if_anchor_missing": true,
+            "block_if_anchor_missing": false,
             "active": true,
-            "notes": "VPO 1 is anchored to DTP 1"
+            "notes": "VPO 1 is anchored to DTP 1",
+            "is_coadmin": true
         },
         {
             "dependent_series": "VPO Series",
@@ -740,9 +787,10 @@
             "anchor_series": "DTP Family",
             "anchor_slot_number": 2,
             "min_offset_days": 0,
-            "block_if_anchor_missing": true,
+            "block_if_anchor_missing": false,
             "active": true,
-            "notes": "VPO 2 is anchored to DTP 2"
+            "notes": "VPO 2 is anchored to DTP 2",
+            "is_coadmin": true
         },
         {
             "dependent_series": "VPO Series",
@@ -750,9 +798,10 @@
             "anchor_series": "DTP Family",
             "anchor_slot_number": 3,
             "min_offset_days": 0,
-            "block_if_anchor_missing": true,
+            "block_if_anchor_missing": false,
             "active": true,
-            "notes": "VPO 3 is anchored to DTP 3"
+            "notes": "VPO 3 is anchored to DTP 3",
+            "is_coadmin": true
         },
         {
             "dependent_series": "VPO Series",
@@ -760,9 +809,10 @@
             "anchor_series": "DTP Family",
             "anchor_slot_number": 4,
             "min_offset_days": 0,
-            "block_if_anchor_missing": true,
+            "block_if_anchor_missing": false,
             "active": true,
-            "notes": "VPO Booster 1 is anchored to DTP 4"
+            "notes": "VPO Booster 1 is anchored to DTP 4",
+            "is_coadmin": true
         },
         {
             "dependent_series": "VPO Series",
@@ -770,9 +820,10 @@
             "anchor_series": "DTP Family",
             "anchor_slot_number": 5,
             "min_offset_days": 0,
-            "block_if_anchor_missing": true,
+            "block_if_anchor_missing": false,
             "active": true,
-            "notes": "VPO Booster 2 is anchored to DTP 5"
+            "notes": "VPO Booster 2 is anchored to DTP 5",
+            "is_coadmin": true
         },
         {
             "dependent_series": "DTP Family",
@@ -800,9 +851,10 @@
             "anchor_series": "DTP Family",
             "anchor_slot_number": 1,
             "min_offset_days": 0,
-            "block_if_anchor_missing": true,
+            "block_if_anchor_missing": false,
             "active": true,
-            "notes": "HB1 anchored to DTP 1"
+            "notes": "HB1 anchored to DTP 1",
+            "is_coadmin": true
         },
         {
             "dependent_series": "HB Series",
@@ -810,9 +862,10 @@
             "anchor_series": "DTP Family",
             "anchor_slot_number": 2,
             "min_offset_days": 0,
-            "block_if_anchor_missing": true,
+            "block_if_anchor_missing": false,
             "active": true,
-            "notes": "HB2 anchored to DTP 2"
+            "notes": "HB2 anchored to DTP 2",
+            "is_coadmin": true
         },
         {
             "dependent_series": "HB Series",
@@ -820,9 +873,10 @@
             "anchor_series": "DTP Family",
             "anchor_slot_number": 3,
             "min_offset_days": 0,
-            "block_if_anchor_missing": true,
+            "block_if_anchor_missing": false,
             "active": true,
-            "notes": "HB3 anchored to DTP 3"
+            "notes": "HB3 anchored to DTP 3",
+            "is_coadmin": true
         }
     ],
     "global_constraints": [

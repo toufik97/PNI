@@ -87,11 +87,28 @@
         </div>
         <div class="card-body">
             <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="text-muted small text-uppercase fw-bold mb-1">Human Name</div>
+                    <div class="fw-bold text-primary">{{ product.vaccine.display_name|default:product.vaccine.name }}</div>
+                </div>
                 <div class="col-md-4"><div class="text-muted small text-uppercase fw-bold mb-1">Manufacturer</div><div>{{ product.manufacturer|default:"-" }}</div></div>
                 <div class="col-md-4"><div class="text-muted small text-uppercase fw-bold mb-1">Linked Series</div><div class="inline-chips">{% for series in product.series_memberships.all %}<span class="badge badge-chip">{{ series.name }}</span>{% empty %}<span class="text-muted">Not linked yet</span>{% endfor %}</div></div>
-                <div class="col-md-4"><div class="text-muted small text-uppercase fw-bold mb-1">Legacy Vaccine</div><div>{{ product.vaccine.name }}</div></div>
             </div>
-            {% if product.description %}<p class="text-muted mb-0 mt-3">{{ product.description }}</p>{% endif %}
+            
+            <div class="row g-3 mt-1">
+                <div class="col-md-4">
+                    <div class="text-muted small text-uppercase fw-bold mb-1">Protects Against</div>
+                    <div class="text-success"><i class="bi bi-shield-fill-check me-1"></i>{{ product.vaccine.protects_against|default:"Not specified" }}</div>
+                </div>
+                <div class="col-md-8">
+                    <div class="text-muted small text-uppercase fw-bold mb-1">Clinical Notes</div>
+                    <div class="text-dark small">{{ product.vaccine.clinical_notes|default:"No clinical warnings configured." }}</div>
+                </div>
+            </div>
+
+            {% if product.description or product.vaccine.description %}
+            <p class="text-muted mb-0 mt-3 border-top pt-2">{{ product.description|default:product.vaccine.description }}</p>
+            {% endif %}
         </div>
     </div>
     {% endfor %}
@@ -121,6 +138,7 @@
                 <span class="badge badge-soft ms-2">{{ series.code }}</span>
                 <span class="badge badge-chip ms-1">{{ series.get_mixing_policy_display }}</span>
                 {% if series.policy_version %}<span class="badge badge-soft ms-1">{{ series.policy_version.code }}</span>{% endif %}
+                {% if not series.active %}<span class="badge badge-inactive ms-1">Inactive</span>{% endif %}
                 {% if series.legacy_group %}<span class="badge badge-legacy ms-1">Legacy bridge</span>{% endif %}
             </div>
             <div>
@@ -213,7 +231,17 @@
                 <div class="col-md-4"><div class="text-muted small text-uppercase fw-bold mb-1">Anchor</div><div>{{ dependency.anchor_series.name }} / {{ dependency.anchor_slot_number|default:"Matching slot" }}</div></div>
                 <div class="col-md-4"><div class="text-muted small text-uppercase fw-bold mb-1">Offset</div><div>{{ dependency.min_offset_days|humanize_days }} <small class="text-muted">({{ dependency.min_offset_days }}d)</small></div></div>
             </div>
-            <div class="mt-3 text-muted small">{% if dependency.block_if_anchor_missing %}Blocked until anchor exists.{% else %}Anchor can be missing without blocking the slot.{% endif %}</div>
+            <div class="mt-3 text-muted small">
+                {% if dependency.block_if_anchor_missing %}
+                <span class="text-danger"><i class="bi bi-lock-fill"></i> Strictly blocked until anchor exists.</span>
+                {% else %}
+                    {% if dependency.is_coadmin %}
+                    <span class="text-warning-emphasis"><i class="bi bi-info-circle-fill"></i> Soft Dependency: Co-administration warning if anchor missing.</span>
+                    {% else %}
+                    <span class="text-success"><i class="bi bi-unlock-fill"></i> Independent of anchor existence.</span>
+                    {% endif %}
+                {% endif %}
+            </div>
             {% if dependency.notes %}<p class="text-muted mb-0 mt-2">{{ dependency.notes }}</p>{% endif %}
         </div>
     </div>

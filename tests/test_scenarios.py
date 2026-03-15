@@ -57,6 +57,17 @@ class TestDynamicScenarios(BaseVaccinationTestCase):
                     for expected in expected_due:
                         self.assertIn(expected, actual_due_names, f"Fail: {expected} expected to be DUE in '{s['name']}'")
                     
+                    if 'expected_due_count_exact' in s:
+                        for vax_name, count in s['expected_due_count_exact'].items():
+                            actual_count = actual_due_names.count(vax_name)
+                            self.assertEqual(actual_count, count, f"Fail: Expected exactly {count} DUE items for {vax_name} in '{s['name']}', got {actual_count}")
+                            
+                    if 'expected_dose_number' in s:
+                        for vax_name, expected_dose in s['expected_dose_number'].items():
+                            for due_item in actual_due_info:
+                                if due_item['vaccine'].name == vax_name:
+                                    self.assertEqual(due_item['dose_number'], expected_dose, f"Fail: Expected dose_number {expected_dose} for {vax_name} in '{s['name']}', got {due_item['dose_number']}")
+                    
                     # Optional: Check dose amount if specified in scenario
                     if 'expected_dose_amount' in s:
                         # Find the relevant vaccine in due_today

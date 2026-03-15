@@ -20,10 +20,32 @@ class ProductForm(forms.Form):
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Prevenar13'}),
         help_text='Concrete product or brand name used at administration time.',
     )
+    display_name = forms.CharField(
+        required=False,
+        max_length=200,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Pentavalent (DTP+HBV+Hib)'}),
+        help_text='Full human-readable name shown for general identification.',
+    )
+    protects_against = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Diphtheria, Tetanus, Pertussis'}),
+        help_text='Comma-separated list of diseases this vaccine prevents.',
+    )
+    clinical_notes = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Clinical administration or catch-up guidelines'}),
+        help_text='Specific clinical notes displayed to providers.',
+    )
     live = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         help_text='Use for products that participate in live-vaccine spacing rules.',
+    )
+    compatible_with = forms.ModelMultipleChoiceField(
+        queryset=Vaccine.objects.filter(live=True).order_by('name'),
+        required=False,
+        widget=forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input-list'}),
+        help_text='Tick boxes for other live vaccines that are compatible (safe to give same-day or within spacing period).',
     )
     code = forms.SlugField(
         required=False,
@@ -57,7 +79,11 @@ class ProductForm(forms.Form):
         initial = kwargs.setdefault('initial', {})
         if instance is not None:
             initial.setdefault('name', instance.vaccine.name)
+            initial.setdefault('display_name', instance.vaccine.display_name)
+            initial.setdefault('protects_against', instance.vaccine.protects_against)
+            initial.setdefault('clinical_notes', instance.vaccine.clinical_notes)
             initial.setdefault('live', instance.vaccine.live)
+            initial.setdefault('compatible_with', instance.vaccine.compatible_live_vaccines.all())
             initial.setdefault('code', instance.code)
             initial.setdefault('manufacturer', instance.manufacturer)
             initial.setdefault('description', instance.description or instance.vaccine.description)
@@ -89,7 +115,17 @@ class ProductForm(forms.Form):
     def save(self):
         data = self.cleaned_data
         if self.instance is None:
-            vaccine = Vaccine.objects.create(name=data['name'], live=data['live'], description=data['description'])
+            vaccine = Vaccine.objects.create(
+                name=data['name'], 
+                display_name=data['display_name'],
+                protects_against=data['protects_against'],
+                clinical_notes=data['clinical_notes'],
+                live=data['live'], 
+                description=data['description']
+            )
+            if data['compatible_with']:
+                vaccine.compatible_live_vaccines.set(data['compatible_with'])
+            
             product = Product.objects.create(
                 vaccine=vaccine,
                 code=data['code'],
@@ -102,9 +138,13 @@ class ProductForm(forms.Form):
         else:
             vaccine = self.instance.vaccine
             vaccine.name = data['name']
+            vaccine.display_name = data['display_name']
+            vaccine.protects_against = data['protects_against']
+            vaccine.clinical_notes = data['clinical_notes']
             vaccine.live = data['live']
             vaccine.description = data['description']
             vaccine.save()
+            vaccine.compatible_live_vaccines.set(data['compatible_with'])
 
             self.instance.code = data['code'] or self.instance.code
             self.instance.manufacturer = data['manufacturer']
@@ -293,7 +333,10 @@ SeriesTransitionRuleFormSet = forms.inlineformset_factory(
 class DependencyRuleForm(forms.ModelForm):
     class Meta:
         model = DependencyRule
-        fields = ['dependent_series', 'dependent_slot_number', 'anchor_series', 'anchor_slot_number', 'min_offset_days', 'block_if_anchor_missing', 'active', 'notes']
+        fields = [
+            'dependent_series', 'dependent_slot_number', 'anchor_series', 'anchor_slot_number',
+            'min_offset_days', 'block_if_anchor_missing', 'is_coadmin', 'active', 'notes'
+        ]
         widgets = {
             'dependent_series': forms.Select(attrs={'class': 'form-select'}),
             'dependent_slot_number': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'placeholder': 'Optional'}),
@@ -301,6 +344,7 @@ class DependencyRuleForm(forms.ModelForm):
             'anchor_slot_number': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'placeholder': 'Optional'}),
             'min_offset_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'e.g., 15'}),
             'block_if_anchor_missing': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'is_coadmin': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Optional notes'}),
         }

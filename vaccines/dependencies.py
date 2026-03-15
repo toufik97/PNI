@@ -8,6 +8,7 @@ class DependencyEvaluator:
 
     def apply(self, series, slot_number, target_date):
         blocking_constraints = []
+        warning_constraints = []
         adjusted_target = target_date
 
         for dependency in series.dependency_rules.all():
@@ -25,6 +26,12 @@ class DependencyEvaluator:
                         'reason_code': 'dependency_anchor_missing',
                         'message': f"Requires {dependency.anchor_series.name} slot {anchor_slot} before {series.name} slot {slot_number}.",
                     })
+                elif dependency.is_coadmin:
+                    warning_constraints.append({
+                        'rule_key': self.dependency_rule_key_builder(dependency, slot_number),
+                        'reason_code': 'coadmin_anchor_missing',
+                        'message': f"Standard practice: Administer with {dependency.anchor_series.name} (Dose {anchor_slot}).",
+                    })
                 continue
 
             anchor_record = anchor_history[anchor_slot - 1]
@@ -33,4 +40,4 @@ class DependencyEvaluator:
                 anchor_record.date_given + timedelta(days=dependency.min_offset_days),
             )
 
-        return adjusted_target, blocking_constraints
+        return adjusted_target, blocking_constraints, warning_constraints

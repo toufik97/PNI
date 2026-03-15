@@ -63,6 +63,24 @@
             <h4>Delete {{ object_type }}</h4>
         </div>
         <div class="card-body">
+            {% if is_used %}
+            <div class="alert alert-warning text-start mb-4">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Safety Protection:</strong> This {{ object_type|lower }} has been used in 
+                <strong>{{ usage_count }}</strong> clinical vaccination records. 
+                Deletions are blocked to preserve medical history integrity.
+            </div>
+            <p class="mb-4">
+                Would you like to mark <strong>"{{ object }}"</strong> as <strong>Inactive</strong> instead? 
+                It will be hidden from new entries but preserved for existing history.
+            </p>
+            <form method="post" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="inactivate">
+                <a href="{{ cancel_href }}" class="btn btn-cancel me-2">Cancel</a>
+                <button type="submit" class="btn btn-warning fw-bold px-4">Mark as Inactive</button>
+            </form>
+            {% else %}
             <p class="mb-3" style="font-size:1.1rem;">
                 Are you sure you want to delete <strong>"{{ object }}"</strong>?
             </p>
@@ -74,6 +92,7 @@
                 <a href="{{ cancel_href }}" class="btn btn-cancel me-2">Cancel</a>
                 <button type="submit" class="btn btn-confirm-delete">Yes, Delete</button>
             </form>
+            {% endif %}
         </div>
     </div>
 </div>

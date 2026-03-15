@@ -117,11 +117,14 @@ class SeriesRecommender:
         filtered = self.filter_series_candidates(series, future_candidates, valid_records)
         if not filtered:
             return None
+        available_filtered = [r for r in filtered if self.availability.is_product_available(r.product)]
+        if available_filtered:
+            filtered = available_filtered
+
         return sorted(
             filtered,
             key=lambda rule: (
                 rule.min_age_days,
-                0 if self.availability.is_product_available(rule.product) else 1,
                 self.availability.series_product_priority(series, rule.product_id),
                 rule.product.vaccine.name,
             ),
@@ -179,27 +182,21 @@ class SeriesRecommender:
         rule,
         future: bool = False,
     ):
-        if future:
-            target_date = self.child.dob + timedelta(
-                days=(rule.recommended_age_days if rule.prior_valid_doses == 0 else rule.min_age_days)
-            )
-            if last_dose_date:
-                interval_date = last_dose_date + timedelta(days=rule.min_interval_days)
-                age_floor_date = self.child.dob + timedelta(days=rule.min_age_days)
-                target_date = max(target_date, interval_date, age_floor_date)
-        else:
-            if rule.prior_valid_doses == 0:
-                target_date = self.child.dob + timedelta(days=rule.recommended_age_days)
-            elif last_dose_date:
-                interval_date = last_dose_date + timedelta(days=rule.min_interval_days)
-                age_floor_date = self.child.dob + timedelta(days=rule.min_age_days)
-                target_date = max(interval_date, age_floor_date)
-            else:
-                target_date = self.child.dob + timedelta(days=rule.min_age_days)
+        # Baseline the target on the recommended age for the child
+        target_date = self.child.dob + timedelta(days=rule.recommended_age_days)
+
+        # But we must respect the minimum interval and minimum age floors
+        if last_dose_date:
+            interval_date = last_dose_date + timedelta(days=rule.min_interval_days)
+            target_date = max(target_date, interval_date)
+        
+        # Absolute safety floor: the minimum age
+        age_floor_date = self.child.dob + timedelta(days=rule.min_age_days)
+        target_date = max(target_date, age_floor_date)
 
         overdue_age = rule.overdue_age_days if rule.overdue_age_days is not None else rule.recommended_age_days
         overdue_date = self.child.dob + timedelta(days=overdue_age)
-        target_date, blocking_constraints = self.dependencies.apply(series, rule.slot_number, target_date)
+        target_date, blocking_constraints, warning_constraints = self.dependencies.apply(series, rule.slot_number, target_date)
         if blocking_constraints:
             overdue_date = max(overdue_date, target_date)
 
@@ -208,6 +205,7 @@ class SeriesRecommender:
             'target_date': target_date,
             'overdue_date': overdue_date,
             'blocking_constraints': blocking_constraints,
+            'warning_constraints': warning_constraints,
             'is_available': self.availability.is_product_available(rule.product),
             'last_product_match': bool(valid_records and valid_records[-1].vaccine_id == rule.product.vaccine_id),
             'priority': self.availability.series_product_priority(series, rule.product_id),

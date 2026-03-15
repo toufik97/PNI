@@ -14,6 +14,7 @@ from .forms import (
     SeriesTransitionRuleFormSet,
 )
 from .models import DependencyRule, GlobalConstraintRule, PolicyVersion, Product, Series, Vaccine
+from patients.models import VaccinationRecord
 
 
 NEW_TABS = {'products', 'series', 'dependencies', 'constraints', 'versions', 'guide'}
@@ -114,12 +115,43 @@ def product_edit(request, pk):
 
 def product_delete(request, pk):
     product = get_object_or_404(Product.objects.select_related('vaccine'), pk=pk)
+    # Check if this vaccine has any administered records (history safety)
+    has_records = product.vaccine.administered_records.exists()
+    
     if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'inactivate':
+            product.active = False
+            product.save()
+            messages.success(request, f'Product "{product.name}" marked as inactive for safety.')
+            return redirect('vaccines:settings_tab', tab='products')
+            
+        if has_records:
+            messages.error(request, f'Cannot delete "{product.name}" because it has been administered to children. Mark it as inactive instead.')
+            return redirect('vaccines:settings_tab', tab='products')
+            
         name = product.vaccine.name
         product.delete()
         messages.success(request, f'Product profile "{name}" deleted.')
         return redirect('vaccines:settings_tab', tab='products')
-    return render(request, 'vaccines/confirm_delete.html', {'object': product, 'object_type': 'Product Profile', 'cancel_href': reverse('vaccines:settings_tab', kwargs={'tab': 'products'})})
+        
+    context = {
+        'object': product,
+        'object_type': 'Product Profile',
+        'cancel_href': reverse('vaccines:settings_tab', kwargs={'tab': 'products'}),
+        'is_used': has_records,
+        'usage_count': product.vaccine.administered_records.count() if has_records else 0,
+    }
+    return render(request, 'vaccines/confirm_delete.html', context)
+
+
+def product_toggle_active(request, pk):
+    product = get_object_or_404(Product, pk=pk)
+    product.active = not product.active
+    product.save()
+    status = "activated" if product.active else "deactivated"
+    messages.success(request, f'Product "{product.name}" {status}.')
+    return redirect('vaccines:settings_tab', tab='products')
 
 
 def policy_version_create(request):
@@ -245,12 +277,36 @@ def series_edit(request, pk):
 
 def series_delete(request, pk):
     series = get_object_or_404(Series, pk=pk)
+    # Check if any vaccines in this series have records
+    vaccine_ids = series.series_products.values_list('product__vaccine_id', flat=True)
+    usage_count = VaccinationRecord.objects.filter(vaccine_id__in=vaccine_ids).count()
+    has_records = usage_count > 0
+
     if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'inactivate':
+            series.active = False
+            series.save()
+            messages.success(request, f'Series "{series.name}" marked as inactive.')
+            return redirect('vaccines:settings_tab', tab='series')
+
+        if has_records:
+            messages.error(request, f'Cannot delete series "{series.name}" because it contains vaccines with clinical history.')
+            return redirect('vaccines:settings_tab', tab='series')
+            
         name = series.name
         series.delete()
         messages.success(request, f'Series "{name}" deleted.')
         return redirect('vaccines:settings_tab', tab='series')
-    return render(request, 'vaccines/confirm_delete.html', {'object': series, 'object_type': 'Series', 'cancel_href': reverse('vaccines:settings_tab', kwargs={'tab': 'series'})})
+        
+    context = {
+        'object': series,
+        'object_type': 'Series',
+        'cancel_href': reverse('vaccines:settings_tab', kwargs={'tab': 'series'}),
+        'is_used': has_records,
+        'usage_count': usage_count,
+    }
+    return render(request, 'vaccines/confirm_delete.html', context)
 
 
 def dependency_create(request):

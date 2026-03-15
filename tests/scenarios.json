@@ -676,6 +676,85 @@
     ]
   },
   {
+    "name": "HB: Standalone HB invalid for Dose 2 if child < 1 year",
+    "age_days": 180,
+    "history": [
+      {
+        "vax": "BCG",
+        "days_ago": 180
+      },
+      {
+        "vax": "HB",
+        "days_ago": 180
+      },
+      {
+        "vax": "HB",
+        "days_ago": 60
+      }
+    ],
+    "expected_due": [
+      "Penta"
+    ],
+    "expected_invalid": [
+      {
+        "vax": "HB",
+        "index": 2,
+        "reason": "wrong_vaccine"
+      }
+    ],
+    "comment": "Standalone HB for dose 2 is now restricted to 365+ days. For a 6 month old, it should be invalid as the wrong product for that age."
+  },
+  {
+    "name": "HB: Standalone HB valid for Dose 2 if child > 1 year (Catch-up)",
+    "age_days": 400,
+    "history": [
+      {
+        "vax": "BCG",
+        "days_ago": 400
+      },
+      {
+        "vax": "HB",
+        "days_ago": 400
+      },
+      {
+        "vax": "HB",
+        "days_ago": 28
+      }
+    ],
+    "expected_due": [
+      "Penta"
+    ],
+    "comment": "Standalone HB for dose 2 is valid for a 13 month old child."
+  },
+  {
+    "name": "HB: Penta 1 covers HB Dose 2 for infant",
+    "age_days": 90,
+    "history": [
+      {
+        "vax": "BCG",
+        "days_ago": 90
+      },
+      {
+        "vax": "HB",
+        "days_ago": 90
+      },
+      {
+        "vax": "VPO",
+        "days_ago": 90
+      },
+      {
+        "vax": "Penta",
+        "days_ago": 0
+      }
+    ],
+    "expected_due": [],
+    "expected_upcoming": [
+      "Penta",
+      "Prevenar13"
+    ],
+    "comment": "Penta 1 should satisfy both DTP 1 and HB 2. Other vaccines like VPO may have different overdue/missing status."
+  },
+  {
     "name": "VPI: VPI 1 due at 120 days (4 months)",
     "age_days": 120,
     "history": [
@@ -725,10 +804,10 @@
       "VPO"
     ],
     "expected_missing": [
-      "HB",
       "Penta",
+      "Prevenar13",
       "Rotasil",
-      "Prevenar13"
+      "VPO"
     ]
   },
   {
@@ -767,5 +846,30 @@
     "expected_upcoming": [
       "VPI"
     ]
+  },
+  {
+    "name": "BUG-003: Penta deduplicated when DTP1 and HB2 both due",
+    "age_days": 90,
+    "history": [
+      { "vax": "BCG", "days_ago": 90 },
+      { "vax": "HB",  "days_ago": 90 },
+      { "vax": "VPO", "days_ago": 90 }
+    ],
+    "expected_due": ["Penta"],
+    "expected_due_count_exact": { "Penta": 1 },
+    "comment": "HB0 given at birth and DTP slot 1 due at 3 months. Engine must emit exactly one Penta item."
+  },
+  {
+    "name": "BUG-003: True dose number for Penta reflects physical history",
+    "age_days": 120,
+    "history": [
+      { "vax": "BCG",   "days_ago": 120 },
+      { "vax": "HB",    "days_ago": 120 },
+      { "vax": "VPO",   "days_ago": 120 },
+      { "vax": "Penta", "days_ago": 60 }
+    ],
+    "expected_due": ["Penta"],
+    "expected_dose_number": { "Penta": 2 },
+    "comment": "Child has 1 valid Penta dose. Next dose should be dose 2."
   }
 ]

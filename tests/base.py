@@ -69,7 +69,13 @@ class BaseVaccinationTestCase(TestCase):
             if vaccine_data['name'] not in required_vaccine_names:
                 continue
 
-            vaccine = Vaccine.objects.create(name=vaccine_data['name'], live=vaccine_data['live'])
+            vaccine = Vaccine.objects.create(
+                name=vaccine_data['name'], 
+                live=vaccine_data['live'],
+                display_name=vaccine_data.get('display_name', ''),
+                protects_against=vaccine_data.get('protects_against', ''),
+                clinical_notes=vaccine_data.get('clinical_notes', '')
+            )
             self.vaccine_map[vaccine_data['name']] = vaccine
             product = Product.objects.create(
                 vaccine=vaccine,

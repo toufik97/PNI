@@ -133,7 +133,36 @@ class VaccinationEngine:
                     reason_code='legacy_item',
                     message=f"{item.name} returned from legacy engine path.",
                 ))
-        return normalized
+        return self._deduplicate_by_vaccine(normalized)
+
+    def _deduplicate_by_vaccine(self, items):
+        seen = {}
+        for item in items:
+            vid = item['vaccine'].id
+            if vid not in seen:
+                item['contributing_series'] = [item.get('series_code')]
+                # Preserve slot_number for internal reference, but replace dose_number with true physical dose count
+                item['dose_number'] = self._true_dose_number(item['vaccine'])
+                seen[vid] = item
+            else:
+                existing = seen[vid]
+                if item.get('series_code') and item.get('series_code') not in existing.get('contributing_series', []):
+                    existing.setdefault('contributing_series', []).append(item.get('series_code'))
+                
+                if 'target_date' in item:
+                    if 'target_date' not in existing or item['target_date'] < existing['target_date']:
+                        existing['target_date'] = item['target_date']
+                
+                if item.get('blocking_constraints'):
+                    existing.setdefault('blocking_constraints', []).extend(item['blocking_constraints'])
+        return list(seen.values())
+
+    def _true_dose_number(self, vaccine: Vaccine) -> int:
+        valid_count = sum(
+            1 for r in self.records
+            if r.vaccine_id == vaccine.id and not getattr(r, 'invalid_flag', False)
+        )
+        return valid_count + 1
 
     def _upcoming_tuple(self, item):
         return (item['vaccine'], item['target_date'], item['dose_number'])
@@ -180,6 +209,7 @@ class VaccinationEngine:
         product: Optional[Product] = None,
         target_date: Optional[date] = None,
         blocking_constraints: Optional[List[Dict[str, Any]]] = None,
+        warning_constraints: Optional[List[Dict[str, Any]]] = None,
         unavailable: bool = False,
     ) -> Dict[str, Any]:
         item = {
@@ -198,6 +228,7 @@ class VaccinationEngine:
             'product_code': product.code if product else None,
             'product_name': product.vaccine.name if product else vaccine.name,
             'blocking_constraints': list(blocking_constraints or []),
+            'warning_constraints': list(warning_constraints or []),
         }
         if target_date is not None:
             item['target_date'] = target_date
@@ -335,6 +366,7 @@ class VaccinationEngine:
             message=message,
             series=series,
             product=state['rule'].product,
+            warning_constraints=state.get('warning_constraints'),
             unavailable=unavailable,
         )
 
@@ -350,6 +382,7 @@ class VaccinationEngine:
             message=f"{state['rule'].product.vaccine.name} slot {state['rule'].slot_number} is overdue under {series.name}.",
             series=series,
             product=state['rule'].product,
+            warning_constraints=state.get('warning_constraints'),
         )
 
     def _state_to_upcoming_item(self, series: Series, state):
@@ -366,6 +399,7 @@ class VaccinationEngine:
             product=state['rule'].product,
             target_date=state['target_date'],
             blocking_constraints=state['blocking_constraints'],
+            warning_constraints=state.get('warning_constraints'),
         )
 
     def _state_to_blocked_item(self, series: Series, state):

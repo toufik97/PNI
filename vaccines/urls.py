@@ -8,6 +8,7 @@ urlpatterns = [
     path('settings/product/new/', views.product_create, name='product_create'),
     path('settings/product/<int:pk>/edit/', views.product_edit, name='product_edit'),
     path('settings/product/<int:pk>/delete/', views.product_delete, name='product_delete'),
+    path('settings/product/<int:pk>/toggle/', views.product_toggle_active, name='product_toggle_active'),
 
     path('settings/policy-version/new/', views.policy_version_create, name='policy_version_create'),
     path('settings/policy-version/<int:pk>/edit/', views.policy_version_edit, name='policy_version_edit'),

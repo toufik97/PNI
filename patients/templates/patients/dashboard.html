@@ -23,18 +23,21 @@
                     {% for entry in due_today %}
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         <div>
+                            {% if entry.child.id %}
                             <a href="{% url 'patients:profile' entry.child.id %}" class="fw-bold text-decoration-none">
                                 {{ entry.child.name }} ({{ entry.child.id }})
                             </a>
+                            {% else %}
+                            <span class="fw-bold text-danger">{{ entry.child.name }} (Invalid ID)</span>
+                            {% endif %}
                             <br>
                             <small class="text-muted">Age: {{ entry.child.dob|timesince }}</small>
                         </div>
                         <div>
                             {% for v_info in entry.due_vaccines %}
-                             <span class="badge bg-danger rounded-pill">
-                                 {{ v_info.vaccine.name }}
-                                 {% if v_info.dose_number %}(Dose {{ v_info.dose_number }}){% endif %}
-                                 {% if v_info.dose_amount %}<br><small>{{ v_info.dose_amount }}</small>{% endif %}
+                             <span class="badge bg-danger rounded-pill p-2 mb-1 d-inline-block">
+                                 <div class="fw-bold">{{ v_info.vaccine.display_name|default:v_info.vaccine.name }}</div>
+                                 <small>{% if v_info.dose_number %}Dose {{ v_info.dose_number }}{% endif %} {% if v_info.dose_amount %}| {{ v_info.dose_amount }}{% endif %}</small>
                              </span>
                             {% endfor %}
                         </div>
@@ -59,9 +62,13 @@
                     {% for app in upcoming %}
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         <div>
+                            {% if app.child.id %}
                             <a href="{% url 'patients:profile' app.child.id %}" class="fw-bold text-decoration-none">
                                 {{ app.child.name }} ({{ app.child.id }})
                             </a>
+                            {% else %}
+                            <span class="fw-bold text-danger">{{ app.child.name }} (Invalid ID)</span>
+                            {% endif %}
                         </div>
                         <div class="text-end">
                             <span class="badge bg-secondary">{{ app.date|date:"M d, Y" }}</span>

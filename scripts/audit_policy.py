@@ -37,15 +37,44 @@ def audit_policy(sync=False):
     for v_data in policy['vaccines']:
         name = v_data['name']
         live = v_data['live']
+        display_name = v_data.get('display_name', '')
+        protects_against = v_data.get('protects_against', '')
+        clinical_notes = v_data.get('clinical_notes', '')
         manufacturer = v_data.get('manufacturer')
         
         try:
             v_obj = Vaccine.objects.get(name=name)
             status = "MATCH" if v_obj.live == live else f"MISMATCH (Live DB: {v_obj.live}, Expected: {live})"
+            
+            # Check for metadata mismatches
+            meta_diffs = []
+            if v_obj.display_name != display_name: meta_diffs.append(f"display_name: DB='{v_obj.display_name}', Expected='{display_name}'")
+            if v_obj.protects_against != protects_against: meta_diffs.append(f"protects_against: DB='{v_obj.protects_against}', Expected='{protects_against}'")
+            if v_obj.clinical_notes != clinical_notes: meta_diffs.append(f"clinical_notes: DB='{v_obj.clinical_notes}', Expected='{clinical_notes}'")
+            
             print(f"{name:15} | {status}")
-            if sync and v_obj.live != live:
-                v_obj.live = live
-                v_obj.save()
+            if meta_diffs:
+                print(f"  -> METADATA MISMATCH:")
+                for d in meta_diffs: print(f"     - {d}")
+
+            if sync:
+                changed = False
+                if v_obj.live != live:
+                    v_obj.live = live
+                    changed = True
+                if v_obj.display_name != display_name:
+                    v_obj.display_name = display_name
+                    changed = True
+                if v_obj.protects_against != protects_against:
+                    v_obj.protects_against = protects_against
+                    changed = True
+                if v_obj.clinical_notes != clinical_notes:
+                    v_obj.clinical_notes = clinical_notes
+                    changed = True
+                
+                if changed:
+                    v_obj.save()
+                    print(f"  -> FIXED: Updated Vaccine metadata/status")
             
             # Ensure Product exists
             p_obj, created = Product.objects.get_or_create(vaccine=v_obj)
@@ -60,7 +89,13 @@ def audit_policy(sync=False):
         except Vaccine.DoesNotExist:
             print(f"{name:15} | MISSING")
             if sync:
-                v_obj = Vaccine.objects.create(name=name, live=live)
+                v_obj = Vaccine.objects.create(
+                    name=name, 
+                    live=live,
+                    display_name=display_name,
+                    protects_against=protects_against,
+                    clinical_notes=clinical_notes
+                )
                 Product.objects.create(vaccine=v_obj, manufacturer=manufacturer)
                 print(f"  -> FIXED: Created Vaccine and Product for {name}")
 
@@ -205,17 +240,20 @@ def audit_policy(sync=False):
                         anchor_series=anc_s,
                         anchor_slot_number=d_data.get('anchor_slot_number'),
                         min_offset_days=d_data['min_offset_days'],
-                        block_if_anchor_missing=d_data.get('block_if_anchor_missing', True)
+                        block_if_anchor_missing=d_data.get('block_if_anchor_missing', True),
+                        is_coadmin=d_data.get('is_coadmin', False)
                     )
                     print(f"    -> FIXED: Created Dependency")
             else:
                 expected_block = d_data.get('block_if_anchor_missing', True)
-                if actual_d.block_if_anchor_missing != expected_block:
-                    print(f"  Dependency: {d_data['dependent_series']} slot {d_data.get('dependent_slot_number')} | MISMATCH (Block DB={actual_d.block_if_anchor_missing}, Expected={expected_block})")
+                expected_coadmin = d_data.get('is_coadmin', False)
+                if actual_d.block_if_anchor_missing != expected_block or actual_d.is_coadmin != expected_coadmin:
+                    print(f"  Dependency: {d_data['dependent_series']} slot {d_data.get('dependent_slot_number')} | MISMATCH (DB: Block={actual_d.block_if_anchor_missing}, CoAdmin={actual_d.is_coadmin})")
                     if sync:
                         actual_d.block_if_anchor_missing = expected_block
+                        actual_d.is_coadmin = expected_coadmin
                         actual_d.save()
-                        print(f"    -> FIXED: Updated Dependency Blocking")
+                        print(f"    -> FIXED: Updated Dependency Blocking/Co-admin")
         except Series.DoesNotExist:
              print(f"  Dependency | Series missing")
 
