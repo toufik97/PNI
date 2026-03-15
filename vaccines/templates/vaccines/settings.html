@@ -74,7 +74,7 @@
     <div class="entity-card card">
         <div class="card-header">
             <div>
-                <h5 class="d-inline">{{ product.vaccine.name }}</h5>
+                <h5 class="d-inline">{{ product.vaccine.display_name|default:product.vaccine.name }}</h5>
                 <span class="badge badge-soft ms-2">{{ product.code }}</span>
                 {% if product.vaccine.live %}<span class="badge badge-live ms-1">Live</span>{% endif %}
                 {% if not product.active %}<span class="badge badge-inactive ms-1">Inactive</span>{% endif %}
@@ -88,8 +88,8 @@
         <div class="card-body">
             <div class="row g-3">
                 <div class="col-md-4">
-                    <div class="text-muted small text-uppercase fw-bold mb-1">Human Name</div>
-                    <div class="fw-bold text-primary">{{ product.vaccine.display_name|default:product.vaccine.name }}</div>
+                    <div class="text-muted small text-uppercase fw-bold mb-1">Vaccine Code</div>
+                    <div class="fw-bold text-primary">{{ product.vaccine.name }}</div>
                 </div>
                 <div class="col-md-4"><div class="text-muted small text-uppercase fw-bold mb-1">Manufacturer</div><div>{{ product.manufacturer|default:"-" }}</div></div>
                 <div class="col-md-4"><div class="text-muted small text-uppercase fw-bold mb-1">Linked Series</div><div class="inline-chips">{% for series in product.series_memberships.all %}<span class="badge badge-chip">{{ series.name }}</span>{% empty %}<span class="text-muted">Not linked yet</span>{% endfor %}</div></div>
@@ -149,7 +149,7 @@
         <div class="card-body">
             <div class="row g-3 mb-3">
                 <div class="col-md-3"><div class="text-muted small text-uppercase fw-bold mb-1">Series Interval Floor</div><div>{{ series.min_valid_interval_days|humanize_days }} <small class="text-muted">({{ series.min_valid_interval_days }}d)</small></div></div>
-                <div class="col-md-3"><div class="text-muted small text-uppercase fw-bold mb-1">Products</div><div class="inline-chips">{% for link in series.series_products.all %}<span class="badge badge-chip">{{ link.product.vaccine.name }}</span>{% empty %}<span class="text-muted">No products linked</span>{% endfor %}</div></div>
+                <div class="col-md-3"><div class="text-muted small text-uppercase fw-bold mb-1">Products</div><div class="inline-chips">{% for link in series.series_products.all %}<span class="badge badge-chip">{{ link.product.vaccine.display_name|default:link.product.vaccine.name }}</span>{% empty %}<span class="text-muted">No products linked</span>{% endfor %}</div></div>
                 <div class="col-md-2"><div class="text-muted small text-uppercase fw-bold mb-1">Rules</div><div>{{ series.rules.count }} slot rule{{ series.rules.count|pluralize }}</div></div>
                 <div class="col-md-2"><div class="text-muted small text-uppercase fw-bold mb-1">Transitions</div><div>{{ series.transition_rules.count }} rule{{ series.transition_rules.count|pluralize }}</div></div>
                 <div class="col-md-2"><div class="text-muted small text-uppercase fw-bold mb-1">Policy Version</div><div>{{ series.policy_version.name|default:"Unassigned" }}</div></div>
@@ -162,7 +162,7 @@
                     <tr>
                         <td>{{ rule.slot_number }}</td>
                         <td>{{ rule.prior_valid_doses }}</td>
-                        <td><strong>{{ rule.product.vaccine.name }}</strong></td>
+                        <td><strong>{{ rule.product.vaccine.display_name|default:rule.product.vaccine.name }}</strong></td>
                         <td>{{ rule.min_age_days|humanize_days }} <small class="text-muted">({{ rule.min_age_days }}d)</small>{% if rule.max_age_days %} - {{ rule.max_age_days|humanize_days }} <small class="text-muted">({{ rule.max_age_days }}d)</small>{% else %} +{% endif %}</td>
                         <td>{{ rule.recommended_age_days|humanize_days }} <small class="text-muted">({{ rule.recommended_age_days }}d)</small></td>
                         <td>{{ rule.min_interval_days|humanize_days }} <small class="text-muted">({{ rule.min_interval_days }}d)</small></td>
@@ -181,8 +181,8 @@
                     <tbody>
                         {% for transition in series.transition_rules.all %}
                         <tr>
-                            <td>{{ transition.from_product.vaccine.name|default:"Any product" }}</td>
-                            <td><strong>{{ transition.to_product.vaccine.name }}</strong></td>
+                            <td>{{ transition.from_product.vaccine.display_name|default:transition.from_product.vaccine.name|default:"Any product" }}</td>
+                            <td><strong>{{ transition.to_product.vaccine.display_name|default:transition.to_product.vaccine.name }}</strong></td>
                             <td>{{ transition.start_slot_number|default:1 }} - {{ transition.end_slot_number|default:"Any" }}</td>
                             <td>{% if transition.allow_if_unavailable %}Only if prior product unavailable{% else %}Always allowed{% endif %}</td>
                             <td>{% if transition.active %}Active{% else %}Inactive{% endif %}</td>
@@ -227,9 +227,18 @@
         </div>
         <div class="card-body">
             <div class="row g-3">
-                <div class="col-md-4"><div class="text-muted small text-uppercase fw-bold mb-1">Dependent Slot</div><div>{{ dependency.dependent_slot_number|default:"All slots" }}</div></div>
-                <div class="col-md-4"><div class="text-muted small text-uppercase fw-bold mb-1">Anchor</div><div>{{ dependency.anchor_series.name }} / {{ dependency.anchor_slot_number|default:"Matching slot" }}</div></div>
-                <div class="col-md-4"><div class="text-muted small text-uppercase fw-bold mb-1">Offset</div><div>{{ dependency.min_offset_days|humanize_days }} <small class="text-muted">({{ dependency.min_offset_days }}d)</small></div></div>
+                <div class="col-md-4">
+                    <div class="text-muted small text-uppercase fw-bold mb-1">Dependent</div>
+                    <div>{{ dependency.dependent_series.name }} {% if dependency.dependent_product %}({{ dependency.dependent_product.vaccine.name }}){% endif %} / Slot {{ dependency.dependent_slot_number|default:"All" }}</div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-muted small text-uppercase fw-bold mb-1">Anchor</div>
+                    <div>{{ dependency.anchor_series.name }} {% if dependency.anchor_product %}({{ dependency.anchor_product.vaccine.name }}){% endif %} / Slot {{ dependency.anchor_slot_number|default:"Match" }}</div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-muted small text-uppercase fw-bold mb-1">Offset</div>
+                    <div>{{ dependency.min_offset_days|humanize_days }} <small class="text-muted">({{ dependency.min_offset_days }}d)</small></div>
+                </div>
             </div>
             <div class="mt-3 text-muted small">
                 {% if dependency.block_if_anchor_missing %}

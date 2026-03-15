@@ -851,25 +851,77 @@
     "name": "BUG-003: Penta deduplicated when DTP1 and HB2 both due",
     "age_days": 90,
     "history": [
-      { "vax": "BCG", "days_ago": 90 },
-      { "vax": "HB",  "days_ago": 90 },
-      { "vax": "VPO", "days_ago": 90 }
+      {
+        "vax": "BCG",
+        "days_ago": 90
+      },
+      {
+        "vax": "HB",
+        "days_ago": 90
+      },
+      {
+        "vax": "VPO",
+        "days_ago": 90
+      }
     ],
-    "expected_due": ["Penta"],
-    "expected_due_count_exact": { "Penta": 1 },
+    "expected_due": [
+      "Penta"
+    ],
+    "expected_due_count_exact": {
+      "Penta": 1
+    },
     "comment": "HB0 given at birth and DTP slot 1 due at 3 months. Engine must emit exactly one Penta item."
   },
   {
     "name": "BUG-003: True dose number for Penta reflects physical history",
     "age_days": 120,
     "history": [
-      { "vax": "BCG",   "days_ago": 120 },
-      { "vax": "HB",    "days_ago": 120 },
-      { "vax": "VPO",   "days_ago": 120 },
-      { "vax": "Penta", "days_ago": 60 }
+      {
+        "vax": "BCG",
+        "days_ago": 120
+      },
+      {
+        "vax": "HB",
+        "days_ago": 120
+      },
+      {
+        "vax": "VPO",
+        "days_ago": 120
+      },
+      {
+        "vax": "Penta",
+        "days_ago": 60
+      }
     ],
-    "expected_due": ["Penta"],
-    "expected_dose_number": { "Penta": 2 },
+    "expected_due": [
+      "Penta"
+    ],
+    "expected_dose_number": {
+      "Penta": 2
+    },
     "comment": "Child has 1 valid Penta dose. Next dose should be dose 2."
+  },
+  {
+    "name": "PCV: Prevenar co-admin with Penta possible, Primovax offset 15d",
+    "age_days": 67,
+    "history": [
+      {
+        "vax": "Penta",
+        "days_ago": 0
+      },
+      {
+        "vax": "BCG",
+        "days_ago": 67
+      }
+    ],
+    "expected_due": [
+      "Prevenar13"
+    ],
+    "expected_upcoming": [
+      "Primovax",
+      "Rotasil",
+      "VPO"
+    ],
+    "comment": "Prevenar has no offset from Penta. Primovax has 15d offset. At 67d, Prevenar is due (min 60d), but if unavailable, the engine should look ahead."
   }
 ]

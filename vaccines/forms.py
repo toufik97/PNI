@@ -334,13 +334,16 @@ class DependencyRuleForm(forms.ModelForm):
     class Meta:
         model = DependencyRule
         fields = [
-            'dependent_series', 'dependent_slot_number', 'anchor_series', 'anchor_slot_number',
+            'dependent_series', 'dependent_product', 'dependent_slot_number', 
+            'anchor_series', 'anchor_product', 'anchor_slot_number',
             'min_offset_days', 'block_if_anchor_missing', 'is_coadmin', 'active', 'notes'
         ]
         widgets = {
             'dependent_series': forms.Select(attrs={'class': 'form-select'}),
+            'dependent_product': forms.Select(attrs={'class': 'form-select'}),
             'dependent_slot_number': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'placeholder': 'Optional'}),
             'anchor_series': forms.Select(attrs={'class': 'form-select'}),
+            'anchor_product': forms.Select(attrs={'class': 'form-select'}),
             'anchor_slot_number': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'placeholder': 'Optional'}),
             'min_offset_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'e.g., 15'}),
             'block_if_anchor_missing': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
@@ -352,8 +355,11 @@ class DependencyRuleForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         series_queryset = Series.objects.select_related('policy_version').order_by('policy_version__name', 'name')
+        product_queryset = Product.objects.select_related('vaccine').order_by('vaccine__name')
         self.fields['dependent_series'].queryset = series_queryset
         self.fields['anchor_series'].queryset = series_queryset
+        self.fields['dependent_product'].queryset = product_queryset
+        self.fields['anchor_product'].queryset = product_queryset
 
     def clean(self):
         cleaned_data = super().clean()

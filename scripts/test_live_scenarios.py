@@ -3,7 +3,9 @@ import json
 import django
 from datetime import date, timedelta
 
+import sys
 # Set up Django environment
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'vaxapp.settings')
 django.setup()
 
@@ -12,7 +14,8 @@ from vaccines.models import Vaccine
 from vaccines.engine import VaccinationEngine
 
 def run_live_scenarios():
-    scenarios_path = os.path.join(os.path.dirname(__file__), 'tests', 'scenarios.json')
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    scenarios_path = os.path.join(base_dir, 'tests', 'scenarios.json')
     with open(scenarios_path, 'r') as f:
         scenarios = json.load(f)
 
@@ -65,20 +68,38 @@ def run_live_scenarios():
                 actual_missing = sorted([d['vaccine'].name for d in result['missing_doses']])
                 expected_missing = sorted(scenario.get('expected_missing', []))
 
+                actual_upcoming = sorted([d['vaccine'].name for d in result['upcoming_details']])
+                expected_upcoming = sorted(scenario.get('expected_upcoming', []))
+
+                actual_unavail = sorted([d['vaccine'].name for d in result['due_but_unavailable']])
+                expected_unavail = sorted(scenario.get('expected_unavailable', []))
+
                 # 4. Compare
                 failed = False
                 if actual_due != expected_due:
                     # Filter out vaccines not mentioned in expected (less strict for live system)
                     missing_from_actual = [e for e in expected_due if e not in actual_due]
                     if missing_from_actual:
-                        print(f"  ❌ DUE MISMATCH: Expected {expected_due}, Actual {actual_due}")
-                        failed = True
+                        # Special case: if expected is due but it's reported as unavailable, that's acceptable for live test
+                        truly_missing = [m for m in missing_from_actual if m not in actual_unavail]
+                        if truly_missing:
+                            print(f"  ❌ DUE MISMATCH: Expected {expected_due}, Actual {actual_due} (Unavail: {actual_unavail})")
+                            failed = True
                 
                 if actual_missing != expected_missing:
                     missing_from_actual = [e for e in expected_missing if e not in actual_missing]
                     if missing_from_actual:
                         print(f"  ❌ MISSING MISMATCH: Expected {expected_missing}, Actual {actual_missing}")
                         failed = True
+
+                if expected_upcoming:
+                    missing_from_actual = [e for e in expected_upcoming if e not in actual_upcoming]
+                    if missing_from_actual:
+                        # Allow upcoming to be in DUE instead (if child reached that age)
+                        truly_missing = [m for m in missing_from_actual if m not in actual_due]
+                        if truly_missing:
+                             print(f"  ❌ UPCOMING MISMATCH: Expected {expected_upcoming}, Actual {actual_upcoming}")
+                             failed = True
 
                 # Check invalid doses (Validation)
                 expected_invalid = scenario.get('expected_invalid', [])

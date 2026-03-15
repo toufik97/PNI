@@ -223,11 +223,16 @@ def audit_policy(sync=False):
             dep_s = Series.objects.get(name=d_data['dependent_series'])
             anc_s = Series.objects.get(name=d_data['anchor_series'])
             
+            dep_p = Product.objects.get(vaccine__name=d_data['dependent_product']) if d_data.get('dependent_product') else None
+            anc_p = Product.objects.get(vaccine__name=d_data['anchor_product']) if d_data.get('anchor_product') else None
+
             actual_d = DependencyRule.objects.filter(
                 dependent_series=dep_s,
                 dependent_slot_number=d_data.get('dependent_slot_number'),
+                dependent_product=dep_p,
                 anchor_series=anc_s,
                 anchor_slot_number=d_data.get('anchor_slot_number'),
+                anchor_product=anc_p,
                 min_offset_days=d_data['min_offset_days']
             ).first()
 
@@ -237,8 +242,10 @@ def audit_policy(sync=False):
                     DependencyRule.objects.create(
                         dependent_series=dep_s,
                         dependent_slot_number=d_data.get('dependent_slot_number'),
+                        dependent_product=dep_p,
                         anchor_series=anc_s,
                         anchor_slot_number=d_data.get('anchor_slot_number'),
+                        anchor_product=anc_p,
                         min_offset_days=d_data['min_offset_days'],
                         block_if_anchor_missing=d_data.get('block_if_anchor_missing', True),
                         is_coadmin=d_data.get('is_coadmin', False)

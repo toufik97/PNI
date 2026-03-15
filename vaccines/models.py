@@ -18,6 +18,8 @@ class Vaccine(models.Model):
     description = models.TextField(blank=True, null=True)
 
     def __str__(self):
+        if self.display_name:
+            return f"{self.display_name} ({self.name})"
         return self.name
 
 
@@ -62,7 +64,7 @@ class Product(models.Model):
         ordering = ['vaccine__name']
 
     def __str__(self):
-        return self.vaccine.name
+        return str(self.vaccine)
 
     @property
     def name(self):
@@ -260,6 +262,22 @@ class DependencyRule(models.Model):
         null=True,
         blank=True,
         help_text="Leave blank to use the same slot number as the dependent series",
+    )
+    dependent_product = models.ForeignKey(
+        'Product',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='dependent_dependency_rules',
+        help_text="Optional: Apply this rule only when using this specific product",
+    )
+    anchor_product = models.ForeignKey(
+        'Product',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='anchor_dependency_rules',
+        help_text="Optional: Apply this rule only if the anchor was this specific product",
     )
     min_offset_days = models.PositiveIntegerField(default=0, help_text="Minimum days after the anchor slot")
     block_if_anchor_missing = models.BooleanField(

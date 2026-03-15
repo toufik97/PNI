@@ -45,7 +45,7 @@
             "name": "Prevenar13",
             "live": false,
             "manufacturer": "Pfizer",
-            "display_name": "Pneumococcal Conjugate (PCV13)",
+            "display_name": "Pneumococcal Conjugate (PREVNAR13)",
             "protects_against": "Pneumococcal disease (13 strains)",
             "clinical_notes": "Primary infant PCV track."
         },
@@ -53,8 +53,8 @@
             "name": "Primovax",
             "live": false,
             "manufacturer": "Acme",
-            "display_name": "Pneumococcal (Alternative)",
-            "protects_against": "Pneumococcal disease",
+            "display_name": "Pneumococcal conjugate (PRIMOVAX13)",
+            "protects_against": "Pneumococcal disease (13 strains)",
             "clinical_notes": "Alternative PCV track starting at dose 2. Requires 15d interval from DTP doses."
         },
         {
@@ -754,11 +754,13 @@
     "dependencies": [
         {
             "dependent_series": "Pneumo",
+            "dependent_product": "Primovax",
             "anchor_series": "DTP Family",
+            "anchor_product": "Penta",
             "min_offset_days": 15,
             "block_if_anchor_missing": false,
             "active": true,
-            "notes": "PrimoVax must be spaced 15 days from any DTP dose. (Requires engine support for specific product blocking, currently applied to whole series)."
+            "notes": "PrimoVax must be spaced 15 days from any Penta dose."
         },
         {
             "dependent_series": "VPO Series",

@@ -55,6 +55,14 @@ class SeriesRecommender:
         ]
         candidate_states = [state for state in candidate_states if state is not None]
 
+        # If all candidates for the current age bracket are unavailable, 
+        # consider the next available future rule as a candidate. 
+        # This allows switching to an alternative (like Primovax) that might only be valid in a few days.
+        if candidate_states and not any(s['is_available'] for s in candidate_states):
+            future_rule = self.first_series_future_rule(series, prior_doses, valid_records)
+            if future_rule:
+                candidate_states.append(self.build_series_candidate_state(series, valid_records, last_dose_date, future_rule, future=True))
+
         if candidate_states:
             due_states = [
                 state for state in candidate_states
@@ -64,12 +72,15 @@ class SeriesRecommender:
                 chosen_due_state = self.availability.choose_due_state(series, valid_records, due_states)
                 if chosen_due_state['is_available']:
                     result['due_today'].append(self.state_to_due_item(series, chosen_due_state))
+                    if self.evaluation_date > chosen_due_state['overdue_date']:
+                        result['missing_doses'].append(self.state_to_missing_item(series, chosen_due_state))
+                    return result
                 else:
                     result['due_but_unavailable'].append(self.state_to_due_item(series, chosen_due_state, unavailable=True))
-                if self.evaluation_date > chosen_due_state['overdue_date']:
-                    result['missing_doses'].append(self.state_to_missing_item(series, chosen_due_state))
-                return result
-
+                    if self.evaluation_date > chosen_due_state['overdue_date']:
+                        result['missing_doses'].append(self.state_to_missing_item(series, chosen_due_state))
+                    # Do NOT return here, so we can check for available upcoming alternatives
+            
             upcoming_states = [
                 state for state in candidate_states
                 if not state['blocking_constraints'] and self.evaluation_date < state['target_date']
@@ -196,7 +207,9 @@ class SeriesRecommender:
 
         overdue_age = rule.overdue_age_days if rule.overdue_age_days is not None else rule.recommended_age_days
         overdue_date = self.child.dob + timedelta(days=overdue_age)
-        target_date, blocking_constraints, warning_constraints = self.dependencies.apply(series, rule.slot_number, target_date)
+        target_date, blocking_constraints, warning_constraints = self.dependencies.apply(
+            series, rule.slot_number, target_date, product=rule.product
+        )
         if blocking_constraints:
             overdue_date = max(overdue_date, target_date)
 
