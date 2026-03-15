@@ -37,7 +37,11 @@ class TestDynamicScenarios(BaseVaccinationTestCase):
                             vax_obj = Vaccine.objects.filter(name__iexact=entry['vax']).first()
                         
                         if vax_obj:
-                            rec = self.give_dose(child, vax_obj, days_ago=entry['days_ago'])
+                            rec = self.give_dose(
+                                child, vax_obj, 
+                                days_ago=entry['days_ago'],
+                                administered_elsewhere=entry.get('administered_elsewhere', False)
+                            )
                             history_records.append(rec)
                         else:
                             self.fail(f"Vaccine {entry['vax']} not found in DB or test setup for scenario {s['name']}")
@@ -72,6 +76,12 @@ class TestDynamicScenarios(BaseVaccinationTestCase):
                     actual_missing = self.missing_names(result)
                     for expected in expected_missing:
                         self.assertIn(expected, actual_missing, f"Fail: {expected} expected to be MISSING in '{s['name']}'")
+
+                    # 5b. Assert Expected Blocked
+                    expected_blocked = s.get('expected_blocked', [])
+                    actual_blocked = [b['vaccine'].name for b in result.get('blocked', [])]
+                    for expected in expected_blocked:
+                        self.assertIn(expected, actual_blocked, f"Fail: {expected} expected to be BLOCKED in '{s['name']}'")
 
                     # 6. Assert Expected Invalid Doses (Validation Checks)
                     expected_invalid = s.get('expected_invalid', [])

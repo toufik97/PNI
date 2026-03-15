@@ -11,7 +11,8 @@ django.setup()
 
 from vaccines.models import (
     Vaccine, Product, Series, SeriesProduct, SeriesRule, 
-    SeriesTransitionRule, DependencyRule, PolicyVersion
+    SeriesTransitionRule, DependencyRule, PolicyVersion,
+    GlobalConstraintRule
 )
 
 def audit_policy(sync=False):
@@ -62,6 +63,24 @@ def audit_policy(sync=False):
                 v_obj = Vaccine.objects.create(name=name, live=live)
                 Product.objects.create(vaccine=v_obj, manufacturer=manufacturer)
                 print(f"  -> FIXED: Created Vaccine and Product for {name}")
+
+    # 1b. Audit Compatibility (Pass 2)
+    print("\n[1b] LIVE VACCINE COMPATIBILITY")
+    print("-" * 40)
+    for v_data in policy['vaccines']:
+        if 'compatible_with' in v_data:
+            v_obj = Vaccine.objects.get(name=v_data['name'])
+            expected_compat = v_data['compatible_with']
+            actual_compat = [v.name for v in v_obj.compatible_live_vaccines.all()]
+            
+            for compat_name in expected_compat:
+                if compat_name not in actual_compat:
+                    print(f"{v_data['name']} -> {compat_name} compat | MISSING")
+                    if sync:
+                        compat_v = Vaccine.objects.get(name=compat_name)
+                        v_obj.compatible_live_vaccines.add(compat_v)
+                        print(f"  -> FIXED: Linked compatibility")
+
 
     # 2. Audit Series
     print("\n[2] SERIES & SERIES RULES")
@@ -189,8 +208,38 @@ def audit_policy(sync=False):
                         block_if_anchor_missing=d_data.get('block_if_anchor_missing', True)
                     )
                     print(f"    -> FIXED: Created Dependency")
+            else:
+                expected_block = d_data.get('block_if_anchor_missing', True)
+                if actual_d.block_if_anchor_missing != expected_block:
+                    print(f"  Dependency: {d_data['dependent_series']} slot {d_data.get('dependent_slot_number')} | MISMATCH (Block DB={actual_d.block_if_anchor_missing}, Expected={expected_block})")
+                    if sync:
+                        actual_d.block_if_anchor_missing = expected_block
+                        actual_d.save()
+                        print(f"    -> FIXED: Updated Dependency Blocking")
         except Series.DoesNotExist:
              print(f"  Dependency | Series missing")
+
+    # 5. Global Constraints
+    print("\n[5] GLOBAL CONSTRAINTS")
+    print("-" * 40)
+    for c_data in policy.get('global_constraints', []):
+        try:
+            actual_c = GlobalConstraintRule.objects.filter(code=c_data['code']).first()
+            if not actual_c:
+                print(f"Constraint {c_data['name']} | MISSING")
+                if sync:
+                    GlobalConstraintRule.objects.create(**c_data)
+                    print(f"  -> FIXED: Created Constraint")
+            else:
+                if actual_c.min_spacing_days != c_data['min_spacing_days']:
+                    print(f"Constraint {c_data['name']} | MISMATCH (DB={actual_c.min_spacing_days}, Expected={c_data['min_spacing_days']})")
+                    if sync:
+                        actual_c.min_spacing_days = c_data['min_spacing_days']
+                        actual_c.save()
+                        print(f"  -> FIXED: Updated Constraint")
+        except Exception as e:
+            print(f"  Error auditing constraint {c_data.get('name')}: {e}")
+
 
     print("\nAudit Complete.")
 

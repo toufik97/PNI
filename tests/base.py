@@ -157,6 +157,17 @@ class BaseVaccinationTestCase(TestCase):
                 notes=dependency_data.get('notes'),
             )
 
+        from vaccines.models import GlobalConstraintRule
+        for g_data in policy.get('global_constraints', []):
+            GlobalConstraintRule.objects.create(
+                code=g_data['code'],
+                name=g_data['name'],
+                constraint_type=g_data.get('constraint_type', 'live_live_spacing'),
+                min_spacing_days=g_data['min_spacing_days'],
+                active=g_data.get('active', True),
+                notes=g_data.get('notes'),
+            )
+
         self.dtp_series = self.series_map.get('DTP Family')
         self.pneumo_series = self.series_map.get('Pneumo')
 
@@ -166,11 +177,12 @@ class BaseVaccinationTestCase(TestCase):
         dob = date.today() - timedelta(days=age_days)
         return Child.objects.create(id=uid, name=name, sex='M', dob=dob)
 
-    def give_dose(self, child, vaccine, days_ago):
+    def give_dose(self, child, vaccine, days_ago, administered_elsewhere=False):
         return VaccinationRecord.objects.create(
             child=child,
             vaccine=vaccine,
             date_given=date.today() - timedelta(days=days_ago),
+            administered_elsewhere=administered_elsewhere
         )
 
     def evaluate(self, child):

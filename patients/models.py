@@ -44,6 +44,10 @@ class VaccinationRecord(models.Model):
         choices=INVALID_REASON_CHOICES,
         help_text="Structured reason code for why this dose is invalid"
     )
+    administered_elsewhere = models.BooleanField(
+        default=False, 
+        help_text="Check if this dose was given at another facility (e.g. at birth in hospital) to avoid inflating local statistics."
+    )
     notes = models.TextField(blank=True, null=True, help_text="Human-readable explanation of any issue")
 
     class Meta:

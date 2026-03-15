@@ -88,12 +88,15 @@ def record_dose(request, child_id):
         
         vaccine = get_object_or_404(Vaccine, id=vaccine_id)
         
+        administered_elsewhere = request.POST.get('administered_elsewhere') == 'on'
+        
         VaccinationRecord.objects.create(
             child=child,
             vaccine=vaccine,
             date_given=date_given,
             lot_number=lot_number,
-            administer_site=administer_site
+            administer_site=administer_site,
+            administered_elsewhere=administered_elsewhere
         )
         messages.success(request, f"Recorded {vaccine.name} for {child.name}")
         return redirect('patients:profile', child_id=child.id)

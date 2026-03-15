@@ -14,11 +14,13 @@
         },
         {
             "name": "RR",
-            "live": true
+            "live": true,
+            "compatible_with": ["VPO"]
         },
         {
             "name": "BCG",
-            "live": true
+            "live": true,
+            "compatible_with": ["VPO"]
         },
         {
             "name": "Prevenar13",
@@ -29,6 +31,24 @@
             "name": "Primovax",
             "live": false,
             "manufacturer": "Acme"
+        },
+        {
+            "name": "Rotasil",
+            "live": true,
+            "compatible_with": ["VPO"]
+        },
+        {
+            "name": "VPO",
+            "live": true,
+            "compatible_with": ["BCG", "Rotasil", "RR"]
+        },
+        {
+            "name": "HB",
+            "live": false
+        },
+        {
+            "name": "VPI",
+            "live": false
         }
     ],
     "series": [
@@ -367,6 +387,300 @@
                     "dose_amount": "0.1ml"
                 }
             ]
+        },
+        {
+            "name": "Rotasil Series",
+            "optional": false,
+            "min_valid_interval_days": 28,
+            "mixing_policy": "strict",
+            "products": [
+                "Rotasil"
+            ],
+            "rules": [
+                {
+                    "slot_number": 1,
+                    "prior_valid_doses": 0,
+                    "product": "Rotasil",
+                    "min_age_days": 53,
+                    "recommended_age_days": 60,
+                    "overdue_age_days": 60,
+                    "max_age_days": 730,
+                    "min_interval_days": 0
+                },
+                {
+                    "slot_number": 2,
+                    "prior_valid_doses": 1,
+                    "product": "Rotasil",
+                    "min_age_days": 83,
+                    "recommended_age_days": 90,
+                    "overdue_age_days": 90,
+                    "max_age_days": 730,
+                    "min_interval_days": 28
+                },
+                {
+                    "slot_number": 3,
+                    "prior_valid_doses": 2,
+                    "product": "Rotasil",
+                    "min_age_days": 113,
+                    "recommended_age_days": 120,
+                    "overdue_age_days": 120,
+                    "max_age_days": 730,
+                    "min_interval_days": 28
+                }
+            ]
+        },
+        {
+            "name": "VPO Series",
+            "optional": false,
+            "min_valid_interval_days": 28,
+            "mixing_policy": "strict",
+            "products": [
+                "VPO"
+            ],
+            "rules": [
+                {
+                    "slot_number": 1,
+                    "prior_valid_doses": 0,
+                    "product": "VPO",
+                    "min_age_days": 0,
+                    "recommended_age_days": 0,
+                    "overdue_age_days": 30,
+                    "max_age_days": null,
+                    "min_interval_days": 0
+                },
+                {
+                    "slot_number": 2,
+                    "prior_valid_doses": 1,
+                    "product": "VPO",
+                    "min_age_days": 53,
+                    "recommended_age_days": 60,
+                    "overdue_age_days": 60,
+                    "max_age_days": null,
+                    "min_interval_days": 28
+                },
+                {
+                    "slot_number": 3,
+                    "prior_valid_doses": 2,
+                    "product": "VPO",
+                    "min_age_days": 83,
+                    "recommended_age_days": 90,
+                    "overdue_age_days": 90,
+                    "max_age_days": null,
+                    "min_interval_days": 28
+                },
+                {
+                    "slot_number": 4,
+                    "prior_valid_doses": 3,
+                    "product": "VPO",
+                    "min_age_days": 113,
+                    "recommended_age_days": 120,
+                    "overdue_age_days": 120,
+                    "max_age_days": null,
+                    "min_interval_days": 28
+                },
+                {
+                    "slot_number": 5,
+                    "prior_valid_doses": 4,
+                    "product": "VPO",
+                    "min_age_days": 540,
+                    "recommended_age_days": 540,
+                    "overdue_age_days": 540,
+                    "max_age_days": null,
+                    "min_interval_days": 180
+                },
+                {
+                    "slot_number": 6,
+                    "prior_valid_doses": 5,
+                    "product": "VPO",
+                    "min_age_days": 1825,
+                    "recommended_age_days": 1825,
+                    "overdue_age_days": 1825,
+                    "max_age_days": null,
+                    "min_interval_days": 1095
+                }
+            ]
+        },
+        {
+            "name": "HB Series",
+            "optional": false,
+            "min_valid_interval_days": 28,
+            "mixing_policy": "flexible",
+            "products": [
+                "Penta",
+                "HB"
+            ],
+            "rules": [
+                {
+                    "slot_number": 1,
+                    "prior_valid_doses": 0,
+                    "product": "HB",
+                    "min_age_days": 0,
+                    "recommended_age_days": 0,
+                    "overdue_age_days": 30,
+                    "max_age_days": 365,
+                    "min_interval_days": 0,
+                    "notes": "HB0 birth dose"
+                },
+                {
+                    "slot_number": 2,
+                    "prior_valid_doses": 1,
+                    "product": "Penta",
+                    "min_age_days": 53,
+                    "recommended_age_days": 60,
+                    "overdue_age_days": 60,
+                    "max_age_days": null,
+                    "min_interval_days": 28
+                },
+                {
+                    "slot_number": 2,
+                    "prior_valid_doses": 1,
+                    "product": "HB",
+                    "min_age_days": 53,
+                    "recommended_age_days": 60,
+                    "overdue_age_days": 60,
+                    "max_age_days": null,
+                    "min_interval_days": 28
+                },
+                {
+                    "slot_number": 2,
+                    "prior_valid_doses": 0,
+                    "product": "Penta",
+                    "min_age_days": 53,
+                    "recommended_age_days": 60,
+                    "overdue_age_days": 60,
+                    "max_age_days": null,
+                    "min_interval_days": 0,
+                    "notes": "HB catch-up for infants starting late (HB0 skipped)"
+                },
+                {
+                    "slot_number": 2,
+                    "prior_valid_doses": 0,
+                    "product": "HB",
+                    "min_age_days": 53,
+                    "recommended_age_days": 60,
+                    "overdue_age_days": 60,
+                    "max_age_days": null,
+                    "min_interval_days": 0,
+                    "notes": "HB catch-up for infants starting late (HB0 skipped)"
+                },
+                {
+                    "slot_number": 3,
+                    "prior_valid_doses": 2,
+                    "product": "Penta",
+                    "min_age_days": 83,
+                    "recommended_age_days": 90,
+                    "overdue_age_days": 90,
+                    "max_age_days": null,
+                    "min_interval_days": 28
+                },
+                {
+                    "slot_number": 3,
+                    "prior_valid_doses": 2,
+                    "product": "HB",
+                    "min_age_days": 83,
+                    "recommended_age_days": 90,
+                    "overdue_age_days": 90,
+                    "max_age_days": null,
+                    "min_interval_days": 28
+                },
+                {
+                    "slot_number": 3,
+                    "prior_valid_doses": 1,
+                    "product": "Penta",
+                    "min_age_days": 83,
+                    "recommended_age_days": 90,
+                    "overdue_age_days": 90,
+                    "max_age_days": null,
+                    "min_interval_days": 28,
+                    "notes": "Catchup track for slot 3"
+                },
+                {
+                    "slot_number": 3,
+                    "prior_valid_doses": 1,
+                    "product": "HB",
+                    "min_age_days": 83,
+                    "recommended_age_days": 90,
+                    "overdue_age_days": 90,
+                    "max_age_days": null,
+                    "min_interval_days": 28,
+                    "notes": "Catchup track for slot 3"
+                },
+                {
+                    "slot_number": 4,
+                    "prior_valid_doses": 3,
+                    "product": "Penta",
+                    "min_age_days": 113,
+                    "recommended_age_days": 120,
+                    "overdue_age_days": 120,
+                    "max_age_days": null,
+                    "min_interval_days": 28
+                },
+                {
+                    "slot_number": 4,
+                    "prior_valid_doses": 3,
+                    "product": "HB",
+                    "min_age_days": 113,
+                    "recommended_age_days": 120,
+                    "overdue_age_days": 120,
+                    "max_age_days": null,
+                    "min_interval_days": 28
+                },
+                {
+                    "slot_number": 4,
+                    "prior_valid_doses": 2,
+                    "product": "Penta",
+                    "min_age_days": 113,
+                    "recommended_age_days": 120,
+                    "overdue_age_days": 120,
+                    "max_age_days": null,
+                    "min_interval_days": 28,
+                    "notes": "Catchup track for slot 4"
+                },
+                {
+                    "slot_number": 4,
+                    "prior_valid_doses": 2,
+                    "product": "HB",
+                    "min_age_days": 113,
+                    "recommended_age_days": 120,
+                    "overdue_age_days": 120,
+                    "max_age_days": null,
+                    "min_interval_days": 28,
+                    "notes": "Catchup track for slot 4"
+                }
+            ]
+        },
+        {
+            "name": "VPI Series",
+            "optional": false,
+            "min_valid_interval_days": 28,
+            "mixing_policy": "strict",
+            "products": [
+                "VPI"
+            ],
+            "rules": [
+                {
+                    "slot_number": 1,
+                    "prior_valid_doses": 0,
+                    "product": "VPI",
+                    "min_age_days": 113,
+                    "recommended_age_days": 120,
+                    "overdue_age_days": 120,
+                    "max_age_days": 1825,
+                    "min_interval_days": 0,
+                    "notes": "VPI 1 at 4 months"
+                },
+                {
+                    "slot_number": 2,
+                    "prior_valid_doses": 1,
+                    "product": "VPI",
+                    "min_age_days": 263,
+                    "recommended_age_days": 270,
+                    "overdue_age_days": 270,
+                    "max_age_days": 1825,
+                    "min_interval_days": 28,
+                    "notes": "VPI 2 at 9 months"
+                }
+            ]
         }
     ],
     "transitions": [
@@ -399,6 +713,124 @@
             "block_if_anchor_missing": false,
             "active": true,
             "notes": "PrimoVax must be spaced 15 days from any DTP dose. (Requires engine support for specific product blocking, currently applied to whole series)."
+        },
+        {
+            "dependent_series": "VPO Series",
+            "dependent_slot_number": 1,
+            "anchor_series": "BCG Series",
+            "anchor_slot_number": 1,
+            "min_offset_days": 0,
+            "block_if_anchor_missing": false,
+            "active": true,
+            "notes": "VPO 0 is anchored to BCG"
+        },
+        {
+            "dependent_series": "VPO Series",
+            "dependent_slot_number": 2,
+            "anchor_series": "DTP Family",
+            "anchor_slot_number": 1,
+            "min_offset_days": 0,
+            "block_if_anchor_missing": true,
+            "active": true,
+            "notes": "VPO 1 is anchored to DTP 1"
+        },
+        {
+            "dependent_series": "VPO Series",
+            "dependent_slot_number": 3,
+            "anchor_series": "DTP Family",
+            "anchor_slot_number": 2,
+            "min_offset_days": 0,
+            "block_if_anchor_missing": true,
+            "active": true,
+            "notes": "VPO 2 is anchored to DTP 2"
+        },
+        {
+            "dependent_series": "VPO Series",
+            "dependent_slot_number": 4,
+            "anchor_series": "DTP Family",
+            "anchor_slot_number": 3,
+            "min_offset_days": 0,
+            "block_if_anchor_missing": true,
+            "active": true,
+            "notes": "VPO 3 is anchored to DTP 3"
+        },
+        {
+            "dependent_series": "VPO Series",
+            "dependent_slot_number": 5,
+            "anchor_series": "DTP Family",
+            "anchor_slot_number": 4,
+            "min_offset_days": 0,
+            "block_if_anchor_missing": true,
+            "active": true,
+            "notes": "VPO Booster 1 is anchored to DTP 4"
+        },
+        {
+            "dependent_series": "VPO Series",
+            "dependent_slot_number": 6,
+            "anchor_series": "DTP Family",
+            "anchor_slot_number": 5,
+            "min_offset_days": 0,
+            "block_if_anchor_missing": true,
+            "active": true,
+            "notes": "VPO Booster 2 is anchored to DTP 5"
+        },
+        {
+            "dependent_series": "DTP Family",
+            "dependent_slot_number": 1,
+            "anchor_series": "BCG Series",
+            "anchor_slot_number": 1,
+            "min_offset_days": 30,
+            "block_if_anchor_missing": true,
+            "active": true,
+            "notes": "BCG and DTP 1 should be at least 1 month (30 days) apart"
+        },
+        {
+            "dependent_series": "HB Series",
+            "dependent_slot_number": 1,
+            "anchor_series": "BCG Series",
+            "anchor_slot_number": 1,
+            "min_offset_days": 0,
+            "block_if_anchor_missing": false,
+            "active": true,
+            "notes": "HB0 anchored to BCG"
+        },
+        {
+            "dependent_series": "HB Series",
+            "dependent_slot_number": 2,
+            "anchor_series": "DTP Family",
+            "anchor_slot_number": 1,
+            "min_offset_days": 0,
+            "block_if_anchor_missing": true,
+            "active": true,
+            "notes": "HB1 anchored to DTP 1"
+        },
+        {
+            "dependent_series": "HB Series",
+            "dependent_slot_number": 3,
+            "anchor_series": "DTP Family",
+            "anchor_slot_number": 2,
+            "min_offset_days": 0,
+            "block_if_anchor_missing": true,
+            "active": true,
+            "notes": "HB2 anchored to DTP 2"
+        },
+        {
+            "dependent_series": "HB Series",
+            "dependent_slot_number": 4,
+            "anchor_series": "DTP Family",
+            "anchor_slot_number": 3,
+            "min_offset_days": 0,
+            "block_if_anchor_missing": true,
+            "active": true,
+            "notes": "HB3 anchored to DTP 3"
+        }
+    ],
+    "global_constraints": [
+        {
+            "code": "live_live_spacing",
+            "name": "Live/Live Spacing Rule",
+            "constraint_type": "live_live_spacing",
+            "min_spacing_days": 28
         }
     ]
 }

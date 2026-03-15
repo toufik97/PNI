@@ -59,6 +59,10 @@
                         <label class="form-label">Site (e.g. Left Arm)</label>
                         <input type="text" name="administer_site" class="form-control">
                     </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" name="administered_elsewhere" class="form-check-input" id="checkExternal">
+                        <label class="form-check-label" for="checkExternal">Given elsewhere (e.g. Hospital)</label>
+                    </div>
                     <button type="submit" class="btn btn-success w-100">Record Dose</button>
                 </form>
             </div>
@@ -153,6 +157,9 @@
                                     <span class="badge bg-danger">Invalid</span>
                                     {% else %}
                                     <span class="badge bg-success">Valid</span>
+                                    {% endif %}
+                                    {% if r.administered_elsewhere %}
+                                    <span class="badge bg-info text-dark">External</span>
                                     {% endif %}
                                 </td>
                                 <td>

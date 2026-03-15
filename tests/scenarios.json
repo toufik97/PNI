@@ -2,7 +2,12 @@
   {
     "name": "DTP: Baby under 12mo gets Penta (0 doses)",
     "age_days": 90,
-    "history": [],
+    "history": [
+      {
+        "vax": "BCG",
+        "days_ago": 90
+      }
+    ],
     "expected_due": [
       "Penta"
     ]
@@ -10,7 +15,12 @@
   {
     "name": "DTP: Toddler 12mo-3y gets Penta (0 doses)",
     "age_days": 540,
-    "history": [],
+    "history": [
+      {
+        "vax": "BCG",
+        "days_ago": 540
+      }
+    ],
     "expected_due": [
       "Penta"
     ]
@@ -18,7 +28,12 @@
   {
     "name": "DTP: Child 3y-7y gets DTC (0 doses)",
     "age_days": 1825,
-    "history": [],
+    "history": [
+      {
+        "vax": "BCG",
+        "days_ago": 1825
+      }
+    ],
     "expected_due": [
       "DTC"
     ]
@@ -26,7 +41,12 @@
   {
     "name": "DTP: Child over 7y gets Td (0 doses)",
     "age_days": 2920,
-    "history": [],
+    "history": [
+      {
+        "vax": "BCG",
+        "days_ago": 2920
+      }
+    ],
     "expected_due": [
       "Td"
     ]
@@ -38,6 +58,10 @@
       {
         "vax": "Penta",
         "days_ago": 14
+      },
+      {
+        "vax": "BCG",
+        "days_ago": 90
       }
     ],
     "expected_due": [],
@@ -52,6 +76,10 @@
       {
         "vax": "Penta",
         "days_ago": 60
+      },
+      {
+        "vax": "BCG",
+        "days_ago": 120
       }
     ],
     "expected_due": [
@@ -77,6 +105,10 @@
       {
         "vax": "DTC",
         "days_ago": 365
+      },
+      {
+        "vax": "BCG",
+        "days_ago": 1095
       }
     ],
     "expected_due": [],
@@ -130,6 +162,10 @@
       {
         "vax": "Penta",
         "days_ago": 35
+      },
+      {
+        "vax": "BCG",
+        "days_ago": 120
       }
     ],
     "expected_due": [
@@ -150,6 +186,10 @@
       {
         "vax": "Penta",
         "days_ago": 83
+      },
+      {
+        "vax": "BCG",
+        "days_ago": 90
       }
     ],
     "expected_due": [
@@ -170,6 +210,10 @@
       {
         "vax": "Penta",
         "days_ago": 0
+      },
+      {
+        "vax": "BCG",
+        "days_ago": 2920
       }
     ],
     "expected_due": [
@@ -344,6 +388,10 @@
       {
         "vax": "Primovax",
         "days_ago": 60
+      },
+      {
+        "vax": "BCG",
+        "days_ago": 130
       }
     ],
     "expected_due": [
@@ -354,10 +402,14 @@
   {
     "name": "PCV: Prevenar Infant Standard Track (0 doses)",
     "age_days": 60,
-    "history": [],
+    "history": [
+      {
+        "vax": "BCG",
+        "days_ago": 60
+      }
+    ],
     "expected_due": [
       "Penta",
-      "BCG",
       "Prevenar13"
     ]
   },
@@ -383,7 +435,12 @@
   {
     "name": "PCV: Catch-up 15mo (needs exactly 2 doses of Prevenar)",
     "age_days": 450,
-    "history": [],
+    "history": [
+      {
+        "vax": "BCG",
+        "days_ago": 450
+      }
+    ],
     "expected_due": [
       "Prevenar13",
       "Penta",
@@ -423,6 +480,292 @@
     "expected_due": [],
     "expected_upcoming": [
       "Primovax"
+    ]
+  },
+  {
+    "name": "Rotasil: Baby 60d gets Rotasil (0 doses)",
+    "age_days": 60,
+    "history": [],
+    "expected_due": [
+      "Rotasil"
+    ]
+  },
+  {
+    "name": "Rotasil: Baby wait for 28d interval (1 dose at 60d, now 80d)",
+    "age_days": 80,
+    "history": [
+      {
+        "vax": "Rotasil",
+        "days_ago": 20
+      }
+    ],
+    "expected_due": [],
+    "expected_upcoming": [
+      "Rotasil"
+    ]
+  },
+  {
+    "name": "Rotasil: Child over 2 years (731d) gets Rotasil (invalid)",
+    "age_days": 731,
+    "history": [
+      {
+        "vax": "Rotasil",
+        "days_ago": 0
+      }
+    ],
+    "expected_invalid": [
+      {
+        "vax": "Rotasil",
+        "index": 0,
+        "reason": "too_late"
+      }
+    ]
+  },
+  {
+    "name": "Rotasil: Catchup at 1.5y (547d) is still valid",
+    "age_days": 547,
+    "history": [],
+    "expected_due": [
+      "Rotasil"
+    ],
+    "expected_missing": [
+      "Rotasil"
+    ]
+  },
+  {
+    "name": "VPO: Newborn gets BCG due, VPO 0 blocked",
+    "age_days": 0,
+    "history": [],
+    "expected_due": [
+      "BCG",
+      "VPO"
+    ],
+    "expected_blocked": []
+  },
+  {
+    "name": "VPO: DTP 1 blocked if BCG missing (at 60d)",
+    "age_days": 60,
+    "history": [],
+    "expected_due": [
+      "BCG"
+    ],
+    "expected_blocked": [
+      "Penta"
+    ],
+    "comment": "Penta and VPO are blocked because BCG is missing."
+  },
+  {
+    "name": "VPO: DTP 1 blocked by 30-day BCG offset (BCG at 45d, child at 60d)",
+    "age_days": 60,
+    "history": [
+      {
+        "vax": "BCG",
+        "days_ago": 15
+      }
+    ],
+    "expected_due": [],
+    "expected_upcoming": [
+      "Penta"
+    ],
+    "comment": "BCG given 15 days ago. Penta needs 30 days offset from BCG, so not due yet."
+  },
+  {
+    "name": "VPO: VPO 1 (Slot 2) due when DTP 1 (Slot 1) is given",
+    "age_days": 60,
+    "history": [
+      {
+        "vax": "BCG",
+        "days_ago": 60
+      },
+      {
+        "vax": "Penta",
+        "days_ago": 0
+      },
+      {
+        "vax": "VPO",
+        "days_ago": 60
+      }
+    ],
+    "expected_due": [
+      "VPO"
+    ],
+    "comment": "BCG and VPO 0 given at birth. Penta 1 given today. VPO 1 should now be due as it is anchored to DTP 1."
+  },
+  {
+    "name": "HB: HB0 blocked waiting for BCG",
+    "age_days": 1,
+    "history": [],
+    "expected_due": [
+      "BCG",
+      "HB"
+    ],
+    "expected_blocked": []
+  },
+  {
+    "name": "HB: HB0 due after BCG",
+    "age_days": 1,
+    "history": [
+      {
+        "vax": "BCG",
+        "days_ago": 0
+      }
+    ],
+    "expected_due": [
+      "HB"
+    ]
+  },
+  {
+    "name": "HB: HB Skip HB0 after 1 year",
+    "age_days": 400,
+    "history": [
+      {
+        "vax": "BCG",
+        "days_ago": 400
+      }
+    ],
+    "expected_due": [
+      "Penta"
+    ],
+    "expected_missing": [
+      "Penta"
+    ]
+  },
+  {
+    "name": "HB: HB history mixing Penta",
+    "age_days": 120,
+    "history": [
+      {
+        "vax": "BCG",
+        "days_ago": 120
+      },
+      {
+        "vax": "HB",
+        "days_ago": 120
+      },
+      {
+        "vax": "Penta",
+        "days_ago": 60
+      }
+    ],
+    "expected_due": [
+      "Penta",
+      "VPO",
+      "Rotasil",
+      "Prevenar13"
+    ]
+  },
+  {
+    "name": "HB: HB0 given elsewhere",
+    "age_days": 10,
+    "history": [
+      {
+        "vax": "BCG",
+        "days_ago": 10
+      },
+      {
+        "vax": "HB",
+        "days_ago": 10,
+        "administered_elsewhere": true
+      }
+    ],
+    "expected_due": [],
+    "expected_upcoming": [
+      "Penta",
+      "Rotasil",
+      "Prevenar13"
+    ]
+  },
+  {
+    "name": "VPI: VPI 1 due at 120 days (4 months)",
+    "age_days": 120,
+    "history": [
+      {
+        "vax": "BCG",
+        "days_ago": 120
+      },
+      {
+        "vax": "HB",
+        "days_ago": 120
+      },
+      {
+        "vax": "VPO",
+        "days_ago": 120
+      }
+    ],
+    "expected_due": [
+      "VPI",
+      "VPO",
+      "Penta",
+      "Rotasil",
+      "Prevenar13"
+    ],
+    "expected_missing": [
+      "Penta",
+      "Prevenar13",
+      "Rotasil",
+      "VPO"
+    ]
+  },
+  {
+    "name": "VPI: VPI 2 due at 270 days (9 months)",
+    "age_days": 270,
+    "history": [
+      {
+        "vax": "BCG",
+        "days_ago": 270
+      },
+      {
+        "vax": "VPI",
+        "days_ago": 150
+      }
+    ],
+    "expected_due": [
+      "VPI",
+      "RR",
+      "VPO"
+    ],
+    "expected_missing": [
+      "HB",
+      "Penta",
+      "Rotasil",
+      "Prevenar13"
+    ]
+  },
+  {
+    "name": "VPI: VPI 2 upcoming at 200 days",
+    "age_days": 200,
+    "history": [
+      {
+        "vax": "BCG",
+        "days_ago": 200
+      },
+      {
+        "vax": "VPI",
+        "days_ago": 80
+      }
+    ],
+    "expected_due": [],
+    "expected_upcoming": [
+      "RR",
+      "VPI"
+    ]
+  },
+  {
+    "name": "VPI: VPI 2 deferred by 28-day interval",
+    "age_days": 280,
+    "history": [
+      {
+        "vax": "VPI",
+        "days_ago": 10
+      }
+    ],
+    "expected_due": [
+      "RR",
+      "VPO",
+      "BCG"
+    ],
+    "expected_upcoming": [
+      "VPI"
     ]
   }
 ]
