@@ -10,12 +10,27 @@ def dashboard(request):
     # For MVP, we'll just evaluate everyone. In production, we'd optimize this.
     due_today_list = []
     upcoming_list = []
+    completed_list = []
+    registered_list = []
     
     for child in children:
         engine = VaccinationEngine(child)
         eval_result = engine.evaluate()
+        
+        has_pending = (
+            eval_result['due_today'] or 
+            eval_result['due_but_unavailable'] or 
+            eval_result['missing_doses'] or 
+            eval_result['upcoming'] or
+            eval_result['blocked']
+        )
+        
+        if not has_pending and child.vaccination_records.exists():
+            completed_list.append(child)
+        
+        registered_list.append(child)
+
         if eval_result['due_today']:
-            # Store structured data for the template
             due_today_list.append({
                 'child': child,
                 'due_vaccines': eval_result['due_today'],
@@ -32,7 +47,9 @@ def dashboard(request):
     
     context = {
         'due_today': due_today_list,
-        'upcoming': upcoming_list[:10], # next 10 apps
+        'upcoming': upcoming_list[:10],
+        'completed': completed_list,
+        'registered': registered_list,
         'stats': {'total_children': children.count()}
     }
     return render(request, 'patients/dashboard.html', context)

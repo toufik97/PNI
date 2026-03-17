@@ -69,6 +69,7 @@ class VaccinationEngine:
         )
 
     def evaluate(self) -> Dict[str, Any]:
+        self._reset_validation_state()
         history_by_vaccine = self._group_history()
         active_series = self.policy_loader.get_active_series()
         self._validate_history(history_by_vaccine, active_series)
@@ -166,6 +167,18 @@ class VaccinationEngine:
 
     def _upcoming_tuple(self, item):
         return (item['vaccine'], item['target_date'], item['dose_number'])
+
+    def _reset_validation_state(self):
+        self.invalid_history = []
+        self.child.vaccination_records.all().update(
+            invalid_flag=False,
+            invalid_reason=None,
+            notes=None
+        )
+        # Re-fetch and re-normalize records to ensure engine is working with fresh clean data
+        self.records = list(self.child.vaccination_records.all().order_by('date_given'))
+        self.history = HistoryNormalizer(self.child, self.records)
+        self.records = self.history.records
 
     def _group_history(self) -> Dict[str, List[VaccinationRecord]]:
         return self.history.history_by_vaccine
@@ -308,12 +321,6 @@ class VaccinationEngine:
             for series in active_series
             for link in series.series_products.all()
         }
-    def _active_series_vaccine_ids(self, active_series: List[Series]) -> set[int]:
-        return {
-            link.product.vaccine_id
-            for series in active_series
-            for link in series.series_products.all()
-        }
 
     def _validate_series_history(self, series: Series, history_by_vaccine: Dict[str, List[VaccinationRecord]]) -> List[VaccinationRecord]:
         validator = SeriesHistoryValidator(self, history_by_vaccine)
@@ -337,8 +344,8 @@ class VaccinationEngine:
     def _build_series_candidate_state(self, series: Series, valid_records: List[VaccinationRecord], last_dose_date: Optional[date], rule, future: bool = False):
         return self.recommender.build_series_candidate_state(series, valid_records, last_dose_date, rule, future)
 
-    def _apply_dependency_rules(self, series: Series, slot_number: int, target_date: date):
-        return self.dependencies.apply(series, slot_number, target_date)
+    def _apply_dependency_rules(self, series: Series, slot_number: int, target_date: date, product: Optional[Product] = None):
+        return self.dependencies.apply(series, slot_number, target_date, product=product)
 
     def _choose_due_state(self, series: Series, valid_records: List[VaccinationRecord], states):
         return self.availability.choose_due_state(series, valid_records, states)

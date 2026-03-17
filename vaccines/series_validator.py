@@ -99,7 +99,26 @@ class SeriesHistoryValidator:
                     )
                     continue
 
+            # Dependency check
+            _, blocking_constraints, _ = self.engine._apply_dependency_rules(
+                series, slot_number, record.date_given, product=product
+            )
+            if blocking_constraints:
+                reasons = [c['message'] for c in blocking_constraints]
+                rule_key = blocking_constraints[0]['rule_key']
+                
+                self.engine._flag_invalid(
+                    record,
+                    VR.REASON_INTERVAL,
+                    f"Dependency conflict: {record.vaccine.name} at slot {slot_number} violates dependency rules: {' '.join(reasons)}",
+                    decision_source=self.engine.SOURCE_SERIES_RULE,
+                    rule_key=rule_key,
+                    series=series,
+                    product=product,
+                    slot_number=slot_number,
+                )
+                continue
+
             valid_records.append(record)
 
         return valid_records
-

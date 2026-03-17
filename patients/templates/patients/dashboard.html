@@ -11,74 +11,119 @@
     </div>
 </div>
 
-<div class="row">
-    <div class="col-md-6">
-        <div class="card border-danger mb-4">
-            <div class="card-header bg-danger text-white">
-                <h5 class="mb-0">Due Today / Overdue</h5>
-            </div>
-            <div class="card-body">
+<div class="card">
+    <div class="card-header bg-light">
+        <ul class="nav nav-tabs card-header-tabs" id="dashboardTabs" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active text-danger fw-bold" id="due-tab" data-bs-toggle="tab" data-bs-target="#due" type="button" role="tab">
+                    Due Today ({{ due_today|length }})
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link text-info fw-bold" id="upcoming-tab" data-bs-toggle="tab" data-bs-target="#upcoming" type="button" role="tab">
+                    Upcoming ({{ upcoming|length }})
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link text-success fw-bold" id="completed-tab" data-bs-toggle="tab" data-bs-target="#completed" type="button" role="tab">
+                    Completed ({{ completed|length }})
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link text-secondary fw-bold" id="registry-tab" data-bs-toggle="tab" data-bs-target="#registry" type="button" role="tab">
+                    All Registry ({{ stats.total_children }})
+                </button>
+            </li>
+        </ul>
+    </div>
+    <div class="card-body">
+        <div class="tab-content" id="dashboardTabsContent">
+            <!-- Due Today -->
+            <div class="tab-pane fade show active" id="due" role="tabpanel">
                 {% if due_today %}
-                <ul class="list-group list-group-flush">
+                <div class="list-group list-group-flush">
                     {% for entry in due_today %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
                         <div>
-                            {% if entry.child.id %}
                             <a href="{% url 'patients:profile' entry.child.id %}" class="fw-bold text-decoration-none">
                                 {{ entry.child.name }} ({{ entry.child.id }})
                             </a>
-                            {% else %}
-                            <span class="fw-bold text-danger">{{ entry.child.name }} (Invalid ID)</span>
-                            {% endif %}
-                            <br>
-                            <small class="text-muted">Age: {{ entry.child.dob|timesince }}</small>
+                            <br><small class="text-muted">Age: {{ entry.child.dob|timesince }}</small>
                         </div>
                         <div>
                             {% for v_info in entry.due_vaccines %}
                              <span class="badge bg-danger rounded-pill p-2 mb-1 d-inline-block">
                                  <div class="fw-bold">{{ v_info.vaccine.display_name|default:v_info.vaccine.name }}</div>
-                                 <small>{% if v_info.dose_number %}Dose {{ v_info.dose_number }}{% endif %} {% if v_info.dose_amount %}| {{ v_info.dose_amount }}{% endif %}</small>
+                                 <small>Dose {{ v_info.dose_number }}</small>
                              </span>
                             {% endfor %}
                         </div>
-                    </li>
+                    </div>
                     {% endfor %}
-                </ul>
+                </div>
                 {% else %}
-                <p class="text-muted mb-0">No children due for vaccines today.</p>
+                <p class="text-muted p-3">No children due for vaccines today.</p>
                 {% endif %}
             </div>
-        </div>
-    </div>
 
-    <div class="col-md-6">
-        <div class="card border-info">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0">Upcoming Appointments</h5>
-            </div>
-            <div class="card-body">
+            <!-- Upcoming -->
+            <div class="tab-pane fade" id="upcoming" role="tabpanel">
                 {% if upcoming %}
-                <ul class="list-group list-group-flush">
+                <div class="list-group list-group-flush">
                     {% for app in upcoming %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
                         <div>
-                            {% if app.child.id %}
                             <a href="{% url 'patients:profile' app.child.id %}" class="fw-bold text-decoration-none">
                                 {{ app.child.name }} ({{ app.child.id }})
                             </a>
-                            {% else %}
-                            <span class="fw-bold text-danger">{{ app.child.name }} (Invalid ID)</span>
-                            {% endif %}
                         </div>
                         <div class="text-end">
-                            <span class="badge bg-secondary">{{ app.date|date:"M d, Y" }}</span>
+                            <span class="badge bg-info text-dark">{{ app.date|date:"M d, Y" }}</span>
                         </div>
-                    </li>
+                    </div>
                     {% endfor %}
-                </ul>
+                </div>
                 {% else %}
-                <p class="text-muted mb-0">No upcoming appointments.</p>
+                <p class="text-muted p-3">No upcoming appointments.</p>
                 {% endif %}
+            </div>
+
+            <!-- Completed -->
+            <div class="tab-pane fade" id="completed" role="tabpanel">
+                {% if completed %}
+                <div class="list-group list-group-flush">
+                    {% for child in completed %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <a href="{% url 'patients:profile' child.id %}" class="fw-bold text-decoration-none">
+                                {{ child.name }} ({{ child.id }})
+                            </a>
+                            <br><small class="text-muted">Status: Fully Vaccinated</small>
+                        </div>
+                        <span class="badge bg-success"><i class="bi bi-patch-check-fill"></i> Complete</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted p-3">No children have completed their full schedule yet.</p>
+                {% endif %}
+            </div>
+
+            <!-- All Registry -->
+            <div class="tab-pane fade" id="registry" role="tabpanel">
+                <div class="list-group list-group-flush">
+                    {% for child in registered %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <a href="{% url 'patients:profile' child.id %}" class="fw-bold text-decoration-none">
+                                {{ child.name }} ({{ child.id }})
+                            </a>
+                            <br><small class="text-muted">DOB: {{ child.dob|date:"Y-m-d" }}</small>
+                        </div>
+                        <a href="{% url 'patients:profile' child.id %}" class="btn btn-sm btn-outline-primary">View Profile</a>
+                    </div>
+                    {% endfor %}
+                </div>
             </div>
         </div>
     </div>

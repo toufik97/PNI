@@ -55,7 +55,7 @@
             "manufacturer": "Acme",
             "display_name": "Pneumococcal conjugate (PRIMOVAX13)",
             "protects_against": "Pneumococcal disease (13 strains)",
-            "clinical_notes": "Alternative PCV track starting at dose 2. Requires 15d interval from DTP doses."
+            "clinical_notes": "Alternative PCV track starting at dose 2. Requires 14d interval from DTP doses."
         },
         {
             "name": "Rotasil",
@@ -756,11 +756,11 @@
             "dependent_series": "Pneumo",
             "dependent_product": "Primovax",
             "anchor_series": "DTP Family",
-            "anchor_product": "Penta",
-            "min_offset_days": 15,
-            "block_if_anchor_missing": false,
+            "anchor_slot_number": 0,
+            "min_offset_days": 14,
+            "block_if_anchor_missing": true,
             "active": true,
-            "notes": "PrimoVax must be spaced 15 days from any Penta dose."
+            "notes": "PrimoVax must be spaced 14 days from any DTP dose (Penta, DTC, or Td)."
         },
         {
             "dependent_series": "VPO Series",
