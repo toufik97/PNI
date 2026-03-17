@@ -25,6 +25,9 @@ urlpatterns = [
     path('settings/global-constraint/new/', views.global_constraint_create, name='global_constraint_create'),
     path('settings/global-constraint/<int:pk>/edit/', views.global_constraint_edit, name='global_constraint_edit'),
     path('settings/global-constraint/<int:pk>/delete/', views.global_constraint_delete, name='global_constraint_delete'),
+    
+    path('settings/policy/export/', views.policy_export, name='policy_export'),
+    path('settings/policy/import/', views.policy_import, name='policy_import'),
 
 
 

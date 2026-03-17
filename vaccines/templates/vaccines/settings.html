@@ -53,6 +53,7 @@
         <li class="nav-item"><a class="nav-link {% if active_tab == 'dependencies' %}active{% endif %}" href="{% url 'vaccines:settings_tab' 'dependencies' %}">Dependencies</a></li>
         <li class="nav-item"><a class="nav-link {% if active_tab == 'constraints' %}active{% endif %}" href="{% url 'vaccines:settings_tab' 'constraints' %}">Global Constraints</a></li>
         <li class="nav-item"><a class="nav-link {% if active_tab == 'versions' %}active{% endif %}" href="{% url 'vaccines:settings_tab' 'versions' %}">Versions</a></li>
+        <li class="nav-item"><a class="nav-link {% if active_tab == 'maintenance' %}active{% endif %}" href="{% url 'vaccines:settings_tab' 'maintenance' %}">Maintenance</a></li>
         <li class="nav-item"><a class="nav-link {% if active_tab == 'guide' %}active{% endif %}" href="{% url 'vaccines:settings_tab' 'guide' %}">Guide</a></li>
     </ul>
 
@@ -342,6 +343,54 @@
     {% else %}
     <div class="empty-state"><p class="mb-2">No policy versions configured yet.</p><a href="{% url 'vaccines:policy_version_create' %}" class="btn btn-add">Add Your First Version</a></div>
     {% endif %}
+    {% elif active_tab == 'maintenance' %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="mb-1" style="font-weight:700; color:#22303c;">Policy Maintenance</h4>
+            <p class="text-muted mb-0">Backup, restore, and audit vaccination policies.</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="entity-card card h-100">
+                <div class="card-header"><h5 class="mb-0">Export Policy</h5></div>
+                <div class="card-body">
+                    <p>Download the entire current vaccination policy (vaccines, series, rules, dependencies) as a JSON file. Use this for backups or to migrate clinical logic between environments.</p>
+                    <a href="{% url 'vaccines:policy_export' %}" class="btn btn-primary">
+                        <i class="bi bi-download me-1"></i> Download Policy JSON
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="entity-card card h-100">
+                <div class="card-header"><h5 class="mb-0">Import Policy</h5></div>
+                <div class="card-body">
+                    <p>Restore or update the vaccination policy from a previously exported JSON file. <strong>Warning:</strong> This will overwrite matching rules and may change the active clinical logic.</p>
+                    <form action="{% url 'vaccines:policy_import' %}" method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <input type="file" name="policy_file" class="form-control" accept=".json" required>
+                        </div>
+                        <button type="submit" class="btn btn-warning" onclick="return confirm('Are you sure you want to import this policy? This will modify vaccine and series configurations.')">
+                            <i class="bi bi-upload me-1"></i> Upload & Import
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="info-box mt-4">
+        <h5><i class="bi bi-info-circle-fill me-2"></i>Developer Access</h5>
+        <p class="mb-0">You can also perform these operations via the command line for automated workflows:</p>
+        <code class="d-block mt-2 p-2 bg-dark text-light rounded">
+            python manage.py export_policy my_backup.json<br>
+            python manage.py import_policy my_backup.json
+        </code>
+    </div>
+
     {% elif active_tab == 'guide' %}
         {% include "vaccines/guide_content.html" %}
     {% endif %}

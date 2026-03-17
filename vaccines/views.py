@@ -17,7 +17,7 @@ from .models import DependencyRule, GlobalConstraintRule, PolicyVersion, Product
 from patients.models import VaccinationRecord
 
 
-NEW_TABS = {'products', 'series', 'dependencies', 'constraints', 'versions', 'guide'}
+NEW_TABS = {'products', 'series', 'dependencies', 'constraints', 'versions', 'guide', 'maintenance'}
 ALL_TABS = NEW_TABS
 
 
@@ -395,4 +395,32 @@ def global_constraint_delete(request, pk):
         return redirect('vaccines:settings_tab', tab='constraints')
     return render(request, 'vaccines/confirm_delete.html', {'object': constraint, 'object_type': 'Global Constraint', 'cancel_href': reverse('vaccines:settings_tab', kwargs={'tab': 'constraints'})})
 
+from .policy_management import PolicyManager
+from datetime import date
+import json
+from django.http import HttpResponse
 
+def policy_export(request):
+    data = PolicyManager.export_to_dict()
+    filename = f"vaccine_policy_{date.today().isoformat()}.json"
+    response = HttpResponse(
+        json.dumps(data, indent=4, ensure_ascii=False),
+        content_type='application/json'
+    )
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
+def policy_import(request):
+    if request.method == 'POST' and request.FILES.get('policy_file'):
+        policy_file = request.FILES['policy_file']
+        try:
+            content = policy_file.read().decode('utf-8')
+            data = json.loads(content)
+            PolicyManager.import_from_dict(data)
+            messages.success(request, 'Vaccine policy imported successfully.')
+        except Exception as e:
+            messages.error(request, f'Failed to import policy: {str(e)}')
+    else:
+        messages.error(request, 'No file provided for import.')
+    
+    return redirect('vaccines:settings_tab', tab='maintenance')
