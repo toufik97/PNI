@@ -5,301 +5,608 @@
 {% block content %}
 <style>
     :root {
-        --primary-blue: #204a87;
-        --secondary-green: #2f855a;
+        --primary: #204a87;
+        --primary-light: #3465a4;
+        --secondary: #2f855a;
         --routine-bg: #ebf8ff;
-        --routine-border: #bee3f8;
+        --routine-border: #90cdf4;
+        --routine-text: #2b6cb0;
         --catchup-bg: #fffaf0;
-        --catchup-border: #feebc8;
-        --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --catchup-border: #fbd38d;
+        --catchup-text: #c05621;
+        --special-bg: #faf5ff;
+        --special-border: #d6bcfa;
+        --special-text: #6b46c1;
+        --card-shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+        --card-shadow-hover: 0 10px 25px -5px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
     }
 
-    .form-header {
-        background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-green) 100%);
-        color: white;
-        border-radius: 12px;
-        padding: 1.5rem 2rem;
+    /* ── Wizard Stepper ────────────────────────────── */
+    .wizard-stepper {
+        display: flex;
+        justify-content: center;
+        gap: 0;
         margin-bottom: 2rem;
+        position: relative;
+    }
+    .wizard-step {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.75rem 1.5rem;
+        cursor: pointer;
+        border-bottom: 3px solid transparent;
+        transition: all 0.3s ease;
+        color: #a0aec0;
+        font-weight: 600;
+        font-size: 0.9rem;
+        user-select: none;
+    }
+    .wizard-step:hover { color: var(--primary-light); }
+    .wizard-step.active {
+        color: var(--primary);
+        border-bottom-color: var(--primary);
+    }
+    .wizard-step.completed {
+        color: var(--secondary);
+        border-bottom-color: var(--secondary);
+    }
+    .wizard-step .step-number {
+        width: 28px; height: 28px;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.8rem; font-weight: 800;
+        background: #e2e8f0; color: #718096;
+        transition: all 0.3s ease;
+    }
+    .wizard-step.active .step-number { background: var(--primary); color: white; }
+    .wizard-step.completed .step-number { background: var(--secondary); color: white; }
+    .wizard-panel { display: none; animation: fadeSlideIn 0.35s ease; }
+    .wizard-panel.active { display: block; }
+    @keyframes fadeSlideIn {
+        from { opacity: 0; transform: translateY(12px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Header ────────────────────────────────────── */
+    .form-header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        color: white;
+        border-radius: 16px;
+        padding: 1.5rem 2rem;
+        margin-bottom: 1.5rem;
         box-shadow: var(--card-shadow);
     }
 
+    /* ── Cards / Sections ─────────────────────────── */
+    .form-section {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: var(--card-shadow);
+    }
+    .section-title {
+        font-weight: 800;
+        font-size: 1rem;
+        color: var(--primary);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    /* ── Slot Cards ────────────────────────────────── */
     .slot-card {
         background: white;
         border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        margin-bottom: 2rem;
+        border-radius: 14px;
+        margin-bottom: 1.25rem;
         overflow: hidden;
         box-shadow: var(--card-shadow);
+        transition: box-shadow 0.2s ease, border-color 0.2s ease;
     }
-
+    .slot-card:hover { box-shadow: var(--card-shadow-hover); }
+    .slot-card.highlight { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(32,74,135,0.15); }
     .slot-card-header {
-        background: #f8fafc;
-        padding: 1rem 1.5rem;
-        border-bottom: 2px solid #edf2f7;
+        padding: 0.85rem 1.25rem;
+        border-bottom: 1px solid #edf2f7;
         display: flex;
         justify-content: space-between;
         align-items: center;
+        cursor: pointer;
+        transition: background 0.15s;
     }
-
+    .slot-card-header:hover { background: #f7fafc; }
     .slot-card-header h4 {
         margin: 0;
-        color: var(--primary-blue);
         font-weight: 800;
+        font-size: 0.92rem;
+        color: #2d3748;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+    .slot-card-summary {
+        font-size: 0.82rem;
+        color: #718096;
+        font-weight: 500;
+        margin-left: 0.75rem;
+    }
+    .slot-card-body { padding: 1rem 1.25rem; }
+    .slot-card-body.collapsed { display: none; }
+
+    /* ── Category Badges ──────────────────────────── */
+    .cat-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 10px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.05em;
     }
+    .cat-badge.routine { background: var(--routine-bg); color: var(--routine-text); border: 1px solid var(--routine-border); }
+    .cat-badge.catchup { background: var(--catchup-bg); color: var(--catchup-text); border: 1px solid var(--catchup-border); }
+    .cat-badge.special { background: var(--special-bg); color: var(--special-text); border: 1px solid var(--special-border); }
 
-    .rule-group {
-        padding: 1rem 1.5rem;
-    }
-
-    .rule-category-header {
-        font-size: 0.85rem;
-        font-weight: 700;
-        text-transform: uppercase;
+    /* ── Rule Rows ─────────────────────────────────── */
+    .rule-row {
+        background: #fafcfe;
+        border: 1px solid #e8eef5;
+        border-radius: 10px;
+        padding: 1rem 1.25rem;
         margin-bottom: 0.75rem;
-        padding-bottom: 0.25rem;
-        border-bottom: 2px solid #eef3f8;
-    }
-
-    .category-routine .rule-category-header { color: #2b6cb0; border-color: #bee3f8; }
-    .category-catchup .rule-category-header { color: #c05621; border-color: #feebc8; }
-    .category-special .rule-category-header { color: #553c9a; border-color: #e9d8fd; }
-
-    .formset-row {
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 1rem;
-        margin-bottom: 1rem;
         transition: all 0.2s;
+        position: relative;
     }
-
-    .formset-row:hover {
-        border-color: #cbd5e0;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-
-    .category-routine .formset-row { background: var(--routine-bg); border-color: var(--routine-border); }
-    .category-catchup .formset-row { background: var(--catchup-bg); border-color: var(--catchup-border); }
-
-    .age-conversion-helper {
-        font-size: 0.7rem;
-        color: #718096;
-        margin-top: 0.25rem;
-        display: block;
-    }
-
-    .unit-badge {
-        display: inline-block;
-        padding: 2px 6px;
-        border-radius: 4px;
-        background: #edf2f7;
-        cursor: pointer;
-        margin-right: 4px;
-        font-weight: 600;
-    }
-
-    .unit-badge:hover { background: #e2e8f0; }
-
-    .btn-save {
-        background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-green) 100%);
-        color: white;
-        border: none;
-        border-radius: 8px;
-        padding: 0.8rem 2.5rem;
-        font-weight: 700;
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
-    }
-
-    .delete-row-btn {
-        color: #e53e3e;
-        cursor: pointer;
-        opacity: 0.7;
-        transition: all 0.2s;
-        border: none;
-        background: transparent;
-        padding: 4px;
-        border-radius: 4px;
-    }
-
-    .delete-row-btn:hover {
-        opacity: 1;
-        background: #fff5f5;
-        color: #c53030;
-    }
-
-    .marked-for-delete {
-        opacity: 0.3 !important;
+    .rule-row:hover { border-color: #cbd5e0; box-shadow: 0 2px 6px rgba(0,0,0,0.04); }
+    .rule-row.routine { background: var(--routine-bg); border-color: var(--routine-border); }
+    .rule-row.catchup { background: var(--catchup-bg); border-color: var(--catchup-border); }
+    .rule-row.special { background: var(--special-bg); border-color: var(--special-border); }
+    .rule-row.marked-for-delete {
+        opacity: 0.35;
         filter: grayscale(1);
         pointer-events: none;
     }
 
-    .form-section {
-        background: white;
-        border: 1px solid #dbe4ee;
-        border-radius: 12px;
-        padding: 1.5rem;
-        margin-bottom: 2rem;
+    /* ── Age Input Group ──────────────────────────── */
+    .age-compound {
+        display: flex;
+        align-items: stretch;
+        gap: 0;
+    }
+    .age-compound input[type="number"] {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+        flex: 1;
+        min-width: 60px;
+    }
+    .age-compound select {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+        border-left: 0;
+        max-width: 88px;
+        font-size: 0.82rem;
+        background: #f7fafc;
+        cursor: pointer;
+    }
+    .age-human-label {
+        display: block;
+        font-size: 0.7rem;
+        color: #a0aec0;
+        margin-top: 3px;
+        min-height: 1em;
     }
 
-    .age-input-group { position: relative; }
-    
-    .slot-meta-pill {
-        background: #e2e8f0;
-        color: #4a5568;
-        padding: 2px 10px;
-        border-radius: 20px;
-        font-size: 0.75rem;
+    /* ── Timeline ──────────────────────────────────── */
+    .timeline-bar {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        padding: 1rem 1.5rem;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        margin-bottom: 1.25rem;
+        overflow-x: auto;
+        box-shadow: var(--card-shadow);
+        min-height: 70px;
+    }
+    .timeline-dot-group {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+        min-width: 80px;
+        cursor: pointer;
+    }
+    .timeline-dot {
+        width: 32px; height: 32px;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 800;
+        font-size: 0.78rem;
+        color: white;
+        transition: transform 0.15s, box-shadow 0.15s;
+        z-index: 2;
+    }
+    .timeline-dot:hover { transform: scale(1.15); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .timeline-dot.routine { background: var(--routine-text); }
+    .timeline-dot.catchup { background: var(--catchup-text); }
+    .timeline-dot.special { background: var(--special-text); }
+    .timeline-dot.mixed { background: linear-gradient(135deg, var(--routine-text), var(--catchup-text)); }
+    .timeline-label {
+        font-size: 0.65rem;
+        color: #a0aec0;
+        margin-top: 6px;
+        white-space: nowrap;
+        text-align: center;
         font-weight: 600;
     }
+    .timeline-connector {
+        flex: 1;
+        height: 3px;
+        background: #e2e8f0;
+        min-width: 30px;
+        border-radius: 2px;
+        position: relative;
+        top: -10px;
+    }
+    .timeline-empty {
+        color: #a0aec0;
+        font-size: 0.85rem;
+        font-style: italic;
+    }
+
+    /* ── Transition Sentence Card ─────────────────── */
+    .transition-sentence {
+        background: #f7fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 1rem 1.25rem;
+        margin-bottom: 0.75rem;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.88rem;
+        color: #4a5568;
+        transition: all 0.2s;
+    }
+    .transition-sentence:hover { border-color: #cbd5e0; }
+    .transition-sentence .sentence-label {
+        font-weight: 700;
+        color: #718096;
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+    .transition-sentence select,
+    .transition-sentence input {
+        font-size: 0.85rem;
+    }
+    .transition-sentence.marked-for-delete {
+        opacity: 0.35;
+        filter: grayscale(1);
+        pointer-events: none;
+    }
+
+    /* ── Delete / Action Buttons ──────────────────── */
+    .delete-btn {
+        color: #e53e3e;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        opacity: 0.6;
+        transition: all 0.2s;
+        padding: 4px 6px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+    }
+    .delete-btn:hover { opacity: 1; background: #fff5f5; }
+    .undo-bar {
+        background: #fffaf0;
+        border: 1px solid #feebc8;
+        border-radius: 8px;
+        padding: 0.4rem 0.75rem;
+        font-size: 0.8rem;
+        color: #c05621;
+        display: none;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .undo-bar.visible { display: flex; }
+
+    /* ── Sticky Footer ─────────────────────────────── */
+    .sticky-footer {
+        position: sticky;
+        bottom: 0;
+        background: white;
+        border-top: 1px solid #e2e8f0;
+        padding: 0.75rem 1.5rem;
+        margin: 0 -12px;
+        z-index: 100;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 -4px 12px rgba(0,0,0,0.06);
+        border-radius: 14px 14px 0 0;
+    }
+    .btn-save-main {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 0.7rem 2.2rem;
+        font-weight: 700;
+        font-size: 0.92rem;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+        transition: opacity 0.2s, transform 0.1s;
+    }
+    .btn-save-main:hover { opacity: 0.92; transform: translateY(-1px); }
+
+    /* ── Validation Warning ────────────────────────── */
+    .validation-warning {
+        background: #fffaf0;
+        border: 1px solid #feebc8;
+        border-radius: 8px;
+        padding: 0.35rem 0.65rem;
+        font-size: 0.75rem;
+        color: #c05621;
+        margin-top: 4px;
+        display: none;
+    }
+    .validation-warning.visible { display: block; }
+
+    /* ── Misc ──────────────────────────────────────── */
+    .form-label-sm {
+        font-size: 0.76rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #718096;
+        letter-spacing: 0.04em;
+        margin-bottom: 0.3rem;
+    }
+    .add-btn {
+        border: 1px dashed #cbd5e0;
+        background: transparent;
+        color: var(--primary);
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-weight: 600;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .add-btn:hover { border-color: var(--primary); background: #f0f4f8; }
+    .chevron-icon { transition: transform 0.2s; }
+    .chevron-icon.collapsed { transform: rotate(-90deg); }
 </style>
 
 <div class="pt-3">
+    <!-- Header -->
     <div class="form-header">
         <div class="d-flex justify-content-between align-items-center">
             <div>
-                <h2 class="mb-1">{{ title }}</h2>
+                <h2 class="mb-1" style="font-weight:800;">{{ title }}</h2>
                 <p class="mb-0 opacity-75">Define vaccination schedules, routine windows, and catch-up logic.</p>
             </div>
-            <div class="text-end">
-                <a href="{% url 'vaccines:settings_tab' 'series' %}" class="btn btn-outline-light btn-sm">Cancel</a>
-            </div>
+            <a href="{% url 'vaccines:settings_tab' 'series' %}" class="btn btn-outline-light btn-sm">Cancel</a>
+        </div>
+    </div>
+
+    <!-- Wizard Stepper -->
+    <div class="wizard-stepper" id="wizard-stepper">
+        <div class="wizard-step active" data-step="1" onclick="goToStep(1)">
+            <span class="step-number">1</span>
+            <span>General & Products</span>
+        </div>
+        <div class="wizard-step" data-step="2" onclick="goToStep(2)">
+            <span class="step-number">2</span>
+            <span>Clinical Schedule</span>
+        </div>
+        <div class="wizard-step" data-step="3" onclick="goToStep(3)">
+            <span class="step-number">3</span>
+            <span>Transition Logic</span>
         </div>
     </div>
 
     <form method="post" novalidate id="series-main-form">
         {% csrf_token %}
 
-        <!-- Core Info -->
-        <div class="form-section">
-            <h5 class="fw-bold mb-3 text-primary"><i class="bi bi-info-circle-fill me-2"></i>General Information</h5>
-            <div class="row">
-                {% for field in form %}
-                <div class="col-md-{% if field.name == 'description' %}12{% else %}4{% endif %} mb-3">
-                    <label for="{{ field.id_for_label }}" class="form-label fw-bold small text-uppercase">{{ field.label }}</label>
-                    {% if field.field.widget.input_type == 'checkbox' %}
-                    <div class="form-check form-switch pb-2">
-                        {{ field }}
-                        <label class="form-check-label ms-2" for="{{ field.id_for_label }}">{{ field.help_text }}</label>
-                    </div>
-                    {% else %}
-                    {{ field }}
-                    {% if field.help_text %}<div class="form-text small">{{ field.help_text }}</div>{% endif %}
-                    {% endif %}
-                    {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors|striptags }}</div>{% endif %}
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-
-        <!-- Products -->
-        <div class="form-section">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="fw-bold mb-0 text-primary"><i class="bi bi-box-seam-fill me-2"></i>Vaccine Products</h5>
-                <button type="button" class="btn btn-sm btn-primary add-formset-row" data-prefix="products">
-                    <i class="bi bi-plus-lg"></i> Add Product
-                </button>
-            </div>
-            {{ product_formset.management_form }}
-            <div id="products-list" class="row">
-                {% for pform in product_formset %}
-                <div class="col-md-6">
-                    <div class="formset-row">
-                        <div class="d-flex justify-content-end mb-1">
-                            <button type="button" class="delete-row-btn"><i class="bi bi-trash"></i></button>
-                            <div style="display:none;">{{ pform.DELETE }}</div>
-                        </div>
-                        <div class="row g-2">
-                            {% for field in pform.visible_fields %}
-                            {% if field.name != 'DELETE' %}
-                            <div class="col-sm">
-                                <label class="form-label small fw-bold">{{ field.label }}</label>
-                                {{ field }}
-                            </div>
-                            {% endif %}
-                            {% endfor %}
-                        </div>
-                        {% for hidden in pform.hidden_fields %}{{ hidden }}{% endfor %}
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-
-        <!-- Rules (The big one) -->
-        <h5 class="fw-bold mb-3 text-secondary px-2"><i class="bi bi-calendar-check-fill me-2"></i>Clinical Schedule (Slot Rules)</h5>
-        {{ rule_formset.management_form }}
-        <div id="slot-cards-container">
-            <!-- Dynamically populated by JS -->
-        </div>
-
-        <!-- Hidden container for standard row-based template -->
-        <div id="rules-list" style="display:none;">
-            {% for rform in rule_formset %}
-            <div class="formset-row rule-form-instance">
-                {% for field in rform.visible_fields %}
-                <div class="field-container" data-field-name="{{ field.name }}">
-                    {{ field }}
-                    {% if field.errors %}<div class="text-danger small">{{ field.errors|striptags }}</div>{% endif %}
-                </div>
-                {% endfor %}
-                {% for hidden in rform.hidden_fields %}{{ hidden }}{% endfor %}
-            </div>
-            {% endfor %}
-        </div>
-
-        <!-- Transitions -->
-        <div class="form-section mt-4">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="fw-bold mb-0 text-primary"><i class="bi bi-arrow-left-right me-2"></i>Product Transition Logic</h5>
-                <button type="button" class="btn btn-sm btn-primary add-formset-row" data-prefix="transitions">
-                    <i class="bi bi-plus-lg"></i> Add Rule
-                </button>
-            </div>
-            {{ transition_formset.management_form }}
-            <div id="transitions-list">
-                {% for tform in transition_formset %}
-                <div class="formset-row">
-                    <div class="d-flex justify-content-end mb-1">
-                        <button type="button" class="delete-row-btn"><i class="bi bi-trash"></i></button>
-                        <div style="display:none;">{{ tform.DELETE }}</div>
-                    </div>
-                    <div class="row g-3">
-                        {% for field in tform.visible_fields %}
-                        {% if field.name != 'DELETE' %}
-                        <div class="col-md">
-                            <label class="form-label small fw-bold">{{ field.label }}</label>
+        <!-- ═══════════════════════════════════════════════
+             STEP 1: General Info + Products
+             ═══════════════════════════════════════════════ -->
+        <div class="wizard-panel active" id="panel-1">
+            <div class="form-section">
+                <div class="section-title"><i class="bi bi-info-circle-fill"></i> Series Information</div>
+                <div class="row">
+                    {% for field in form %}
+                    <div class="col-md-{% if field.name == 'description' %}12{% else %}4{% endif %} mb-3">
+                        <label for="{{ field.id_for_label }}" class="form-label-sm">{{ field.label }}</label>
+                        {% if field.field.widget.input_type == 'checkbox' %}
+                        <div class="form-check form-switch pb-2">
                             {{ field }}
+                            <label class="form-check-label ms-2 small text-muted" for="{{ field.id_for_label }}">{{ field.help_text }}</label>
                         </div>
+                        {% else %}
+                        {{ field }}
+                        {% if field.help_text %}<div class="form-text small text-muted">{{ field.help_text }}</div>{% endif %}
                         {% endif %}
-                        {% endfor %}
+                        {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors|striptags }}</div>{% endif %}
                     </div>
-                    {% for hidden in tform.hidden_fields %}{{ hidden }}{% endfor %}
+                    {% endfor %}
                 </div>
-                {% endfor %}
+            </div>
+
+            <div class="form-section">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="section-title mb-0"><i class="bi bi-box-seam-fill"></i> Vaccine Products</div>
+                    <button type="button" class="add-btn add-formset-row" data-prefix="products">
+                        <i class="bi bi-plus-lg me-1"></i> Add Product
+                    </button>
+                </div>
+                {{ product_formset.management_form }}
+                <div id="products-list" class="row">
+                    {% for pform in product_formset %}
+                    <div class="col-md-6">
+                        <div class="rule-row" style="position:relative;">
+                            <button type="button" class="delete-btn" style="position:absolute;top:8px;right:8px;" title="Remove"><i class="bi bi-x-lg"></i></button>
+                            <div style="display:none;">{{ pform.DELETE }}</div>
+                            <div class="row g-2">
+                                {% for field in pform.visible_fields %}
+                                {% if field.name != 'DELETE' %}
+                                <div class="col-sm">
+                                    <label class="form-label-sm">{{ field.label }}</label>
+                                    {{ field }}
+                                </div>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                            {% for hidden in pform.hidden_fields %}{{ hidden }}{% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end mt-2">
+                <button type="button" class="btn btn-primary px-4" onclick="goToStep(2)">
+                    Next: Clinical Schedule <i class="bi bi-arrow-right ms-1"></i>
+                </button>
             </div>
         </div>
 
-        <div class="d-flex justify-content-between align-items-center py-4">
+        <!-- ═══════════════════════════════════════════════
+             STEP 2: Clinical Schedule (Slot Rules)
+             ═══════════════════════════════════════════════ -->
+        <div class="wizard-panel" id="panel-2">
+            <div class="section-title px-1 mb-2"><i class="bi bi-calendar-check-fill"></i> Dose Timeline</div>
+            <div class="timeline-bar" id="timeline-bar">
+                <span class="timeline-empty">Add slot rules below to see the timeline…</span>
+            </div>
+
+            {{ rule_formset.management_form }}
+            {% if rule_formset.non_form_errors %}<div class="alert alert-danger small">{{ rule_formset.non_form_errors }}</div>{% endif %}
+            {% for rform in rule_formset %}{% if rform.errors %}<div class="alert alert-warning small">{% for field, errors in rform.errors.items %}{{ errors|striptags }} {% endfor %}</div>{% endif %}{% endfor %}
+            <div id="slot-cards-container">
+                <!-- Dynamically built by JS -->
+            </div>
+
+            <!-- Hidden canonical formset rows (source of truth for Django) -->
+            <div id="rules-list" style="display:none;">
+                {% for rform in rule_formset %}
+                <div class="formset-row rule-form-instance">
+                    {% for field in rform.visible_fields %}
+                    <div class="field-container" data-field-name="{{ field.name }}">
+                        {{ field }}
+                        {% if field.errors %}<div class="text-danger small">{{ field.errors|striptags }}</div>{% endif %}
+                    </div>
+                    {% endfor %}
+                    {% for hidden in rform.hidden_fields %}{{ hidden }}{% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="text-center mt-3" id="add-slot-container"></div>
+
+            <div class="d-flex justify-content-between mt-3">
+                <button type="button" class="btn btn-outline-secondary px-4" onclick="goToStep(1)">
+                    <i class="bi bi-arrow-left me-1"></i> Back
+                </button>
+                <button type="button" class="btn btn-primary px-4" onclick="goToStep(3)">
+                    Next: Transitions <i class="bi bi-arrow-right ms-1"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════
+             STEP 3: Transition Logic
+             ═══════════════════════════════════════════════ -->
+        <div class="wizard-panel" id="panel-3">
+            <div class="form-section">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="section-title mb-0"><i class="bi bi-arrow-left-right"></i> Product Transition Rules</div>
+                    <button type="button" class="add-btn add-formset-row" data-prefix="transitions">
+                        <i class="bi bi-plus-lg me-1"></i> Add Rule
+                    </button>
+                </div>
+                <p class="text-muted small mb-3">Define when switching between vaccine products is allowed within this series.</p>
+                {{ transition_formset.management_form }}
+                {% if transition_formset.non_form_errors %}<div class="alert alert-danger small">{{ transition_formset.non_form_errors }}</div>{% endif %}
+                <div id="transitions-list">
+                    {% for tform in transition_formset %}
+                    <div class="transition-sentence">
+                        <button type="button" class="delete-btn" title="Remove"><i class="bi bi-trash"></i></button>
+                        <div style="display:none;">{{ tform.DELETE }}</div>
+                        {% if tform.errors %}<div class="text-danger small w-100 mb-2">{% for field, errors in tform.errors.items %}{{ errors|striptags }} {% endfor %}</div>{% endif %}
+                        {% if tform.non_field_errors %}<div class="text-danger small w-100 mb-2">{{ tform.non_field_errors|striptags }}</div>{% endif %}
+                        <div class="w-100">
+                            <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                <span class="sentence-label">Switch from</span>
+                                <div style="min-width:140px;">{{ tform.from_product }}</div>
+                                <span class="sentence-label">to</span>
+                                <div style="min-width:140px;">{{ tform.to_product }}</div>
+                                <span class="sentence-label">between slots</span>
+                                <div style="max-width:70px;">{{ tform.start_slot_number }}</div>
+                                <span class="sentence-label">and</span>
+                                <div style="max-width:70px;">{{ tform.end_slot_number }}</div>
+                            </div>
+                            <div class="d-flex flex-wrap align-items-center gap-3">
+                                <div class="form-check form-switch">
+                                    {{ tform.allow_if_unavailable }}
+                                    <label class="form-check-label small text-muted">Only if prior product unavailable</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    {{ tform.active }}
+                                    <label class="form-check-label small text-muted">Active</label>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <label class="form-label-sm">Notes</label>
+                                {{ tform.notes }}
+                            </div>
+                        </div>
+                        {% for hidden in tform.hidden_fields %}{{ hidden }}{% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between mt-2">
+                <button type="button" class="btn btn-outline-secondary px-4" onclick="goToStep(2)">
+                    <i class="bi bi-arrow-left me-1"></i> Back
+                </button>
+            </div>
+        </div>
+
+        <!-- Sticky Save Footer -->
+        <div class="sticky-footer">
             <a href="{% url 'vaccines:settings_tab' 'series' %}" class="btn btn-link text-muted"><i class="bi bi-arrow-left me-1"></i> Back to Series List</a>
-            <button type="submit" class="btn btn-save shadow-sm">{{ submit_label }}</button>
+            <div class="d-flex align-items-center gap-3">
+                <span class="text-muted small" id="validation-summary"></span>
+                <button type="button" class="btn btn-primary d-none" id="sticky-next-btn" onclick="goToStep(currentStep + 1)">Next Step <i class="bi bi-arrow-right ms-1"></i></button>
+                <button type="submit" class="btn-save-main" id="sticky-submit-btn" style="display:none;">{{ submit_label }}</button>
+            </div>
         </div>
     </form>
 </div>
 
-<!-- TEMPLATES -->
+<!-- ═══════════════════════════════════════════════════
+     TEMPLATES (for dynamic row creation)
+     ═══════════════════════════════════════════════════ -->
 <div id="products-template" style="display:none;">
     <div class="col-md-6">
-        <div class="formset-row">
-            <div class="d-flex justify-content-end mb-1">
-                <button type="button" class="delete-row-btn"><i class="bi bi-x-lg"></i></button>
-                <div style="display:none;">{{ product_formset.empty_form.DELETE }}</div>
-            </div>
+        <div class="rule-row" style="position:relative;">
+            <button type="button" class="delete-btn" style="position:absolute;top:8px;right:8px;" title="Remove"><i class="bi bi-x-lg"></i></button>
+            <div style="display:none;">{{ product_formset.empty_form.DELETE }}</div>
             <div class="row g-2">
                 {% for field in product_formset.empty_form.visible_fields %}
                 <div class="col-sm">
-                    <label class="form-label small fw-bold">{{ field.label }}</label>
+                    <label class="form-label-sm">{{ field.label }}</label>
                     {{ field }}
                 </div>
                 {% endfor %}
@@ -321,262 +628,535 @@
 </div>
 
 <div id="transitions-template" style="display:none;">
-    <div class="formset-row">
-        <div class="d-flex justify-content-end mb-1">
-            <button type="button" class="delete-row-btn"><i class="bi bi-x-lg"></i></button>
-            <div style="display:none;">{{ transition_formset.empty_form.DELETE }}</div>
-        </div>
-        <div class="row g-3">
-            {% for field in transition_formset.empty_form.visible_fields %}
-            <div class="col-md">
-                <label class="form-label small fw-bold">{{ field.label }}</label>
-                {{ field }}
+    <div class="transition-sentence">
+        <button type="button" class="delete-btn" title="Remove"><i class="bi bi-trash"></i></button>
+        <div style="display:none;">{{ transition_formset.empty_form.DELETE }}</div>
+        <div class="w-100">
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                <span class="sentence-label">Switch from</span>
+                <div style="min-width:140px;">{{ transition_formset.empty_form.from_product }}</div>
+                <span class="sentence-label">to</span>
+                <div style="min-width:140px;">{{ transition_formset.empty_form.to_product }}</div>
+                <span class="sentence-label">between slots</span>
+                <div style="max-width:70px;">{{ transition_formset.empty_form.start_slot_number }}</div>
+                <span class="sentence-label">and</span>
+                <div style="max-width:70px;">{{ transition_formset.empty_form.end_slot_number }}</div>
             </div>
-            {% endfor %}
+            <div class="d-flex flex-wrap align-items-center gap-3">
+                <div class="form-check form-switch">
+                    {{ transition_formset.empty_form.allow_if_unavailable }}
+                    <label class="form-check-label small text-muted">Only if prior product unavailable</label>
+                </div>
+                <div class="form-check form-switch">
+                    {{ transition_formset.empty_form.active }}
+                    <label class="form-check-label small text-muted">Active</label>
+                </div>
+            </div>
+            <div class="mt-2">
+                <label class="form-label-sm">Notes</label>
+                {{ transition_formset.empty_form.notes }}
+            </div>
         </div>
         {% for hidden in transition_formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
     </div>
 </div>
 
-<!-- JS SCRIPT -->
+<!-- ═══════════════════════════════════════════════════
+     JAVASCRIPT
+     ═══════════════════════════════════════════════════ -->
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const rulesList = document.getElementById('rules-list');
-        const cardsContainer = document.getElementById('slot-cards-container');
-        const totalRulesCount = document.getElementById('id_rules-TOTAL_FORMS');
+document.addEventListener('DOMContentLoaded', function() {
+    const rulesList = document.getElementById('rules-list');
+    const cardsContainer = document.getElementById('slot-cards-container');
+    const totalRulesInput = document.getElementById('id_rules-TOTAL_FORMS');
+    const timelineBar = document.getElementById('timeline-bar');
+    const addSlotContainer = document.getElementById('add-slot-container');
 
-        // Age Unit Conversion Utility
-        function setupAgeHelpers(row) {
-            const ageInputs = row.querySelectorAll('.age-input');
-            ageInputs.forEach(input => {
-                const helper = document.createElement('span');
-                helper.className = 'age-conversion-helper';
-                input.parentNode.appendChild(helper);
+    // ─── Age Conversion Helpers ──────────────────────
+    const AGE_MULTIPLIERS = { days: 1, weeks: 7, months: 30, years: 365 };
 
-                const updateHelper = () => {
-                    const days = parseInt(input.value);
-                    if (isNaN(days)) {
-                        helper.innerHTML = '&nbsp;';
-                        return;
-                    }
-                    const weeks = (days / 7).toFixed(1);
-                    const months = (days / 30.44).toFixed(1);
-                    const years = (days / 365.25).toFixed(1);
-                    
-                    let text = [];
-                    if (days >= 7 && days < 90) text.push(`<span class="unit-badge" data-val="${days/7}">~${weeks}w</span>`);
-                    if (days >= 28 && days < 730) text.push(`<span class="unit-badge" data-val="${days/30.44}">~${months}m</span>`);
-                    if (days >= 365) text.push(`<span class="unit-badge" data-val="${days/365.25}">~${years}y</span>`);
-                    
-                    helper.innerHTML = text.join(' ');
-                };
-                
-                input.addEventListener('input', updateHelper);
-                updateHelper();
-            });
-        }
+    function daysToHuman(days) {
+        if (days === null || days === undefined || isNaN(days)) return '';
+        days = parseInt(days);
+        if (days === 0) return 'Birth';
+        if (days % 365 === 0) return (days / 365) + 'y';
+        if (days % 30 === 0) return (days / 30) + 'm';
+        if (days % 7 === 0) return (days / 7) + 'w';
+        return days + 'd';
+    }
 
-        // Build the Grouped UI
-        function refreshGroupedUI() {
-            cardsContainer.innerHTML = '';
-            const forms = Array.from(rulesList.querySelectorAll('.rule-form-instance'));
+    function bestUnit(days) {
+        if (!days || days === 0) return { value: days || 0, unit: 'days' };
+        days = parseInt(days);
+        if (days % 365 === 0) return { value: days / 365, unit: 'years' };
+        if (days % 30 === 0) return { value: days / 30, unit: 'months' };
+        if (days % 7 === 0) return { value: days / 7, unit: 'weeks' };
+        return { value: days, unit: 'days' };
+    }
+
+    // ─── Wizard Navigation ───────────────────────────
+    window.goToStep = function(step) {
+        document.querySelectorAll('.wizard-panel').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.wizard-step').forEach(s => {
+            const sNum = parseInt(s.dataset.step);
+            s.classList.remove('active', 'completed');
+            if (sNum < step) s.classList.add('completed');
+            if (sNum === step) s.classList.add('active');
+        });
+        document.getElementById('panel-' + step).classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (step === 2) refreshGroupedUI();
+    };
+
+    // ─── Build Grouped UI for Step 2 ─────────────────
+    function refreshGroupedUI() {
+        cardsContainer.innerHTML = '';
+        const forms = Array.from(rulesList.querySelectorAll('.rule-form-instance'));
+
+        // Group by slot
+        const groups = {};
+        forms.forEach((form, index) => {
+            const slotInput = form.querySelector('.slot-number-input');
+            const slotValue = slotInput ? slotInput.value : null;
+            if (!slotValue) return; // Skip empty 'extra' forms generated by Django
             
-            // Group by slot
-            const groups = {};
-            forms.forEach((form, index) => {
-                const slotInput = form.querySelector('.slot-number-input');
-                const slot = slotInput.value || 'New';
-                if (!groups[slot]) groups[slot] = [];
-                groups[slot].push({ form, index });
-            });
-
-            // Sort slots numerically
-            const sortedSlots = Object.keys(groups).sort((a, b) => {
-                if (a === 'New') return 1;
-                if (b === 'New') return -1;
-                return parseInt(a) - parseInt(b);
-            });
-
-            sortedSlots.forEach(slot => {
-                const slotCard = document.createElement('div');
-                slotCard.className = 'slot-card';
-                slotCard.dataset.slot = slot;
-                
-                const header = document.createElement('div');
-                header.className = 'slot-card-header';
-                header.innerHTML = `
-                    <div class="d-flex align-items-center">
-                        <h4>Dose ${slot}</h4>
-                        <span class="ms-3 slot-meta-pill">Prior Doses: ${slot === 'New' ? '?' : parseInt(slot)-1}</span>
-                    </div>
-                `;
-                
-                const addRuleBtn = document.createElement('button');
-                addRuleBtn.type = 'button';
-                addRuleBtn.className = 'btn btn-outline-primary btn-sm';
-                addRuleBtn.innerHTML = '<i class="bi bi-plus"></i> Add Age-variant / Catch-up';
-                addRuleBtn.onclick = () => addNewRuleToSlot(slot);
-                header.appendChild(addRuleBtn);
-                
-                slotCard.appendChild(header);
-
-                // Categories container
-                const body = document.createElement('div');
-                body.className = 'rule-groups-container';
-                
-                ['routine', 'catchup', 'special'].forEach(cat => {
-                    const catGroup = document.createElement('div');
-                    catGroup.className = `rule-group category-${cat}`;
-                    catGroup.innerHTML = `<div class="rule-category-header">${cat} path</div>`;
-                    const list = document.createElement('div');
-                    list.className = 'category-list';
-                    catGroup.appendChild(list);
-                    body.appendChild(catGroup);
-                });
-                
-                slotCard.appendChild(body);
-                cardsContainer.appendChild(slotCard);
-
-                // Distribute forms into category lists
-                groups[slot].forEach(({form}) => {
-                    const category = form.querySelector('.rule-category-select').value || 'routine';
-                    const list = slotCard.querySelector(`.category-${category} .category-list`);
-                    
-                    // Style the form row for the card view
-                    const row = document.createElement('div');
-                    row.className = 'formset-row';
-                    if (form.querySelector('input[name$="-DELETE"]').checked) row.classList.add('marked-for-delete');
-
-                    const deleteBtn = document.createElement('button');
-                    deleteBtn.type = 'button';
-                    deleteBtn.className = 'delete-row-btn float-end';
-                    deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
-                    deleteBtn.onclick = () => toggleDelete(form, row);
-                    row.appendChild(deleteBtn);
-
-                    const grid = document.createElement('div');
-                    grid.className = 'row g-3';
-                    
-                    const fieldOrder = ['category', 'product', 'min_age_days', 'recommended_age_days', 'overdue_age_days', 'max_age_days', 'min_interval_days', 'dose_amount'];
-                    fieldOrder.forEach(name => {
-                        const fieldCont = form.querySelector(`[data-field-name="${name}"]`);
-                        if (!fieldCont) return;
-                        
-                        const col = document.createElement('div');
-                        col.className = (name === 'product' || name === 'category') ? 'col-md-3' : 'col-md';
-                        
-                        const label = document.createElement('label');
-                        label.className = 'form-label small fw-bold text-muted mb-1';
-                        label.innerText = fieldCont.querySelector('label')?.innerText || name.replace(/_/g, ' ');
-                        
-                        col.appendChild(label);
-                        col.appendChild(fieldCont.cloneNode(true));
-                        
-                        // Link clones back to actual form inputs so they stay in sync
-                        const originalInput = fieldCont.querySelector('input, select, textarea');
-                        const cloneInput = col.querySelector('input, select, textarea');
-                        
-                        cloneInput.oninput = (e) => {
-                            originalInput.value = e.target.value;
-                            if (name === 'category') refreshGroupedUI(); // Re-sort on category change
-                        };
-                        cloneInput.onchange = cloneInput.oninput;
-
-                        grid.appendChild(col);
-                    });
-
-                    row.appendChild(grid);
-                    list.appendChild(row);
-                    setupAgeHelpers(row);
-                });
-
-                // Hide empty categories
-                ['routine', 'catchup', 'special'].forEach(cat => {
-                    const list = slotCard.querySelector(`.category-${cat} .category-list`);
-                    if (list.children.length === 0) {
-                        slotCard.querySelector(`.category-${cat}`).style.display = 'none';
-                    }
-                });
-            });
-            
-            // Append an "Add New Slot" card if there are slots
-            const lastSlot = sortedSlots.filter(s => s !== 'New').pop() || 0;
-            const addSlotCard = document.createElement('div');
-            addSlotCard.className = 'text-center py-4 mb-5';
-            addSlotCard.innerHTML = `
-                <button type="button" class="btn btn-outline-secondary" onclick="addNewRuleToSlot(${parseInt(lastSlot)+1})">
-                    <i class="bi bi-plus-circle me-1"></i> Start Dose ${parseInt(lastSlot)+1}
-                </button>
-            `;
-            cardsContainer.appendChild(addSlotCard);
-        }
-
-        function toggleDelete(originalForm, uiRow) {
-            const checkbox = originalForm.querySelector('input[name$="-DELETE"]');
-            checkbox.checked = !checkbox.checked;
-            uiRow.classList.toggle('marked-for-delete', checkbox.checked);
-        }
-
-        function addNewRuleToSlot(slot) {
-            const template = document.getElementById('rules-template').innerHTML;
-            const count = parseInt(totalRulesCount.value);
-            const newHtml = template.replace(/__prefix__/g, count);
-            
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = newHtml;
-            const newForm = tempDiv.firstElementChild;
-            
-            // Set defaults for the new rule
-            newForm.querySelector('.slot-number-input').value = slot;
-            newForm.querySelector('input[name$="-prior_valid_doses"]').value = Math.max(0, parseInt(slot) - 1);
-            
-            rulesList.appendChild(newForm);
-            totalRulesCount.value = count + 1;
-            
-            refreshGroupedUI();
-        }
-
-        // Generic add handler for other formsets
-        const addButtons = document.querySelectorAll('.add-formset-row');
-        addButtons.forEach(btn => {
-            btn.addEventListener('click', function() {
-                const prefix = this.dataset.prefix;
-                if (prefix === 'rules') return; // Handled specially
-
-                const template = document.getElementById(`${prefix}-template`).innerHTML;
-                const list = document.getElementById(`${prefix}-list`);
-                const totalForms = document.getElementById(`id_${prefix}-TOTAL_FORMS`);
-                
-                const formCount = parseInt(totalForms.value);
-                const newRowHtml = template.replace(/__prefix__/g, formCount);
-                
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = newRowHtml;
-                const newRow = tempDiv.firstElementChild;
-                
-                list.appendChild(newRow);
-                totalRulesCount.value = formCount + 1; // Wait, this should be prefix-TOTAL_FORMS
-                document.getElementById(`id_${prefix}-TOTAL_FORMS`).value = formCount + 1;
-                
-                attachDeleteHandler(newRow);
-            });
+            if (!groups[slotValue]) groups[slotValue] = [];
+            groups[slotValue].push({ form, index });
         });
 
-        function attachDeleteHandler(row) {
-            const btn = row.querySelector('.delete-row-btn');
-            if (btn) {
-                btn.onclick = () => {
-                    const checkbox = row.querySelector('input[name$="-DELETE"]');
-                    checkbox.checked = !checkbox.checked;
-                    row.classList.toggle('marked-for-delete', checkbox.checked);
-                };
-            }
+        const sortedSlots = Object.keys(groups).sort((a, b) => {
+            if (a === 'New') return 1;
+            if (b === 'New') return -1;
+            return parseInt(a) - parseInt(b);
+        });
+
+        // Build timeline
+        buildTimeline(sortedSlots, groups);
+
+        // Build slot cards
+        sortedSlots.forEach(slot => {
+            const card = document.createElement('div');
+            card.className = 'slot-card';
+            card.dataset.slot = slot;
+
+            // Determine categories in this slot
+            const categories = new Set();
+            groups[slot].forEach(({ form }) => {
+                const cat = form.querySelector('.rule-category-select');
+                categories.add(cat ? cat.value || 'routine' : 'routine');
+            });
+
+            // Build summary text from first rule
+            const firstForm = groups[slot][0].form;
+            const productSelect = firstForm.querySelector('[name$="-product"]');
+            const minAgeInput = firstForm.querySelector('[name$="-min_age_days"]');
+            const intervalInput = firstForm.querySelector('[name$="-min_interval_days"]');
+            const productText = productSelect ? productSelect.options[productSelect.selectedIndex]?.text || '—' : '—';
+            const ageText = minAgeInput ? daysToHuman(minAgeInput.value) : '?';
+            const intervalText = intervalInput && intervalInput.value ? `min ${daysToHuman(intervalInput.value)} interval` : '';
+            const summaryStr = `${productText} @ ${ageText}${intervalText ? ' · ' + intervalText : ''}`;
+
+            // Category badges html
+            const catBadges = [...categories].map(c => `<span class="cat-badge ${c}">${c}</span>`).join(' ');
+
+            // Header
+            const header = document.createElement('div');
+            header.className = 'slot-card-header';
+            header.innerHTML = `
+                <div class="d-flex align-items-center flex-wrap gap-2">
+                    <h4>Dose ${slot}</h4>
+                    ${catBadges}
+                    <span class="slot-card-summary">${summaryStr}</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="add-btn" style="padding:0.3rem 0.7rem;font-size:0.78rem;" onclick="addNewRuleToSlot(${slot === 'New' ? 1 : slot})">
+                        <i class="bi bi-plus"></i> Variant
+                    </button>
+                    <i class="bi bi-chevron-down chevron-icon" style="font-size:0.85rem;color:#a0aec0;"></i>
+                </div>
+            `;
+            card.appendChild(header);
+
+            // Body
+            const body = document.createElement('div');
+            body.className = 'slot-card-body';
+
+            // Toggle collapse
+            header.addEventListener('click', (e) => {
+                if (e.target.closest('.add-btn')) return;
+                body.classList.toggle('collapsed');
+                header.querySelector('.chevron-icon').classList.toggle('collapsed');
+            });
+
+            groups[slot].forEach(({ form }) => {
+                const category = (form.querySelector('.rule-category-select')?.value) || 'routine';
+                const isDeleted = form.querySelector('input[name$="-DELETE"]')?.checked;
+
+                const row = document.createElement('div');
+                row.className = `rule-row ${category}${isDeleted ? ' marked-for-delete' : ''}`;
+
+                // Delete button + Undo bar
+                const actionsHtml = `
+                    <div class="d-flex justify-content-end mb-2">
+                        <div class="undo-bar" style="margin-right:auto;">
+                            <i class="bi bi-exclamation-triangle"></i> Marked for removal
+                            <button type="button" class="btn btn-sm btn-outline-warning py-0 px-2" onclick="undoDelete(this)">Undo</button>
+                        </div>
+                        <button type="button" class="delete-btn" onclick="toggleRuleDelete(this)"><i class="bi bi-trash"></i></button>
+                    </div>
+                `;
+                row.innerHTML = actionsHtml;
+
+                // Build the 2-column field grid
+                const grid = document.createElement('div');
+                grid.className = 'row g-3';
+
+                const fieldConfig = [
+                    { name: 'category', label: 'Category', col: 'col-md-4' },
+                    { name: 'product', label: 'Product', col: 'col-md-4' },
+                    { name: 'dose_amount', label: 'Dose Amount', col: 'col-md-4' },
+                    { name: 'min_age_days', label: 'Minimum Age', col: 'col-md-3', age: true },
+                    { name: 'recommended_age_days', label: 'Recommended Age', col: 'col-md-3', age: true },
+                    { name: 'overdue_age_days', label: 'Overdue Age', col: 'col-md-3', age: true },
+                    { name: 'max_age_days', label: 'Max Age', col: 'col-md-3', age: true },
+                    { name: 'min_interval_days', label: 'Min Interval', col: 'col-md-4', age: true },
+                    { name: 'notes', label: 'Notes', col: 'col-md-8' },
+                ];
+
+                fieldConfig.forEach(cfg => {
+                    const fieldCont = form.querySelector(`[data-field-name="${cfg.name}"]`);
+                    if (!fieldCont) return;
+
+                    const col = document.createElement('div');
+                    col.className = cfg.col;
+
+                    const label = document.createElement('label');
+                    label.className = 'form-label-sm';
+                    label.textContent = cfg.label;
+                    col.appendChild(label);
+
+                    if (cfg.age) {
+                        // Build compound age input
+                        const originalInput = fieldCont.querySelector('input');
+                        if (!originalInput) { col.appendChild(fieldCont.cloneNode(true)); grid.appendChild(col); return; }
+
+                        const daysVal = parseInt(originalInput.value) || 0;
+                        const auto = bestUnit(daysVal);
+
+                        const compound = document.createElement('div');
+                        compound.className = 'age-compound';
+
+                        const numInput = document.createElement('input');
+                        numInput.type = 'number';
+                        numInput.className = 'form-control';
+                        numInput.min = '0';
+                        numInput.value = auto.value || '';
+                        numInput.placeholder = '0';
+
+                        const unitSelect = document.createElement('select');
+                        unitSelect.className = 'form-select';
+                        ['days', 'weeks', 'months', 'years'].forEach(u => {
+                            const opt = document.createElement('option');
+                            opt.value = u;
+                            opt.textContent = u.charAt(0).toUpperCase() + u.slice(1);
+                            if (u === auto.unit) opt.selected = true;
+                            unitSelect.appendChild(opt);
+                        });
+
+                        const humanLabel = document.createElement('span');
+                        humanLabel.className = 'age-human-label';
+                        humanLabel.textContent = daysVal ? `= ${daysVal} days` : '';
+
+                        function sync() {
+                            const val = parseFloat(numInput.value) || 0;
+                            const mult = AGE_MULTIPLIERS[unitSelect.value];
+                            const totalDays = Math.round(val * mult);
+                            originalInput.value = totalDays;
+                            humanLabel.textContent = totalDays ? `= ${totalDays} days` : '';
+                        }
+
+                        numInput.addEventListener('input', sync);
+                        unitSelect.addEventListener('change', sync);
+
+                        compound.appendChild(numInput);
+                        compound.appendChild(unitSelect);
+                        col.appendChild(compound);
+                        col.appendChild(humanLabel);
+
+                        // Inline validation for age fields
+                        if (cfg.name === 'min_age_days' || cfg.name === 'recommended_age_days' || cfg.name === 'overdue_age_days' || cfg.name === 'max_age_days') {
+                            const warning = document.createElement('div');
+                            warning.className = 'validation-warning';
+                            col.appendChild(warning);
+
+                            numInput.addEventListener('input', () => validateAgeFields(form, row));
+                            unitSelect.addEventListener('change', () => validateAgeFields(form, row));
+                        }
+                    } else {
+                        // Clone non-age fields
+                        const clone = fieldCont.cloneNode(true);
+                        const originalInput = fieldCont.querySelector('input, select, textarea');
+                        const cloneInput = clone.querySelector('input, select, textarea');
+
+                        if (originalInput && cloneInput) {
+                            cloneInput.addEventListener('input', (e) => {
+                                originalInput.value = e.target.value;
+                                if (cfg.name === 'category') refreshGroupedUI();
+                            });
+                            cloneInput.addEventListener('change', (e) => {
+                                originalInput.value = e.target.value;
+                                if (cfg.name === 'category') refreshGroupedUI();
+                                if (cfg.name === 'product') refreshGroupedUI();
+                            });
+                        }
+
+                        col.appendChild(clone);
+                    }
+
+                    grid.appendChild(col);
+                });
+
+                row.appendChild(grid);
+                row.dataset.formRef = groups[slot][groups[slot].indexOf(groups[slot].find(g => g.form === form))].index;
+                body.appendChild(row);
+            });
+
+            card.appendChild(body);
+            cardsContainer.appendChild(card);
+        });
+
+        // Add "Start New Dose" button
+        const lastSlot = sortedSlots.filter(s => s !== 'New').pop() || 0;
+        addSlotContainer.innerHTML = `
+            <button type="button" class="add-btn px-4 py-2" onclick="addNewRuleToSlot(${parseInt(lastSlot) + 1})">
+                <i class="bi bi-plus-circle me-1"></i> Start Dose ${parseInt(lastSlot) + 1}
+            </button>
+        `;
+
+        updateValidationSummary();
+    }
+
+    // ─── Timeline Builder ────────────────────────────
+    function buildTimeline(sortedSlots, groups) {
+        timelineBar.innerHTML = '';
+        const realSlots = sortedSlots.filter(s => s !== 'New');
+
+        if (realSlots.length === 0) {
+            timelineBar.innerHTML = '<span class="timeline-empty">Add slot rules below to see the timeline…</span>';
+            return;
         }
 
-        document.querySelectorAll('.formset-row').forEach(attachDeleteHandler);
+        realSlots.forEach((slot, idx) => {
+            // Determine dominant category
+            const categories = groups[slot].map(g => {
+                const sel = g.form.querySelector('.rule-category-select');
+                return sel ? sel.value || 'routine' : 'routine';
+            });
+            const unique = [...new Set(categories)];
+            const dotClass = unique.length > 1 ? 'mixed' : (unique[0] || 'routine');
 
-        // Initial build
+            // Age label from first rule
+            const firstAge = groups[slot][0].form.querySelector('[name$="-recommended_age_days"]');
+            const ageLabel = firstAge ? daysToHuman(firstAge.value) : '?';
+
+            const dotGroup = document.createElement('div');
+            dotGroup.className = 'timeline-dot-group';
+            dotGroup.dataset.slot = slot;
+            dotGroup.onclick = () => {
+                const targetCard = cardsContainer.querySelector(`[data-slot="${slot}"]`);
+                if (targetCard) {
+                    targetCard.classList.add('highlight');
+                    targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setTimeout(() => targetCard.classList.remove('highlight'), 1500);
+                }
+            };
+
+            dotGroup.innerHTML = `
+                <div class="timeline-dot ${dotClass}">${slot}</div>
+                <div class="timeline-label">${ageLabel}</div>
+            `;
+            timelineBar.appendChild(dotGroup);
+
+            // Connector between dots
+            if (idx < realSlots.length - 1) {
+                const conn = document.createElement('div');
+                conn.className = 'timeline-connector';
+                timelineBar.appendChild(conn);
+            }
+        });
+    }
+
+    // ─── Delete / Undo for Rules ─────────────────────
+    window.toggleRuleDelete = function(btn) {
+        const row = btn.closest('.rule-row');
+        const undoBar = row.querySelector('.undo-bar');
+        const formIndex = row.dataset.formRef;
+        const forms = rulesList.querySelectorAll('.rule-form-instance');
+        // find the actual form and toggle DELETE
+        const allForms = Array.from(forms);
+        // Walk the card to find which canonical form this maps to
+        const slotCard = row.closest('.slot-card');
+        const slot = slotCard?.dataset.slot;
+        const ruleRows = Array.from(row.parentElement.children).filter(c => c.classList.contains('rule-row'));
+        const ruleIdx = ruleRows.indexOf(row);
+
+        // Find corresponding canonical form
+        const groups = {};
+        allForms.forEach((f, i) => {
+            const si = f.querySelector('.slot-number-input');
+            const s = si ? (si.value || 'New') : 'New';
+            if (!groups[s]) groups[s] = [];
+            groups[s].push({ form: f, index: i });
+        });
+
+        if (groups[slot] && groups[slot][ruleIdx]) {
+            const checkbox = groups[slot][ruleIdx].form.querySelector('input[name$="-DELETE"]');
+            if (checkbox) {
+                checkbox.checked = true;
+                row.classList.add('marked-for-delete');
+                if (undoBar) undoBar.classList.add('visible');
+            }
+        }
+    };
+
+    window.undoDelete = function(btn) {
+        const row = btn.closest('.rule-row');
+        const undoBar = row.querySelector('.undo-bar');
+        const slotCard = row.closest('.slot-card');
+        const slot = slotCard?.dataset.slot;
+        const ruleRows = Array.from(row.parentElement.children).filter(c => c.classList.contains('rule-row'));
+        const ruleIdx = ruleRows.indexOf(row);
+
+        const allForms = Array.from(rulesList.querySelectorAll('.rule-form-instance'));
+        const groups = {};
+        allForms.forEach((f, i) => {
+            const si = f.querySelector('.slot-number-input');
+            const s = si ? (si.value || 'New') : 'New';
+            if (!groups[s]) groups[s] = [];
+            groups[s].push({ form: f, index: i });
+        });
+
+        if (groups[slot] && groups[slot][ruleIdx]) {
+            const checkbox = groups[slot][ruleIdx].form.querySelector('input[name$="-DELETE"]');
+            if (checkbox) {
+                checkbox.checked = false;
+                row.classList.remove('marked-for-delete');
+                if (undoBar) undoBar.classList.remove('visible');
+            }
+        }
+    };
+
+    // ─── Add New Rule to a Slot ──────────────────────
+    window.addNewRuleToSlot = function(slot) {
+        const template = document.getElementById('rules-template').innerHTML;
+        const count = parseInt(totalRulesInput.value);
+        const newHtml = template.replace(/__prefix__/g, count);
+
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = newHtml;
+        const newForm = tempDiv.firstElementChild;
+
+        newForm.querySelector('.slot-number-input').value = slot;
+        const priorInput = newForm.querySelector('input[name$="-prior_valid_doses"]');
+        if (priorInput) priorInput.value = Math.max(0, parseInt(slot) - 1);
+
+        rulesList.appendChild(newForm);
+        totalRulesInput.value = count + 1;
+
         refreshGroupedUI();
+    };
+
+    // ─── Inline Age Validation ───────────────────────
+    function validateAgeFields(canonicalForm, uiRow) {
+        if (!canonicalForm || !uiRow) return;
+
+        const getVal = (name) => {
+            const input = canonicalForm.querySelector(`[name$="-${name}"]`);
+            return input ? parseInt(input.value) || 0 : 0;
+        };
+
+        const minAge = getVal('min_age_days');
+        const recAge = getVal('recommended_age_days');
+        const overdueAge = getVal('overdue_age_days');
+        const maxAge = getVal('max_age_days');
+
+        const warnings = uiRow.querySelectorAll('.validation-warning');
+        warnings.forEach(w => { w.classList.remove('visible'); w.textContent = ''; });
+
+        // Check: min <= recommended
+        if (minAge > recAge && recAge > 0) {
+            const w = uiRow.querySelector('[data-field-name="min_age_days"]')?.closest('.col-md-3')?.querySelector('.validation-warning')
+                || warnings[0];
+            if (w) { w.textContent = 'Min age should be ≤ recommended age'; w.classList.add('visible'); }
+        }
+
+        // Check: recommended <= overdue (if set)
+        if (overdueAge > 0 && recAge > overdueAge) {
+            const w = warnings[1];
+            if (w) { w.textContent = 'Recommended should be ≤ overdue age'; w.classList.add('visible'); }
+        }
+
+        // Check: max >= min (if set)
+        if (maxAge > 0 && maxAge < minAge) {
+            const w = warnings[3] || warnings[warnings.length - 1];
+            if (w) { w.textContent = 'Max age must be ≥ min age'; w.classList.add('visible'); }
+        }
+
+        updateValidationSummary();
+    }
+
+    function updateValidationSummary() {
+        const visibleWarnings = document.querySelectorAll('.validation-warning.visible');
+        const summary = document.getElementById('validation-summary');
+        if (visibleWarnings.length > 0) {
+            summary.innerHTML = `<span class="text-warning"><i class="bi bi-exclamation-triangle me-1"></i>${visibleWarnings.length} warning${visibleWarnings.length > 1 ? 's' : ''}</span>`;
+        } else {
+            summary.innerHTML = '';
+        }
+    }
+
+    // ─── Generic Formset Add (Products, Transitions) ──
+    document.querySelectorAll('.add-formset-row').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const prefix = this.dataset.prefix;
+            if (prefix === 'rules') return;
+
+            const template = document.getElementById(`${prefix}-template`).innerHTML;
+            const list = document.getElementById(`${prefix}-list`);
+            const totalForms = document.getElementById(`id_${prefix}-TOTAL_FORMS`);
+
+            const formCount = parseInt(totalForms.value);
+            const newRowHtml = template.replace(/__prefix__/g, formCount);
+
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = newRowHtml;
+            const newRow = tempDiv.firstElementChild;
+
+            list.appendChild(newRow);
+            totalForms.value = formCount + 1;
+
+            attachDeleteHandler(newRow);
+        });
     });
+
+    // ─── Delete handler for Products / Transitions ───
+    function attachDeleteHandler(row) {
+        const btn = row.querySelector('.delete-btn');
+        if (btn) {
+            btn.onclick = () => {
+                const checkbox = row.querySelector('input[name$="-DELETE"]');
+                if (checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                    row.classList.toggle('marked-for-delete', checkbox.checked);
+                }
+            };
+        }
+    }
+
+    document.querySelectorAll('.rule-row, .transition-sentence').forEach(attachDeleteHandler);
+
+    // ─── Initial Build ───────────────────────────────
+    refreshGroupedUI();
+});
 </script>
 {% endblock %}
