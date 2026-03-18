@@ -455,3 +455,6 @@ class GlobalConstraintRule(models.Model):
         if rule:
             return rule.min_spacing_days
         return 0
+
+
+from .test_models import TestScenario  # noqa: E402, F401

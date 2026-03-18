@@ -1,6 +1,7 @@
 from django.urls import path
 
 from . import views
+from . import scenario_views
 
 app_name = 'vaccines'
 
@@ -29,9 +30,15 @@ urlpatterns = [
     path('settings/policy/export/', views.policy_export, name='policy_export'),
     path('settings/policy/import/', views.policy_import, name='policy_import'),
 
-
+    # Scenario Simulator
+    path('settings/scenario/new/', scenario_views.scenario_create, name='scenario_create'),
+    path('settings/scenario/<int:pk>/edit/', scenario_views.scenario_edit, name='scenario_edit'),
+    path('settings/scenario/<int:pk>/delete/', scenario_views.scenario_delete, name='scenario_delete'),
+    path('settings/scenario/<int:pk>/run/', scenario_views.scenario_run, name='scenario_run'),
+    path('settings/scenarios/run-all/', scenario_views.scenario_run_all, name='scenario_run_all'),
+    path('settings/scenarios/export/', scenario_views.scenario_export, name='scenario_export'),
+    path('settings/scenarios/import/', scenario_views.scenario_import, name='scenario_import'),
 
     path('settings/', views.vaccine_settings, name='settings'),
     path('settings/<str:tab>/', views.vaccine_settings, name='settings_tab'),
 ]
-

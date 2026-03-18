@@ -17,7 +17,7 @@ from .models import DependencyRule, GlobalConstraintRule, PolicyVersion, Product
 from patients.models import VaccinationRecord
 
 
-NEW_TABS = {'products', 'series', 'dependencies', 'constraints', 'versions', 'guide', 'maintenance'}
+NEW_TABS = {'products', 'series', 'dependencies', 'constraints', 'versions', 'guide', 'maintenance', 'scenarios'}
 ALL_TABS = NEW_TABS
 
 
@@ -71,6 +71,19 @@ def vaccine_settings(request, tab=None):
 
     policy_versions = PolicyVersion.objects.order_by('-is_active', 'name')
 
+    # Scenario data (lazy — only query when tab is active)
+    from .test_models import TestScenario
+    scenarios = TestScenario.objects.all() if active_tab == 'scenarios' else []
+    scenario_stats = {}
+    if active_tab == 'scenarios':
+        all_scenarios = TestScenario.objects.filter(active=True)
+        scenario_stats = {
+            'total': all_scenarios.count(),
+            'passed': all_scenarios.filter(last_status='pass').count(),
+            'failed': all_scenarios.filter(last_status='fail').count(),
+            'untested': all_scenarios.filter(last_status='untested').count(),
+        }
+
     context = {
         'products': products,
         'series_list': series,
@@ -80,6 +93,8 @@ def vaccine_settings(request, tab=None):
         'active_policy_version': active_policy_version,
         'active_tab': active_tab,
         'global_constraints_available': constraints_available,
+        'scenarios': scenarios,
+        'scenario_stats': scenario_stats,
     }
     return render(request, 'vaccines/settings.html', context)
 

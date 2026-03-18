@@ -53,6 +53,7 @@
         <li class="nav-item"><a class="nav-link {% if active_tab == 'dependencies' %}active{% endif %}" href="{% url 'vaccines:settings_tab' 'dependencies' %}">Dependencies</a></li>
         <li class="nav-item"><a class="nav-link {% if active_tab == 'constraints' %}active{% endif %}" href="{% url 'vaccines:settings_tab' 'constraints' %}">Global Constraints</a></li>
         <li class="nav-item"><a class="nav-link {% if active_tab == 'versions' %}active{% endif %}" href="{% url 'vaccines:settings_tab' 'versions' %}">Versions</a></li>
+        <li class="nav-item"><a class="nav-link {% if active_tab == 'scenarios' %}active{% endif %}" href="{% url 'vaccines:settings_tab' 'scenarios' %}"><i class="bi bi-play-circle me-1"></i>Scenarios</a></li>
         <li class="nav-item"><a class="nav-link {% if active_tab == 'maintenance' %}active{% endif %}" href="{% url 'vaccines:settings_tab' 'maintenance' %}">Maintenance</a></li>
         <li class="nav-item"><a class="nav-link {% if active_tab == 'guide' %}active{% endif %}" href="{% url 'vaccines:settings_tab' 'guide' %}">Guide</a></li>
     </ul>
@@ -390,6 +391,146 @@
             python manage.py import_policy my_backup.json
         </code>
     </div>
+
+    {% elif active_tab == 'scenarios' %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="mb-1" style="font-weight:700; color:#22303c;"><i class="bi bi-play-circle me-1"></i>Clinical Scenario Simulator</h4>
+            <p class="text-muted mb-0">Define virtual patients, run the engine, and validate clinical outcomes visually.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <form action="{% url 'vaccines:scenario_run_all' %}" method="post" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-primary"><i class="bi bi-play-fill me-1"></i>Run All</button>
+            </form>
+            <a href="{% url 'vaccines:scenario_create' %}" class="btn btn-add">+ New Scenario</a>
+        </div>
+    </div>
+
+    {% if scenario_stats %}
+    <div class="row mb-3">
+        <div class="col-md-3">
+            <div class="card text-center" style="border-left:4px solid #204a87">
+                <div class="card-body py-2">
+                    <div class="fw-bold fs-4">{{ scenario_stats.total }}</div>
+                    <div class="text-muted small">Total Scenarios</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center" style="border-left:4px solid #2f855a">
+                <div class="card-body py-2">
+                    <div class="fw-bold fs-4 text-success">{{ scenario_stats.passed }}</div>
+                    <div class="text-muted small">Passed</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center" style="border-left:4px solid #c53030">
+                <div class="card-body py-2">
+                    <div class="fw-bold fs-4 text-danger">{{ scenario_stats.failed }}</div>
+                    <div class="text-muted small">Failed</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center" style="border-left:4px solid #718096">
+                <div class="card-body py-2">
+                    <div class="fw-bold fs-4 text-secondary">{{ scenario_stats.untested }}</div>
+                    <div class="text-muted small">Untested</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% for scenario in scenarios %}
+    <div class="entity-card card {% if scenario.last_status == 'fail' %}border-danger{% elif scenario.last_status == 'pass' %}border-success{% endif %}">
+        <div class="card-header">
+            <div>
+                {% if scenario.last_status == 'pass' %}<span class="badge bg-success me-2">✅ Pass</span>
+                {% elif scenario.last_status == 'fail' %}<span class="badge bg-danger me-2">❌ Fail</span>
+                {% else %}<span class="badge bg-secondary me-2">⏳ Untested</span>{% endif %}
+                <h5 class="d-inline">{{ scenario.name }}</h5>
+                <span class="badge badge-soft ms-2">{{ scenario.get_category_display }}</span>
+                {% if not scenario.active %}<span class="badge badge-inactive ms-1">Inactive</span>{% endif %}
+            </div>
+            <div class="d-flex gap-1">
+                <form action="{% url 'vaccines:scenario_run' scenario.pk %}" method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-success btn-sm"><i class="bi bi-play-fill"></i> Run</button>
+                </form>
+                <a href="{% url 'vaccines:scenario_edit' scenario.pk %}" class="btn btn-edit">Edit</a>
+                <a href="{% url 'vaccines:scenario_delete' scenario.pk %}" class="btn btn-delete">Delete</a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-2">
+                    <div class="text-muted small text-uppercase fw-bold mb-1">Patient Age</div>
+                    <div>{{ scenario.age_days }} days</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-muted small text-uppercase fw-bold mb-1">History</div>
+                    <div class="inline-chips">{% for h in scenario.history %}<span class="badge badge-chip">{{ h.vax }} ({{ h.days_ago }}d ago)</span>{% empty %}<span class="text-muted">No history</span>{% endfor %}</div>
+                </div>
+                <div class="col-md-2">
+                    <div class="text-muted small text-uppercase fw-bold mb-1">Expected Due</div>
+                    <div class="inline-chips">{% for v in scenario.expected_due %}<span class="badge bg-primary">{{ v }}</span>{% empty %}<span class="text-muted">—</span>{% endfor %}</div>
+                </div>
+                <div class="col-md-2">
+                    <div class="text-muted small text-uppercase fw-bold mb-1">Expected Upcoming</div>
+                    <div class="inline-chips">{% for v in scenario.expected_upcoming %}<span class="badge bg-info text-dark">{{ v }}</span>{% empty %}<span class="text-muted">—</span>{% endfor %}</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-muted small text-uppercase fw-bold mb-1">Last Run</div>
+                    <div>{% if scenario.last_run_at %}{{ scenario.last_run_at|timesince }} ago{% else %}Never{% endif %}</div>
+                </div>
+            </div>
+
+            {% if scenario.last_result and scenario.last_result.checks %}
+            <div class="mt-3">
+                <div class="text-muted small text-uppercase fw-bold mb-2">Result Details</div>
+                <table class="table table-sm rule-table">
+                    <thead><tr><th>Check</th><th>Expected</th><th>Actual</th><th>Result</th></tr></thead>
+                    <tbody>
+                    {% for check in scenario.last_result.checks %}
+                    <tr class="{% if check.passed %}table-success{% else %}table-danger{% endif %}">
+                        <td><strong>{{ check.category }}</strong></td>
+                        <td>{{ check.expected|join:", " }}</td>
+                        <td>{{ check.actual|join:", " }}</td>
+                        <td>{% if check.passed %}✅{% else %}❌ Missing: {{ check.missing_from_actual|join:", " }}{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+
+            {% if scenario.description %}
+            <p class="text-muted mb-0 mt-2 border-top pt-2">{{ scenario.description }}</p>
+            {% endif %}
+        </div>
+    </div>
+    {% empty %}
+    <div class="empty-state">
+        <p class="mb-2">No test scenarios configured yet.</p>
+        <a href="{% url 'vaccines:scenario_create' %}" class="btn btn-add">Create Your First Scenario</a>
+    </div>
+    {% endfor %}
+
+    {% if scenarios %}
+    <div class="d-flex justify-content-between mt-3">
+        <div>
+            <a href="{% url 'vaccines:scenario_export' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-download me-1"></i>Export Scenarios</a>
+        </div>
+        <form action="{% url 'vaccines:scenario_import' %}" method="post" enctype="multipart/form-data" class="d-flex gap-2">
+            {% csrf_token %}
+            <input type="file" name="scenario_file" class="form-control form-control-sm" accept=".json" required style="max-width:250px">
+            <button type="submit" class="btn btn-outline-warning btn-sm"><i class="bi bi-upload me-1"></i>Import</button>
+        </form>
+    </div>
+    {% endif %}
 
     {% elif active_tab == 'guide' %}
         {% include "vaccines/guide_content.html" %}

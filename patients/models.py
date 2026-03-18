@@ -49,6 +49,9 @@ class VaccinationRecord(models.Model):
         help_text="Check if this dose was given at another facility (e.g. at birth in hospital) to avoid inflating local statistics."
     )
     notes = models.TextField(blank=True, null=True, help_text="Human-readable explanation of any issue")
+    warning_flag = models.BooleanField(default=False, help_text="Flagged with a soft warning (e.g. co-admin rule)")
+    warning_reason = models.TextField(blank=True, null=True, help_text="Explanation for the warning")
+
 
     class Meta:
         ordering = ['-date_given']
