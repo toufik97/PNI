@@ -315,6 +315,8 @@ class TestSeriesSettingsUI(BaseVaccinationTestCase):
         response = self.client.get(reverse('vaccines:settings_tab', kwargs={'tab': 'series'}))
 
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Only if prior product unavailable')
+        self.assertContains(response, 'Transition Rules')
 
 
     def test_series_create_rejects_overlapping_transition_rules(self):
@@ -434,3 +436,51 @@ class TestSeriesSettingsUI(BaseVaccinationTestCase):
         self.assertFalse(Series.objects.filter(code='pneumo-impossible-transition').exists())
 
 
+    def test_series_create_ignores_empty_extra_formset_row(self):
+        """Regression: SeriesRule.clean() must not crash when prior_valid_doses is None."""
+        from vaccines.models import SeriesRule
+        rule = SeriesRule(slot_number=None, prior_valid_doses=None)
+        # Should not raise TypeError: unsupported operand type(s) for +: 'NoneType' and 'int'
+        rule.clean()  # no-op when both are None
+
+    def test_series_create_with_catchup_category(self):
+        """Confirm catchup category is accepted and saved correctly."""
+        response = self.client.post(reverse('vaccines:series_create'), {
+            'name': 'Pneumo Catchup',
+            'code': 'pneumo-catchup',
+            'description': 'Catchup category test',
+            'active': 'on',
+            'mixing_policy': Series.MIXING_FLEXIBLE,
+            'min_valid_interval_days': '15',
+            'products-TOTAL_FORMS': '1',
+            'products-INITIAL_FORMS': '0',
+            'products-MIN_NUM_FORMS': '0',
+            'products-MAX_NUM_FORMS': '1000',
+            'products-0-product': str(self.product_map['Penta'].pk),
+            'products-0-priority': '0',
+            'rules-TOTAL_FORMS': '1',
+            'rules-INITIAL_FORMS': '0',
+            'rules-MIN_NUM_FORMS': '0',
+            'rules-MAX_NUM_FORMS': '1000',
+            'rules-0-slot_number': '1',
+            'rules-0-category': 'catchup',
+            'rules-0-prior_valid_doses': '0',
+            'rules-0-product': str(self.product_map['Penta'].pk),
+            'rules-0-min_age_days': '365',
+            'rules-0-recommended_age_days': '365',
+            'rules-0-overdue_age_days': '730',
+            'rules-0-max_age_days': '2555',
+            'rules-0-min_interval_days': '28',
+            'rules-0-dose_amount': '0.5ml',
+            'rules-0-notes': 'Catch-up window for late starters',
+            'transitions-TOTAL_FORMS': '0',
+            'transitions-INITIAL_FORMS': '0',
+            'transitions-MIN_NUM_FORMS': '0',
+            'transitions-MAX_NUM_FORMS': '1000',
+        })
+
+        self.assertEqual(response.status_code, 302)
+        series = Series.objects.get(code='pneumo-catchup')
+        rule = series.rules.get(slot_number=1)
+        self.assertEqual(rule.category, 'catchup')
+        self.assertEqual(rule.max_age_days, 2555)

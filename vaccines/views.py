@@ -217,13 +217,14 @@ def series_create(request):
         if form.is_valid() and product_formset.is_valid():
             with transaction.atomic():
                 series = form.save()
+                # Re-bind with saved instance and validate/save in dependency order
                 product_formset = SeriesProductFormSet(request.POST, instance=series, prefix='products')
+                rule_formset = SeriesRuleFormSet(request.POST, instance=series, prefix='rules')
                 if product_formset.is_valid():
                     product_formset.save()
-                    rule_formset = SeriesRuleFormSet(request.POST, instance=series, prefix='rules')
-                    transition_formset = SeriesTransitionRuleFormSet(request.POST, instance=series, prefix='transitions')
                     if rule_formset.is_valid():
                         rule_formset.save()
+                        # Transition validation may depend on saved rules
                         transition_formset = SeriesTransitionRuleFormSet(request.POST, instance=series, prefix='transitions')
                         if transition_formset.is_valid():
                             transition_formset.save()

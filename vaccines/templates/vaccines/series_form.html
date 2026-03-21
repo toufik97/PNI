@@ -538,6 +538,7 @@
                 {{ transition_formset.management_form }}
                 {% if transition_formset.non_form_errors %}<div class="alert alert-danger small">{{ transition_formset.non_form_errors }}</div>{% endif %}
                 <div id="transitions-list">
+                    <div class="text-muted small fst-italic mb-3" id="transitions-empty-state">No transition rules yet. Add one if this series uses multiple interchangeable products.</div>
                     {% for tform in transition_formset %}
                     <div class="transition-sentence">
                         <button type="button" class="delete-btn" title="Remove"><i class="bi bi-trash"></i></button>
@@ -588,8 +589,7 @@
             <a href="{% url 'vaccines:settings_tab' 'series' %}" class="btn btn-link text-muted"><i class="bi bi-arrow-left me-1"></i> Back to Series List</a>
             <div class="d-flex align-items-center gap-3">
                 <span class="text-muted small" id="validation-summary"></span>
-                <button type="button" class="btn btn-primary d-none" id="sticky-next-btn" onclick="goToStep(currentStep + 1)">Next Step <i class="bi bi-arrow-right ms-1"></i></button>
-                <button type="submit" class="btn-save-main" id="sticky-submit-btn" style="display:none;">{{ submit_label }}</button>
+                <button type="submit" class="btn-save-main">{{ submit_label }}</button>
             </div>
         </div>
     </form>
@@ -676,7 +676,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const AGE_MULTIPLIERS = { days: 1, weeks: 7, months: 30, years: 365 };
 
     function daysToHuman(days) {
-        if (days === null || days === undefined || isNaN(days)) return '';
+        if (days === null || days === undefined || days === "" || isNaN(parseInt(days))) return "";
         days = parseInt(days);
         if (days === 0) return 'Birth';
         if (days % 365 === 0) return (days / 365) + 'y';
@@ -695,7 +695,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ─── Wizard Navigation ───────────────────────────
+    let currentStep = 1;
+
     window.goToStep = function(step) {
+        currentStep = step;
         document.querySelectorAll('.wizard-panel').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.wizard-step').forEach(s => {
             const sNum = parseInt(s.dataset.step);
@@ -788,7 +791,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 header.querySelector('.chevron-icon').classList.toggle('collapsed');
             });
 
-            groups[slot].forEach(({ form }) => {
+            groups[slot].forEach(({ form, index }) => {
                 const category = (form.querySelector('.rule-category-select')?.value) || 'routine';
                 const isDeleted = form.querySelector('input[name$="-DELETE"]')?.checked;
 
@@ -917,7 +920,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
 
                 row.appendChild(grid);
-                row.dataset.formRef = groups[slot][groups[slot].indexOf(groups[slot].find(g => g.form === form))].index;
+                row.dataset.formRef = index;
                 body.appendChild(row);
             });
 
@@ -1004,7 +1007,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const groups = {};
         allForms.forEach((f, i) => {
             const si = f.querySelector('.slot-number-input');
-            const s = si ? (si.value || 'New') : 'New';
+            const s = si ? si.value : null;
+            if (!s) return;
             if (!groups[s]) groups[s] = [];
             groups[s].push({ form: f, index: i });
         });
@@ -1031,7 +1035,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const groups = {};
         allForms.forEach((f, i) => {
             const si = f.querySelector('.slot-number-input');
-            const s = si ? (si.value || 'New') : 'New';
+            const s = si ? si.value : null;
+            if (!s) return;
             if (!groups[s]) groups[s] = [];
             groups[s].push({ form: f, index: i });
         });
@@ -1056,9 +1061,15 @@ document.addEventListener('DOMContentLoaded', function() {
         tempDiv.innerHTML = newHtml;
         const newForm = tempDiv.firstElementChild;
 
-        newForm.querySelector('.slot-number-input').value = slot;
+        const slotInput = newForm.querySelector('.slot-number-input');
+        slotInput.value = slot;
+        slotInput.setAttribute('value', slot);
         const priorInput = newForm.querySelector('input[name$="-prior_valid_doses"]');
-        if (priorInput) priorInput.value = Math.max(0, parseInt(slot) - 1);
+        if (priorInput) {
+            const priorVal = Math.max(0, parseInt(slot) - 1);
+            priorInput.value = priorVal;
+            priorInput.setAttribute('value', priorVal);
+        }
 
         rulesList.appendChild(newForm);
         totalRulesInput.value = count + 1;

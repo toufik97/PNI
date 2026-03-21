@@ -190,6 +190,8 @@ class SeriesRule(models.Model):
         )
 
     def clean(self):
+        if self.slot_number is None or self.prior_valid_doses is None:
+            return  # Empty extra form — let Django's required-field validation handle it
         if self.slot_number != self.prior_valid_doses + 1:
             raise ValidationError("Slot number must equal prior valid doses + 1.")
 
