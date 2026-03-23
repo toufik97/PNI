@@ -1,34 +1,48 @@
-Found 48 test(s).
+﻿Found 11 test(s).
+Operations to perform:
+  Synchronize unmigrated apps: messages, staticfiles
+  Apply all migrations: admin, auth, contenttypes, patients, sessions, vaccines
+Synchronizing apps without migrations:
+  Creating tables...
+    Running deferred SQL...
+Running migrations:
+  Applying contenttypes.0001_initial... OK
+  Applying auth.0001_initial... OK
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying contenttypes.0002_remove_content_type_name... OK
+  Applying auth.0002_alter_permission_name_max_length... OK
+  Applying auth.0003_alter_user_email_max_length... OK
+  Applying auth.0004_alter_user_username_opts... OK
+  Applying auth.0005_alter_user_last_login_null... OK
+  Applying auth.0006_require_contenttypes_0002... OK
+  Applying auth.0007_alter_validators_add_error_messages... OK
+  Applying auth.0008_alter_user_username_max_length... OK
+  Applying auth.0009_alter_user_last_name_max_length... OK
+  Applying auth.0010_alter_group_name_max_length... OK
+  Applying auth.0011_update_proxy_permissions... OK
+  Applying auth.0012_alter_user_first_name_max_length... OK
+  Applying vaccines.0001_initial... OK
+  Applying patients.0001_initial... OK
+  Applying patients.0002_vaccinationrecord_invalid_reason_and_more... OK
+  Applying patients.0003_vaccinationrecord_administered_elsewhere... OK
+  Applying sessions.0001_initial... OK
+  Applying vaccines.0002_vaccinegroup_grouprule... OK
+  Applying vaccines.0003_grouprule_min_eligible_age_days_and_more... OK
+  Applying vaccines.0004_remove_grouprule_min_eligible_age_days... OK
+  Applying vaccines.0005_schedulerule_alternate_dose_age_days_and_more... OK
+  Applying vaccines.0006_remove_schedulerule_alternate_dose_age_days_and_more... OK
+  Applying vaccines.0007_vaccine_compatible_live_vaccines... OK
+  Applying vaccines.0008_product_series_seriesproduct_series_products_and_more... OK
+  Applying vaccines.0009_backfill_series_policy_from_legacy_groups... OK
+  Applying vaccines.0010_product_available_dependencyrule... OK
+  Applying vaccines.0011_policyversion_series_policy_version... OK
+  Applying vaccines.0012_seriestransitionrule... OK
+  Applying vaccines.0013_globalconstraintrule... OK
+  Applying vaccines.0014_remove_grouprule_group_and_more... OK
+  Applying vaccines.0015_dependencyrule_is_coadmin... OK
+  Applying vaccines.0016_add_vaccine_human_metadata... OK
+  Applying vaccines.0017_dependencyrule_anchor_product_and_more... OK
+  Applying vaccines.0018_alter_seriesrule_options_seriesrule_category... OK
 System check identified no issues (0 silenced).
-
---- STDERR ---
-Creating test database for alias 'default'...
-
-...................................F.F..........
-======================================================================
-FAIL: test_scenario_41_hb_standalone_hb_invalid_for_dose_2_if_child_<_1_year (tests.test_scenarios.TestDynamicScenarios.test_scenario_41_hb_standalone_hb_invalid_for_dose_2_if_child_<_1_year)
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "C:\Users\admiralTOUFIK\PNI\tests\test_scenarios.py", line 104, in test
-    self.assertEqual(rec.invalid_reason, expected_code, f"Fail: Wrong invalid reason for dose {inv['index']} in '{s['name']}'")
-    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError: 'wrong_vaccine' != 'too_early'
-- wrong_vaccine
-+ too_early
- : Fail: Wrong invalid reason for dose 2 in 'HB: Standalone HB invalid for Dose 2 if child < 1 year'
-
-======================================================================
-FAIL: test_scenario_43_hb_penta_1_covers_hb_dose_2_for_infant (tests.test_scenarios.TestDynamicScenarios.test_scenario_43_hb_penta_1_covers_hb_dose_2_for_infant)
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "C:\Users\admiralTOUFIK\PNI\tests\test_scenarios.py", line 72, in test
-    self.assertIn(expected, actual_upcoming_names, f"Fail: {expected} expected to be UPCOMING in '{s['name']}'")
-    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError: 'VPO' not found in ['Penta', 'Penta', 'Prevenar13', 'RR', 'VPI'] : Fail: VPO expected to be UPCOMING in 'HB: Penta 1 covers HB Dose 2 for infant'
-
-----------------------------------------------------------------------
-Ran 48 tests in 4.045s
-
-FAILED (failures=2)
-Destroying test database for alias 'default'...
-

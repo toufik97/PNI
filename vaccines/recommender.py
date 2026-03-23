@@ -5,6 +5,33 @@ from patients.models import VaccinationRecord
 from vaccines.models import Series
 
 
+class TransitionCandidate:
+    """Wraps a SeriesRule with an alternative product resolved from a transition rule.
+
+    When a slot rule's primary product is expired by age (e.g., Penta max_age=3y but child is 4y),
+    transition rules can substitute an alternative product (e.g., DTC) while keeping the same
+    slot timing (interval, recommended age, etc.).
+    """
+
+    def __init__(self, base_rule, product, transition_rule=None):
+        self._base = base_rule
+        self._product = product
+        self._transition_rule = transition_rule
+
+    def __getattr__(self, name):
+        if name == 'product':
+            return self._product
+        if name == 'product_id':
+            return self._product.id
+        return getattr(self._base, name)
+
+    def __repr__(self):
+        return (
+            f"TransitionCandidate(slot={self._base.slot_number}, "
+            f"base={self._base.product.vaccine.name}→{self._product.vaccine.name})"
+        )
+
+
 class SeriesRecommender:
     def __init__(
         self,
@@ -107,11 +134,38 @@ class SeriesRecommender:
         return result
 
     def series_age_candidates(self, series: Series, prior_doses: int, age_days: int):
-        candidates = [
+        all_pvd_rules = [
             rule for rule in series.rules.all()
             if rule.prior_valid_doses == prior_doses and rule.min_age_days <= age_days
         ]
-        return [rule for rule in candidates if rule.max_age_days is None or age_days <= rule.max_age_days]
+        direct = [rule for rule in all_pvd_rules if rule.max_age_days is None or age_days <= rule.max_age_days]
+        if direct:
+            return direct
+
+        # No direct matches — generate transition-based candidates from expired rules
+        expired = [rule for rule in all_pvd_rules if rule.max_age_days is not None and age_days > rule.max_age_days]
+        if not expired:
+            return []
+
+        transition_rules = list(
+            series.transition_rules.filter(active=True)
+            .select_related('from_product__vaccine', 'to_product__vaccine')
+        )
+        candidates = []
+        seen_products = set()
+        for rule in expired:
+            for tr in transition_rules:
+                if tr.to_product_id in seen_products:
+                    continue
+                if tr.from_product_id is not None and tr.from_product_id != rule.product_id:
+                    continue
+                if tr.min_age_days is not None and age_days < tr.min_age_days:
+                    continue
+                if tr.max_age_days is not None and age_days > tr.max_age_days:
+                    continue
+                candidates.append(TransitionCandidate(rule, tr.to_product, tr))
+                seen_products.add(tr.to_product_id)
+        return candidates
 
     def first_series_future_rule(
         self,

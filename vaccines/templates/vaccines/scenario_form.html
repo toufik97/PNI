@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load vaccine_tags %}
 
 {% block title %}{{ title }} — Scenario Simulator{% endblock %}
 
@@ -74,28 +75,44 @@
                 <p class="text-muted small mb-3">Enter comma-separated vaccine names. Leave blank to skip that check.</p>
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label class="form-label"><span class="badge bg-primary me-1">Due</span> Expected Due Today</label>
-                        <input type="text" name="expected_due" class="form-control"
-                               value="{% if scenario %}{{ scenario.expected_due|join:', ' }}{% endif %}"
-                               placeholder="e.g., Penta, VPO">
+                        <label class="form-label"><span class="badge bg-primary me-1">Due Today</span> Expected Due</label>
+                        <div class="input-group">
+                            <input type="text" name="expected_due" id="exp_due" class="form-control" value="{% if scenario %}{{ scenario.expected_due|join:', ' }}{% endif %}" placeholder="e.g., Penta, VPO">
+                            <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">Select</button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                {% for v in vaccines_json|json_loads %}<li><a class="dropdown-item" href="#" onclick="appendVax('exp_due', '{{v}}'); return false;">{{v}}</a></li>{% endfor %}
+                            </ul>
+                        </div>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label"><span class="badge bg-info text-dark me-1">Upcoming</span> Expected Upcoming</label>
-                        <input type="text" name="expected_upcoming" class="form-control"
-                               value="{% if scenario %}{{ scenario.expected_upcoming|join:', ' }}{% endif %}"
-                               placeholder="e.g., RR, Prevenar13">
+                        <div class="input-group">
+                            <input type="text" name="expected_upcoming" id="exp_up" class="form-control" value="{% if scenario %}{{ scenario.expected_upcoming|join:', ' }}{% endif %}" placeholder="e.g., RR">
+                            <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">Select</button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                {% for v in vaccines_json|json_loads %}<li><a class="dropdown-item" href="#" onclick="appendVax('exp_up', '{{v}}'); return false;">{{v}}</a></li>{% endfor %}
+                            </ul>
+                        </div>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label"><span class="badge bg-warning text-dark me-1">Missing</span> Expected Missing</label>
-                        <input type="text" name="expected_missing" class="form-control"
-                               value="{% if scenario %}{{ scenario.expected_missing|join:', ' }}{% endif %}"
-                               placeholder="e.g., BCG">
+                        <label class="form-label"><span class="badge bg-warning text-dark me-1">Missing</span> Expected Overdue</label>
+                        <div class="input-group">
+                            <input type="text" name="expected_missing" id="exp_miss" class="form-control" value="{% if scenario %}{{ scenario.expected_missing|join:', ' }}{% endif %}" placeholder="e.g., BCG">
+                            <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">Select</button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                {% for v in vaccines_json|json_loads %}<li><a class="dropdown-item" href="#" onclick="appendVax('exp_miss', '{{v}}'); return false;">{{v}}</a></li>{% endfor %}
+                            </ul>
+                        </div>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label"><span class="badge bg-dark me-1">Blocked</span> Expected Blocked</label>
-                        <input type="text" name="expected_blocked" class="form-control"
-                               value="{% if scenario %}{{ scenario.expected_blocked|join:', ' }}{% endif %}"
-                               placeholder="e.g., Prevenar13">
+                        <div class="input-group">
+                            <input type="text" name="expected_blocked" id="exp_block" class="form-control" value="{% if scenario %}{{ scenario.expected_blocked|join:', ' }}{% endif %}" placeholder="e.g., Penta">
+                            <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">Select</button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                {% for v in vaccines_json|json_loads %}<li><a class="dropdown-item" href="#" onclick="appendVax('exp_block', '{{v}}'); return false;">{{v}}</a></li>{% endfor %}
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -147,6 +164,15 @@ function addHistoryRow(vax='', daysAgo='', elsewhere=false) {
     `;
     container.appendChild(div);
     if (vax) div.querySelector(`select[name="history_${i}_vax"]`).value = vax;
+}
+
+function appendVax(id, name) {
+    const input = document.getElementById(id);
+    const existing = input.value.split(',').map(s => s.trim()).filter(s => s);
+    if (!existing.includes(name)) {
+        existing.push(name);
+        input.value = existing.join(', ');
+    }
 }
 
 function addInvalidRow(vax='', index='', reason='') {

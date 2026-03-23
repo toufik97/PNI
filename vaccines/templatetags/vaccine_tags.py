@@ -1,7 +1,13 @@
+import json
 from django import template
 import math
 
 register = template.Library()
+
+@register.filter
+def json_loads(value):
+    return json.loads(value)
+
 
 @register.filter
 def humanize_days(days):

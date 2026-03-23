@@ -113,45 +113,9 @@
                     "min_age_days": 53,
                     "recommended_age_days": 60,
                     "overdue_age_days": 60,
-                    "max_age_days": 364,
-                    "min_interval_days": 0,
-                    "notes": "DTP1 routine infant dose"
-                },
-                {
-                    "slot_number": 1,
-                    "prior_valid_doses": 0,
-                    "category": "catchup",
-                    "product": "Penta",
-                    "min_age_days": 365,
-                    "recommended_age_days": 365,
-                    "overdue_age_days": 365,
                     "max_age_days": 1094,
                     "min_interval_days": 0,
-                    "notes": "DTP1 catch-up 1-3y"
-                },
-                {
-                    "slot_number": 1,
-                    "prior_valid_doses": 0,
-                    "category": "catchup",
-                    "product": "DTC",
-                    "min_age_days": 1095,
-                    "recommended_age_days": 1095,
-                    "overdue_age_days": 1095,
-                    "max_age_days": 2554,
-                    "min_interval_days": 0,
-                    "notes": "DTP1 catch-up 3-7y using DTC"
-                },
-                {
-                    "slot_number": 1,
-                    "prior_valid_doses": 0,
-                    "category": "catchup",
-                    "product": "Td",
-                    "min_age_days": 2555,
-                    "recommended_age_days": 2555,
-                    "overdue_age_days": 2555,
-                    "max_age_days": null,
-                    "min_interval_days": 0,
-                    "notes": "DTP1 catch-up >=7y using Td"
+                    "notes": "DTP1: Penta up to 3y. Catch-up via transitions (DTC 3-7y, Td >=7y)."
                 },
                 {
                     "slot_number": 2,
@@ -161,45 +125,9 @@
                     "min_age_days": 83,
                     "recommended_age_days": 90,
                     "overdue_age_days": 90,
-                    "max_age_days": 539,
-                    "min_interval_days": 28,
-                    "notes": "DTP2 routine infant dose"
-                },
-                {
-                    "slot_number": 2,
-                    "prior_valid_doses": 1,
-                    "category": "catchup",
-                    "product": "Penta",
-                    "min_age_days": 540,
-                    "recommended_age_days": 540,
-                    "overdue_age_days": 540,
                     "max_age_days": 1094,
                     "min_interval_days": 28,
-                    "notes": "DTP2 catch-up 18m-3y"
-                },
-                {
-                    "slot_number": 2,
-                    "prior_valid_doses": 1,
-                    "category": "catchup",
-                    "product": "DTC",
-                    "min_age_days": 1095,
-                    "recommended_age_days": 1095,
-                    "overdue_age_days": 1095,
-                    "max_age_days": 2554,
-                    "min_interval_days": 28,
-                    "notes": "DTP2 catch-up 3-7y using DTC"
-                },
-                {
-                    "slot_number": 2,
-                    "prior_valid_doses": 1,
-                    "category": "catchup",
-                    "product": "Td",
-                    "min_age_days": 2555,
-                    "recommended_age_days": 2555,
-                    "overdue_age_days": 2555,
-                    "max_age_days": null,
-                    "min_interval_days": 28,
-                    "notes": "DTP2 catch-up >=7y using Td"
+                    "notes": "DTP2: Penta up to 3y. Catch-up via transitions."
                 },
                 {
                     "slot_number": 3,
@@ -209,45 +137,9 @@
                     "min_age_days": 113,
                     "recommended_age_days": 120,
                     "overdue_age_days": 120,
-                    "max_age_days": 539,
-                    "min_interval_days": 28,
-                    "notes": "DTP3 routine infant dose"
-                },
-                {
-                    "slot_number": 3,
-                    "prior_valid_doses": 2,
-                    "category": "catchup",
-                    "product": "Penta",
-                    "min_age_days": 540,
-                    "recommended_age_days": 540,
-                    "overdue_age_days": 540,
                     "max_age_days": 1094,
                     "min_interval_days": 28,
-                    "notes": "DTP3 catch-up 18m-3y"
-                },
-                {
-                    "slot_number": 3,
-                    "prior_valid_doses": 2,
-                    "category": "catchup",
-                    "product": "DTC",
-                    "min_age_days": 1095,
-                    "recommended_age_days": 1095,
-                    "overdue_age_days": 1095,
-                    "max_age_days": 2554,
-                    "min_interval_days": 28,
-                    "notes": "DTP3 catch-up 3-7y using DTC (corrected from Penta)"
-                },
-                {
-                    "slot_number": 3,
-                    "prior_valid_doses": 2,
-                    "category": "catchup",
-                    "product": "Td",
-                    "min_age_days": 2555,
-                    "recommended_age_days": 2555,
-                    "overdue_age_days": 2555,
-                    "max_age_days": null,
-                    "min_interval_days": 28,
-                    "notes": "DTP3 catch-up >=7y using Td"
+                    "notes": "DTP3: Penta up to 3y. Catch-up via transitions."
                 },
                 {
                     "slot_number": 4,
@@ -259,19 +151,7 @@
                     "overdue_age_days": 540,
                     "max_age_days": 2554,
                     "min_interval_days": 180,
-                    "notes": "DTC1 booster at 18m, min 6 month interval"
-                },
-                {
-                    "slot_number": 4,
-                    "prior_valid_doses": 3,
-                    "category": "catchup",
-                    "product": "Td",
-                    "min_age_days": 2555,
-                    "recommended_age_days": 2555,
-                    "overdue_age_days": 2555,
-                    "max_age_days": null,
-                    "min_interval_days": 180,
-                    "notes": "DTP4 catch-up >=7y using Td, same 6m interval"
+                    "notes": "DTC1 recall at 18m, 6m interval. Catch-up: Td >=7y via transition."
                 },
                 {
                     "slot_number": 5,
@@ -283,19 +163,7 @@
                     "overdue_age_days": 1825,
                     "max_age_days": 2554,
                     "min_interval_days": 1285,
-                    "notes": "DTC2 booster at 5y, min 3.5 year interval, only if <7y"
-                },
-                {
-                    "slot_number": 5,
-                    "prior_valid_doses": 4,
-                    "category": "catchup",
-                    "product": "Td",
-                    "min_age_days": 2555,
-                    "recommended_age_days": 2555,
-                    "overdue_age_days": 2555,
-                    "max_age_days": null,
-                    "min_interval_days": 1285,
-                    "notes": "DTP5 catch-up >=7y using Td, same 3.5y interval"
+                    "notes": "DTC2 recall at 5y, 3.5y interval. Catch-up: Td >=7y via transition."
                 }
             ]
         },
@@ -832,6 +700,40 @@
         }
     ],
     "transitions": [
+        {
+            "series": "DTP Family",
+            "from_product": "Penta",
+            "to_product": "DTC",
+            "start_slot_number": 1,
+            "end_slot_number": 3,
+            "allow_if_unavailable": false,
+            "min_age_days": 1095,
+            "max_age_days": 2554,
+            "active": true,
+            "notes": "Catch-up: use DTC instead of Penta for slots 1-3 when child is 3-7y."
+        },
+        {
+            "series": "DTP Family",
+            "from_product": "Penta",
+            "to_product": "Td",
+            "start_slot_number": 1,
+            "end_slot_number": 3,
+            "allow_if_unavailable": false,
+            "min_age_days": 2555,
+            "active": true,
+            "notes": "Catch-up: use Td instead of Penta for slots 1-3 when child is >=7y."
+        },
+        {
+            "series": "DTP Family",
+            "from_product": "DTC",
+            "to_product": "Td",
+            "start_slot_number": 4,
+            "end_slot_number": 5,
+            "allow_if_unavailable": false,
+            "min_age_days": 2555,
+            "active": true,
+            "notes": "Catch-up: use Td instead of DTC for slots 4-5 when child is >=7y."
+        },
         {
             "series": "Pneumo",
             "from_product": "Prevenar13",

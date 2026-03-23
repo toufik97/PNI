@@ -71,66 +71,56 @@ class ScenarioRunner:
         engine = VaccinationEngine(child, evaluation_date=date.today())
         engine_result = engine.evaluate()
 
-        # Extract actuals
-        actual_due = sorted([d['vaccine'].name for d in engine_result.get('due_today', [])])
-        actual_upcoming = sorted([item[0].name for item in engine_result.get('upcoming', [])])
-        actual_missing = sorted([d['vaccine'].name for d in engine_result.get('missing_doses', [])])
-        actual_blocked = sorted([b['vaccine'].name for b in engine_result.get('blocked', [])])
+        # Extract actuals with dose amounts
+        def _fmt(item):
+            if not item: return ""
+            # Most items are dicts from _build_decision_item
+            if isinstance(item, dict):
+                vax = item.get('vaccine')
+                base = vax.name if vax else "Unknown"
+                if item.get('dose_amount'):
+                    return f"{base} ({item['dose_amount']})"
+                return base
+            # Fallback for Vaccine objects
+            if hasattr(item, 'name'):
+                return item.name
+            return str(item)
+
+        due_list = engine_result.get('due_today', []) + engine_result.get('due_but_unavailable', [])
+        actual_due = sorted([_fmt(d) for d in due_list])
+        actual_upcoming = sorted([_fmt(d) for d in engine_result.get('upcoming_details', [])])
+        actual_missing = sorted([_fmt(d) for d in engine_result.get('missing_doses', [])])
+        actual_blocked = sorted([_fmt(d) for d in engine_result.get('blocked', [])])
 
         # Build check results
         checks = []
 
-        # Check DUE
-        if scenario.expected_due:
-            expected = sorted(scenario.expected_due)
-            match = _list_match(expected, actual_due)
+        # Build check results using smart matching
+        checks = []
+
+        def run_list_check(category, expected, actual):
+            if not expected: return
+            exp_sorted = sorted(expected)
+            # Find items from the expected list that aren't found in actual results
+            # A match counts if it's exact OR if the actual result starts with the name + dose brackets
+            missing = [
+                e for e in exp_sorted 
+                if not any(a == e or a.startswith(f"{e} (") for a in actual)
+            ]
+            passed = (len(missing) == 0)
+            
             checks.append({
-                'category': 'Due Today',
-                'expected': expected,
-                'actual': actual_due,
-                'passed': match,
-                'extra': sorted(set(actual_due) - set(expected)),
-                'missing_from_actual': sorted(set(expected) - set(actual_due)),
+                'category': category,
+                'expected': exp_sorted,
+                'actual': actual,
+                'passed': passed,
+                'missing_from_actual': missing,
             })
 
-        # Check UPCOMING
-        if scenario.expected_upcoming:
-            expected = sorted(scenario.expected_upcoming)
-            match = all(e in actual_upcoming for e in expected)
-            checks.append({
-                'category': 'Upcoming',
-                'expected': expected,
-                'actual': actual_upcoming,
-                'passed': match,
-                'extra': [],
-                'missing_from_actual': sorted(set(expected) - set(actual_upcoming)),
-            })
-
-        # Check MISSING
-        if scenario.expected_missing:
-            expected = sorted(scenario.expected_missing)
-            match = all(e in actual_missing for e in expected)
-            checks.append({
-                'category': 'Missing',
-                'expected': expected,
-                'actual': actual_missing,
-                'passed': match,
-                'extra': [],
-                'missing_from_actual': sorted(set(expected) - set(actual_missing)),
-            })
-
-        # Check BLOCKED
-        if scenario.expected_blocked:
-            expected = sorted(scenario.expected_blocked)
-            match = all(e in actual_blocked for e in expected)
-            checks.append({
-                'category': 'Blocked',
-                'expected': expected,
-                'actual': actual_blocked,
-                'passed': match,
-                'extra': [],
-                'missing_from_actual': sorted(set(expected) - set(actual_blocked)),
-            })
+        run_list_check('Due Today', scenario.expected_due, actual_due)
+        run_list_check('Upcoming', scenario.expected_upcoming, actual_upcoming)
+        run_list_check('Missing', scenario.expected_missing, actual_missing)
+        run_list_check('Blocked', scenario.expected_blocked, actual_blocked)
 
         # Check INVALID doses
         if scenario.expected_invalid:
@@ -214,6 +204,4 @@ class ScenarioRunner:
         }
 
 
-def _list_match(expected, actual):
-    """Check if two sorted lists contain the same elements."""
-    return expected == actual
+

@@ -198,14 +198,24 @@ def policy_version_edit(request, pk):
     return render(request, 'vaccines/policy_version_form.html', {'form': form, 'title': f'Edit Policy Version: {version.name}', 'submit_label': 'Save Changes', 'policy_version': version})
 
 
+from django.db.models import ProtectedError
+
 def policy_version_delete(request, pk):
     version = get_object_or_404(PolicyVersion, pk=pk)
     if request.method == 'POST':
         name = version.name
-        version.delete()
-        messages.success(request, f'Policy version "{name}" deleted.')
-        return redirect('vaccines:settings_tab', tab='versions')
+        try:
+            version.delete()
+            messages.success(request, f'Policy version "{name}" deleted.')
+            return redirect('vaccines:settings_tab', tab='versions')
+        except ProtectedError as e:
+            dependent_objects = e.protected_objects
+            series_names = ", ".join([str(obj) for obj in dependent_objects])
+            messages.error(request, f'Cannot delete policy version "{name}" because it is referenced by: {series_names}. Please delete or reassign these first.')
+            return redirect('vaccines:settings_tab', tab='versions')
+            
     return render(request, 'vaccines/confirm_delete.html', {'object': version, 'object_type': 'Policy Version', 'cancel_href': reverse('vaccines:settings_tab', kwargs={'tab': 'versions'})})
+
 
 
 def series_create(request):
@@ -293,10 +303,10 @@ def series_edit(request, pk):
 
 def series_delete(request, pk):
     series = get_object_or_404(Series, pk=pk)
-    # Check if any vaccines in this series have records
-    vaccine_ids = series.series_products.values_list('product__vaccine_id', flat=True)
-    usage_count = VaccinationRecord.objects.filter(vaccine_id__in=vaccine_ids).count()
+    # Check if any vaccines belonging to this series have been administered
+    usage_count = VaccinationRecord.objects.filter(vaccine__product_profile__series_memberships=series).count()
     has_records = usage_count > 0
+
 
     if request.method == 'POST':
         action = request.POST.get('action')
