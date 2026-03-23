@@ -462,6 +462,7 @@
                                 <div class="col-sm">
                                     <label class="form-label-sm">{{ field.label }}</label>
                                     {{ field }}
+                                    {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors|striptags }}</div>{% endif %}
                                 </div>
                                 {% endif %}
                                 {% endfor %}
@@ -490,8 +491,17 @@
             </div>
 
             {{ rule_formset.management_form }}
-            {% if rule_formset.non_form_errors %}<div class="alert alert-danger small">{{ rule_formset.non_form_errors }}</div>{% endif %}
-            {% for rform in rule_formset %}{% if rform.errors %}<div class="alert alert-warning small">{% for field, errors in rform.errors.items %}{{ errors|striptags }} {% endfor %}</div>{% endif %}{% endfor %}
+            {% if rule_formset.non_form_errors %}<div class="alert alert-danger small text-danger">{{ rule_formset.non_form_errors }}</div>{% endif %}
+            {% for rform in rule_formset %}
+                {% if rform.errors %}
+                <div class="alert alert-warning small mb-2">
+                    <b>Dose {{ rform.instance.slot_number|default:rform.slot_number.value|default:"(new)" }}:</b>
+                    {% for field in rform.visible_fields %}
+                        {% if field.errors %}<span class="me-2">{{ field.label }}: {{ field.errors|striptags }}</span>{% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+            {% endfor %}
             <div id="slot-cards-container">
                 <!-- Dynamically built by JS -->
             </div>
@@ -557,13 +567,22 @@
                                 <div style="max-width:70px;">{{ tform.end_slot_number }}</div>
                             </div>
                             <div class="d-flex flex-wrap align-items-center gap-3">
-                                <div class="form-check form-switch">
+                                <div class="form-check form-switch mt-1">
                                     {{ tform.allow_if_unavailable }}
-                                    <label class="form-check-label small text-muted">Only if prior product unavailable</label>
+                                    <label class="form-check-label small text-muted lh-1">Only if prior<br>unavailable</label>
                                 </div>
-                                <div class="form-check form-switch">
+                                <div class="form-check form-switch mt-1">
                                     {{ tform.active }}
                                     <label class="form-check-label small text-muted">Active</label>
+                                </div>
+                                <div class="vr mx-1 d-none d-md-block" style="opacity:0.1"></div>
+                                <div>
+                                    <label class="form-label-sm mb-0">Min Age (Days)</label>
+                                    <div style="max-width:90px">{{ tform.min_age_days }}</div>
+                                </div>
+                                <div>
+                                    <label class="form-label-sm mb-0">Max Age (Days)</label>
+                                    <div style="max-width:90px">{{ tform.max_age_days }}</div>
                                 </div>
                             </div>
                             <div class="mt-2">
@@ -643,13 +662,22 @@
                 <div style="max-width:70px;">{{ transition_formset.empty_form.end_slot_number }}</div>
             </div>
             <div class="d-flex flex-wrap align-items-center gap-3">
-                <div class="form-check form-switch">
+                <div class="form-check form-switch mt-1">
                     {{ transition_formset.empty_form.allow_if_unavailable }}
-                    <label class="form-check-label small text-muted">Only if prior product unavailable</label>
+                    <label class="form-check-label small text-muted lh-1">Only if prior<br>unavailable</label>
                 </div>
-                <div class="form-check form-switch">
+                <div class="form-check form-switch mt-1">
                     {{ transition_formset.empty_form.active }}
                     <label class="form-check-label small text-muted">Active</label>
+                </div>
+                <div class="vr mx-1 d-none d-md-block" style="opacity:0.1"></div>
+                <div>
+                    <label class="form-label-sm mb-0">Min Age (Days)</label>
+                    <div style="max-width:90px">{{ transition_formset.empty_form.min_age_days }}</div>
+                </div>
+                <div>
+                    <label class="form-label-sm mb-0">Max Age (Days)</label>
+                    <div style="max-width:90px">{{ transition_formset.empty_form.max_age_days }}</div>
                 </div>
             </div>
             <div class="mt-2">
@@ -885,6 +913,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         compound.appendChild(unitSelect);
                         col.appendChild(compound);
                         col.appendChild(humanLabel);
+
+                        // Server-side error
+                        const serverError = fieldCont.querySelector('.text-danger');
+                        if (serverError) col.appendChild(serverError.cloneNode(true));
 
                         // Inline validation for age fields
                         if (cfg.name === 'min_age_days' || cfg.name === 'recommended_age_days' || cfg.name === 'overdue_age_days' || cfg.name === 'max_age_days') {
@@ -1168,6 +1200,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ─── Initial Build ───────────────────────────────
     refreshGroupedUI();
+
+    // ─── Auto-Jump to errors on page load ─────────────
+    const firstError = document.querySelector('.wizard-panel .text-danger, .wizard-panel .alert-danger, .wizard-panel .alert-warning');
+    if (firstError) {
+        const panel = firstError.closest('.wizard-panel');
+        if (panel) {
+            const stepNum = parseInt(panel.id.replace('panel-', ''));
+            if (!isNaN(stepNum)) goToStep(stepNum);
+        }
+    }
 });
 </script>
 {% endblock %}

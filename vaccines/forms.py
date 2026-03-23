@@ -303,12 +303,14 @@ class SeriesTransitionRuleInlineFormSet(forms.BaseInlineFormSet):
 class SeriesTransitionRuleForm(forms.ModelForm):
     class Meta:
         model = SeriesTransitionRule
-        fields = ['from_product', 'to_product', 'start_slot_number', 'end_slot_number', 'allow_if_unavailable', 'active', 'notes']
+        fields = ['from_product', 'to_product', 'start_slot_number', 'end_slot_number', 'min_age_days', 'max_age_days', 'allow_if_unavailable', 'active', 'notes']
         widgets = {
             'from_product': forms.Select(attrs={'class': 'form-select'}),
             'to_product': forms.Select(attrs={'class': 'form-select'}),
             'start_slot_number': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'placeholder': 'Optional'}),
             'end_slot_number': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'placeholder': 'Optional'}),
+            'min_age_days': forms.NumberInput(attrs={'class': 'form-control age-input', 'min': 0, 'placeholder': 'Optional'}),
+            'max_age_days': forms.NumberInput(attrs={'class': 'form-control age-input', 'min': 0, 'placeholder': 'Optional'}),
             'allow_if_unavailable': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Optional notes'}),

@@ -292,15 +292,6 @@ class SeriesTransitionRule(models.Model):
         if self.from_product_id and linked_product_ids and self.from_product_id not in linked_product_ids:
             raise ValidationError('Transition rules can only reference source products linked to the same series.')
 
-        candidate_slots = self.series.rules.filter(product_id=self.to_product_id) if self.series_id and self.to_product_id else None
-        if candidate_slots is not None:
-            if self.start_slot_number is not None:
-                candidate_slots = candidate_slots.filter(slot_number__gte=self.start_slot_number)
-            if self.end_slot_number is not None:
-                candidate_slots = candidate_slots.filter(slot_number__lte=self.end_slot_number)
-            if not candidate_slots.exists():
-                raise ValidationError('Transition rules must target at least one slot that already allows the destination product.')
-
 class DependencyRule(models.Model):
     dependent_series = models.ForeignKey(Series, on_delete=models.CASCADE, related_name='dependency_rules')
     dependent_slot_number = models.PositiveIntegerField(
