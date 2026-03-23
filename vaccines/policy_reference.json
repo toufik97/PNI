@@ -108,162 +108,264 @@
                 {
                     "slot_number": 1,
                     "prior_valid_doses": 0,
+                    "category": "routine",
                     "product": "Penta",
                     "min_age_days": 53,
                     "recommended_age_days": 60,
                     "overdue_age_days": 60,
                     "max_age_days": 364,
-                    "min_interval_days": 0
+                    "min_interval_days": 0,
+                    "notes": "DTP1 routine infant dose"
                 },
                 {
                     "slot_number": 1,
                     "prior_valid_doses": 0,
+                    "category": "catchup",
                     "product": "Penta",
                     "min_age_days": 365,
                     "recommended_age_days": 365,
                     "overdue_age_days": 365,
                     "max_age_days": 1094,
-                    "min_interval_days": 0
+                    "min_interval_days": 0,
+                    "notes": "DTP1 catch-up 1-3y"
                 },
                 {
                     "slot_number": 1,
                     "prior_valid_doses": 0,
+                    "category": "catchup",
                     "product": "DTC",
                     "min_age_days": 1095,
                     "recommended_age_days": 1095,
                     "overdue_age_days": 1095,
                     "max_age_days": 2554,
-                    "min_interval_days": 0
+                    "min_interval_days": 0,
+                    "notes": "DTP1 catch-up 3-7y using DTC"
                 },
                 {
                     "slot_number": 1,
                     "prior_valid_doses": 0,
+                    "category": "catchup",
                     "product": "Td",
                     "min_age_days": 2555,
                     "recommended_age_days": 2555,
                     "overdue_age_days": 2555,
                     "max_age_days": null,
-                    "min_interval_days": 0
+                    "min_interval_days": 0,
+                    "notes": "DTP1 catch-up >=7y using Td"
                 },
                 {
                     "slot_number": 2,
                     "prior_valid_doses": 1,
+                    "category": "routine",
                     "product": "Penta",
                     "min_age_days": 83,
                     "recommended_age_days": 90,
                     "overdue_age_days": 90,
                     "max_age_days": 539,
-                    "min_interval_days": 28
+                    "min_interval_days": 28,
+                    "notes": "DTP2 routine infant dose"
                 },
                 {
                     "slot_number": 2,
                     "prior_valid_doses": 1,
+                    "category": "catchup",
                     "product": "Penta",
                     "min_age_days": 540,
                     "recommended_age_days": 540,
                     "overdue_age_days": 540,
                     "max_age_days": 1094,
-                    "min_interval_days": 28
+                    "min_interval_days": 28,
+                    "notes": "DTP2 catch-up 18m-3y"
                 },
                 {
                     "slot_number": 2,
                     "prior_valid_doses": 1,
-                    "product": "DTC",
-                    "min_age_days": 1825,
-                    "recommended_age_days": 1825,
-                    "overdue_age_days": 1825,
-                    "max_age_days": 2554,
-                    "min_interval_days": 28
-                },
-                {
-                    "slot_number": 2,
-                    "prior_valid_doses": 1,
-                    "product": "Td",
-                    "min_age_days": 2555,
-                    "recommended_age_days": 2555,
-                    "overdue_age_days": 2555,
-                    "max_age_days": null,
-                    "min_interval_days": 28
-                },
-                {
-                    "slot_number": 3,
-                    "prior_valid_doses": 2,
-                    "product": "Penta",
-                    "min_age_days": 113,
-                    "recommended_age_days": 120,
-                    "overdue_age_days": 120,
-                    "max_age_days": 539,
-                    "min_interval_days": 28
-                },
-                {
-                    "slot_number": 3,
-                    "prior_valid_doses": 2,
-                    "product": "Penta",
-                    "min_age_days": 540,
-                    "recommended_age_days": 540,
-                    "overdue_age_days": 540,
-                    "max_age_days": 1094,
-                    "min_interval_days": 28
-                },
-                {
-                    "slot_number": 3,
-                    "prior_valid_doses": 2,
+                    "category": "catchup",
                     "product": "DTC",
                     "min_age_days": 1095,
                     "recommended_age_days": 1095,
                     "overdue_age_days": 1095,
                     "max_age_days": 2554,
-                    "min_interval_days": 28
+                    "min_interval_days": 28,
+                    "notes": "DTP2 catch-up 3-7y using DTC"
+                },
+                {
+                    "slot_number": 2,
+                    "prior_valid_doses": 1,
+                    "category": "catchup",
+                    "product": "Td",
+                    "min_age_days": 2555,
+                    "recommended_age_days": 2555,
+                    "overdue_age_days": 2555,
+                    "max_age_days": null,
+                    "min_interval_days": 28,
+                    "notes": "DTP2 catch-up >=7y using Td"
                 },
                 {
                     "slot_number": 3,
                     "prior_valid_doses": 2,
+                    "category": "routine",
+                    "product": "Penta",
+                    "min_age_days": 113,
+                    "recommended_age_days": 120,
+                    "overdue_age_days": 120,
+                    "max_age_days": 539,
+                    "min_interval_days": 28,
+                    "notes": "DTP3 routine infant dose"
+                },
+                {
+                    "slot_number": 3,
+                    "prior_valid_doses": 2,
+                    "category": "catchup",
+                    "product": "Penta",
+                    "min_age_days": 540,
+                    "recommended_age_days": 540,
+                    "overdue_age_days": 540,
+                    "max_age_days": 1094,
+                    "min_interval_days": 28,
+                    "notes": "DTP3 catch-up 18m-3y"
+                },
+                {
+                    "slot_number": 3,
+                    "prior_valid_doses": 2,
+                    "category": "catchup",
+                    "product": "DTC",
+                    "min_age_days": 1095,
+                    "recommended_age_days": 1095,
+                    "overdue_age_days": 1095,
+                    "max_age_days": 2554,
+                    "min_interval_days": 28,
+                    "notes": "DTP3 catch-up 3-7y using DTC (corrected from Penta)"
+                },
+                {
+                    "slot_number": 3,
+                    "prior_valid_doses": 2,
+                    "category": "catchup",
                     "product": "Td",
                     "min_age_days": 2555,
                     "recommended_age_days": 2555,
                     "overdue_age_days": 2555,
                     "max_age_days": null,
-                    "min_interval_days": 28
+                    "min_interval_days": 28,
+                    "notes": "DTP3 catch-up >=7y using Td"
                 },
                 {
                     "slot_number": 4,
                     "prior_valid_doses": 3,
+                    "category": "routine",
                     "product": "DTC",
                     "min_age_days": 540,
                     "recommended_age_days": 540,
                     "overdue_age_days": 540,
-                    "max_age_days": null,
-                    "min_interval_days": 180
+                    "max_age_days": 2554,
+                    "min_interval_days": 180,
+                    "notes": "DTC1 booster at 18m, min 6 month interval"
                 },
                 {
                     "slot_number": 4,
                     "prior_valid_doses": 3,
+                    "category": "catchup",
                     "product": "Td",
                     "min_age_days": 2555,
                     "recommended_age_days": 2555,
                     "overdue_age_days": 2555,
                     "max_age_days": null,
-                    "min_interval_days": 180
+                    "min_interval_days": 180,
+                    "notes": "DTP4 catch-up >=7y using Td, same 6m interval"
                 },
                 {
                     "slot_number": 5,
                     "prior_valid_doses": 4,
+                    "category": "routine",
                     "product": "DTC",
                     "min_age_days": 1825,
                     "recommended_age_days": 1825,
                     "overdue_age_days": 1825,
-                    "max_age_days": null,
-                    "min_interval_days": 1285
+                    "max_age_days": 2554,
+                    "min_interval_days": 1285,
+                    "notes": "DTC2 booster at 5y, min 3.5 year interval, only if <7y"
                 },
                 {
                     "slot_number": 5,
                     "prior_valid_doses": 4,
+                    "category": "catchup",
                     "product": "Td",
                     "min_age_days": 2555,
                     "recommended_age_days": 2555,
                     "overdue_age_days": 2555,
                     "max_age_days": null,
-                    "min_interval_days": 365
+                    "min_interval_days": 1285,
+                    "notes": "DTP5 catch-up >=7y using Td, same 3.5y interval"
+                }
+            ]
+        },
+        {
+            "name": "Td Late Start",
+            "min_valid_interval_days": 28,
+            "mixing_policy": "strict",
+            "products": [
+                "Td"
+            ],
+            "rules": [
+                {
+                    "slot_number": 1,
+                    "prior_valid_doses": 0,
+                    "category": "catchup",
+                    "product": "Td",
+                    "min_age_days": 2555,
+                    "recommended_age_days": 2555,
+                    "overdue_age_days": 2555,
+                    "max_age_days": null,
+                    "min_interval_days": 0,
+                    "notes": "Td-only track for unvaccinated children >=7y"
+                },
+                {
+                    "slot_number": 2,
+                    "prior_valid_doses": 1,
+                    "category": "catchup",
+                    "product": "Td",
+                    "min_age_days": 2555,
+                    "recommended_age_days": 2583,
+                    "overdue_age_days": 2583,
+                    "max_age_days": null,
+                    "min_interval_days": 28,
+                    "notes": "Td2 at 28 day interval"
+                },
+                {
+                    "slot_number": 3,
+                    "prior_valid_doses": 2,
+                    "category": "catchup",
+                    "product": "Td",
+                    "min_age_days": 2555,
+                    "recommended_age_days": 2611,
+                    "overdue_age_days": 2611,
+                    "max_age_days": null,
+                    "min_interval_days": 28,
+                    "notes": "Td3 at 28 day interval"
+                },
+                {
+                    "slot_number": 4,
+                    "prior_valid_doses": 3,
+                    "category": "catchup",
+                    "product": "Td",
+                    "min_age_days": 2555,
+                    "recommended_age_days": 2791,
+                    "overdue_age_days": 2791,
+                    "max_age_days": null,
+                    "min_interval_days": 180,
+                    "notes": "Td4 at 6 month interval"
+                },
+                {
+                    "slot_number": 5,
+                    "prior_valid_doses": 4,
+                    "category": "catchup",
+                    "product": "Td",
+                    "min_age_days": 2555,
+                    "recommended_age_days": 3156,
+                    "overdue_age_days": 3156,
+                    "max_age_days": null,
+                    "min_interval_days": 365,
+                    "notes": "Td5 at 1 year interval"
                 }
             ]
         },

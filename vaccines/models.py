@@ -90,8 +90,8 @@ class Series(models.Model):
         (MIXING_FLEXIBLE, 'Flexible switching'),
     ]
 
-    code = models.SlugField(max_length=100, unique=True)
-    name = models.CharField(max_length=100, unique=True)
+    code = models.SlugField(max_length=100)
+    name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
     active = models.BooleanField(default=True)
     policy_version = models.ForeignKey(PolicyVersion, on_delete=models.PROTECT, related_name='series', null=True, blank=True)
@@ -108,6 +108,7 @@ class Series(models.Model):
 
     class Meta:
         ordering = ['name']
+        unique_together = [('name', 'policy_version'), ('code', 'policy_version')]
 
     def __str__(self):
         return self.name
@@ -180,7 +181,9 @@ class SeriesRule(models.Model):
         else:
             age_range += "+"
 
-        interval = f" (min {days_to_human(self.min_interval_days)} interval)" if self.min_interval_days > 0 else ""
+        interval = ""
+        if self.min_interval_days is not None and self.min_interval_days > 0:
+            interval = f" (min {days_to_human(self.min_interval_days)} interval)"
         return f"{self.product.vaccine.name} @ {age_range}{interval}"
 
     def __str__(self):
@@ -200,17 +203,19 @@ class SeriesRule(models.Model):
             if not linked_products.exists():
                 raise ValidationError("Series rules can only reference products linked to the same series.")
 
-        if self.min_age_days > self.recommended_age_days:
-            raise ValidationError(
-                f"Invalid age logic: Minimum age ({self.min_age_days}d) "
-                f"cannot be greater than recommended age ({self.recommended_age_days}d)."
-            )
+        if self.min_age_days is not None and self.recommended_age_days is not None:
+            if self.min_age_days > self.recommended_age_days:
+                raise ValidationError(
+                    f"Invalid age logic: Minimum age ({self.min_age_days}d) "
+                    f"cannot be greater than recommended age ({self.recommended_age_days}d)."
+                )
 
-        if self.max_age_days and self.max_age_days < self.min_age_days:
-            raise ValidationError(
-                f"Invalid age range: Min age ({self.min_age_days}d) "
-                f"is greater than Max age ({self.max_age_days}d)."
-            )
+        if self.max_age_days is not None and self.min_age_days is not None:
+            if self.max_age_days < self.min_age_days:
+                raise ValidationError(
+                    f"Invalid age range: Min age ({self.min_age_days}d) "
+                    f"is greater than Max age ({self.max_age_days}d)."
+                )
 
 
 
@@ -243,6 +248,16 @@ class SeriesTransitionRule(models.Model):
     allow_if_unavailable = models.BooleanField(
         default=False,
         help_text='If enabled, the transition is allowed only when the prior product is unavailable.',
+    )
+    min_age_days = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text='Minimum child age in days for this transition to apply. Leave blank for no minimum.',
+    )
+    max_age_days = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text='Maximum child age in days for this transition to apply. Leave blank for no maximum.',
     )
     active = models.BooleanField(default=True)
     notes = models.TextField(blank=True, null=True)

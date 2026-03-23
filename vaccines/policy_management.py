@@ -66,6 +66,8 @@ class PolicyManager:
                 "start_slot_number": t.start_slot_number,
                 "end_slot_number": t.end_slot_number,
                 "allow_if_unavailable": t.allow_if_unavailable,
+                "min_age_days": t.min_age_days,
+                "max_age_days": t.max_age_days,
                 "active": t.active,
                 "notes": t.notes
             }
@@ -167,10 +169,10 @@ class PolicyManager:
 
             s_obj, created = Series.objects.update_or_create(
                 name=s_name,
+                policy_version=active_version,
                 defaults={
                     'min_valid_interval_days': min_interval,
                     'mixing_policy': mixing,
-                    'policy_version': active_version,
                     'active': True
                 }
             )
@@ -244,6 +246,8 @@ class PolicyManager:
                     start_slot_number=t_data.get('start_slot_number'),
                     end_slot_number=t_data.get('end_slot_number'),
                     allow_if_unavailable=t_data.get('allow_if_unavailable', False),
+                    min_age_days=t_data.get('min_age_days'),
+                    max_age_days=t_data.get('max_age_days'),
                     active=t_data.get('active', True),
                     notes=t_data.get('notes')
                 )

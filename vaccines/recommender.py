@@ -173,6 +173,8 @@ class SeriesRecommender:
             and (transition_rule.from_product_id is None or transition_rule.from_product.vaccine_id == last_vaccine_id)
             and (transition_rule.start_slot_number is None or slot_number >= transition_rule.start_slot_number)
             and (transition_rule.end_slot_number is None or slot_number <= transition_rule.end_slot_number)
+            and (transition_rule.min_age_days is None or self.age_days >= transition_rule.min_age_days)
+            and (transition_rule.max_age_days is None or self.age_days <= transition_rule.max_age_days)
         ]
         if not matching_rules:
             return False

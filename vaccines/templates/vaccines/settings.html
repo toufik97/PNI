@@ -21,6 +21,11 @@
     .badge-inactive { background: #718096; color: white; }
     .badge-unavailable { background: #c05621; color: white; }
     .badge-legacy { background: #dd6b20; color: white; }
+    .badge-routine { background: #2f855a; color: white; font-size: 0.7rem; }
+    .badge-catchup { background: #c05621; color: white; font-size: 0.7rem; }
+    .badge-special { background: #6b46c1; color: white; font-size: 0.7rem; }
+    .slot-separator td { border-top: 2px solid #cbd5e0 !important; }
+    .rule-note { color: #718096; font-size: 0.78rem; font-style: italic; }
     .rule-table { font-size: 0.85rem; margin-bottom: 0; }
     .rule-table th { background: #eef3f8; font-weight: 700; font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.4px; color: #4a5568; }
     .btn-add { background: linear-gradient(135deg, #204a87 0%, #2f855a 100%); color: white; border: none; border-radius: 8px; padding: 0.55rem 1.25rem; font-weight: 600; }
@@ -158,16 +163,23 @@
             </div>
             {% if series.rules.count > 0 %}
             <table class="table table-sm rule-table">
-                <thead><tr><th>Slot</th><th>Prior Doses</th><th>Product</th><th>Age Window</th><th>Recommended</th><th>Interval</th></tr></thead>
+                <thead><tr><th>Slot</th><th>Prior</th><th>Category</th><th>Product</th><th>Age Window</th><th>Recommended</th><th>Interval</th><th>Notes</th></tr></thead>
                 <tbody>
                     {% for rule in series.rules.all %}
-                    <tr>
-                        <td>{{ rule.slot_number }}</td>
+                    <tr{% if forloop.first %} class="slot-separator"{% elif rule.slot_number != prev_slot %} class="slot-separator"{% endif %}>
+                        <td><strong>{{ rule.slot_number }}</strong></td>
                         <td>{{ rule.prior_valid_doses }}</td>
+                        <td>
+                            {% if rule.category == 'routine' %}<span class="badge badge-routine">Routine</span>
+                            {% elif rule.category == 'catchup' %}<span class="badge badge-catchup">Catch-up</span>
+                            {% elif rule.category == 'special' %}<span class="badge badge-special">Special</span>
+                            {% else %}<span class="badge badge-soft">{{ rule.category }}</span>{% endif %}
+                        </td>
                         <td><strong>{{ rule.product.vaccine.display_name|default:rule.product.vaccine.name }}</strong></td>
-                        <td>{{ rule.min_age_days|humanize_days }} <small class="text-muted">({{ rule.min_age_days }}d)</small>{% if rule.max_age_days %} - {{ rule.max_age_days|humanize_days }} <small class="text-muted">({{ rule.max_age_days }}d)</small>{% else %} +{% endif %}</td>
+                        <td>{{ rule.min_age_days|humanize_days }} <small class="text-muted">({{ rule.min_age_days }}d)</small>{% if rule.max_age_days %} – {{ rule.max_age_days|humanize_days }} <small class="text-muted">({{ rule.max_age_days }}d)</small>{% else %} +{% endif %}</td>
                         <td>{{ rule.recommended_age_days|humanize_days }} <small class="text-muted">({{ rule.recommended_age_days }}d)</small></td>
                         <td>{{ rule.min_interval_days|humanize_days }} <small class="text-muted">({{ rule.min_interval_days }}d)</small></td>
+                        <td>{% if rule.notes %}<span class="rule-note" title="{{ rule.notes }}">{{ rule.notes|truncatewords:8 }}</span>{% else %}<span class="text-muted">—</span>{% endif %}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -179,15 +191,16 @@
             <div class="mt-3">
                 <div class="text-muted small text-uppercase fw-bold mb-2">Transition Rules</div>
                 <table class="table table-sm rule-table">
-                    <thead><tr><th>From</th><th>To</th><th>Slots</th><th>Condition</th><th>Status</th></tr></thead>
+                    <thead><tr><th>From</th><th>To</th><th>Slots</th><th>Age Range</th><th>Condition</th><th>Status</th></tr></thead>
                     <tbody>
                         {% for transition in series.transition_rules.all %}
                         <tr>
                             <td>{{ transition.from_product.vaccine.display_name|default:transition.from_product.vaccine.name|default:"Any product" }}</td>
                             <td><strong>{{ transition.to_product.vaccine.display_name|default:transition.to_product.vaccine.name }}</strong></td>
-                            <td>{{ transition.start_slot_number|default:1 }} - {{ transition.end_slot_number|default:"Any" }}</td>
-                            <td>{% if transition.allow_if_unavailable %}Only if prior product unavailable{% else %}Always allowed{% endif %}</td>
-                            <td>{% if transition.active %}Active{% else %}Inactive{% endif %}</td>
+                            <td>{{ transition.start_slot_number|default:1 }} – {{ transition.end_slot_number|default:"Any" }}</td>
+                            <td>{% if transition.min_age_days or transition.max_age_days %}{% if transition.min_age_days %}{{ transition.min_age_days|humanize_days }}+{% endif %}{% if transition.min_age_days and transition.max_age_days %} – {% endif %}{% if transition.max_age_days %}≤{{ transition.max_age_days|humanize_days }}{% endif %}{% else %}<span class="text-muted">Any age</span>{% endif %}</td>
+                            <td>{% if transition.allow_if_unavailable %}Only if prior unavailable{% else %}Always allowed{% endif %}</td>
+                            <td>{% if transition.active %}<span class="badge badge-chip">Active</span>{% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
