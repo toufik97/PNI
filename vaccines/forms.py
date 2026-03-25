@@ -209,7 +209,10 @@ class SeriesProductForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['product'].queryset = Product.objects.select_related('vaccine').order_by('vaccine__name')
+        product_qs = Product.objects.select_related('vaccine').order_by('vaccine__name')
+        if not self.instance or not self.instance.pk:
+            product_qs = product_qs.filter(active=True)
+        self.fields['product'].queryset = product_qs
 
 
 SeriesProductFormSet = forms.inlineformset_factory(Series, SeriesProduct, form=SeriesProductForm, extra=1, can_delete=True)
@@ -235,7 +238,10 @@ class SeriesRuleForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['product'].queryset = Product.objects.select_related('vaccine').order_by('vaccine__name')
+        product_qs = Product.objects.select_related('vaccine').order_by('vaccine__name')
+        if not self.instance or not self.instance.pk:
+            product_qs = product_qs.filter(active=True)
+        self.fields['product'].queryset = product_qs
 
 
 SeriesRuleFormSet = forms.inlineformset_factory(Series, SeriesRule, form=SeriesRuleForm, extra=1, can_delete=True)
@@ -318,9 +324,11 @@ class SeriesTransitionRuleForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        product_queryset = Product.objects.select_related('vaccine').order_by('vaccine__name')
-        self.fields['from_product'].queryset = product_queryset
-        self.fields['to_product'].queryset = product_queryset
+        product_qs = Product.objects.select_related('vaccine').order_by('vaccine__name')
+        if not self.instance.pk:
+            product_qs = product_qs.filter(active=True)
+        self.fields['from_product'].queryset = product_qs
+        self.fields['to_product'].queryset = product_qs
 
 
 SeriesTransitionRuleFormSet = forms.inlineformset_factory(
@@ -357,10 +365,27 @@ class DependencyRuleForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        series_queryset = Series.objects.select_related('policy_version').order_by('policy_version__name', 'name')
-        product_queryset = Product.objects.select_related('vaccine').order_by('vaccine__name')
+        
+        # Determine the target policy version
+        policy_version = None
+        if self.instance and self.instance.pk and self.instance.dependent_series_id:
+            policy_version = self.instance.dependent_series.policy_version
+        else:
+            policy_version = PolicyVersion.get_active()
+            
+        series_queryset = Series.objects.order_by('name')
+        if policy_version:
+            series_queryset = series_queryset.filter(policy_version=policy_version)
+        else:
+            # Fallback for empty DB scenario (though uncommon in production)
+            series_queryset = series_queryset.select_related('policy_version').order_by('policy_version__name', 'name')
+
         self.fields['dependent_series'].queryset = series_queryset
         self.fields['anchor_series'].queryset = series_queryset
+        
+        # We also filter products to active ones for better UX, 
+        # as inactive products are generally legacy and hidden from new policy edits.
+        product_queryset = Product.objects.filter(active=True).select_related('vaccine').order_by('vaccine__name')
         self.fields['dependent_product'].queryset = product_queryset
         self.fields['anchor_product'].queryset = product_queryset
 
