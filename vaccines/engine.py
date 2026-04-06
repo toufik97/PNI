@@ -10,7 +10,9 @@ from vaccines.models import GlobalConstraintRule, Product, Series, Vaccine
 from vaccines.policy_loader import PolicyLoader
 from vaccines.recommender import SeriesRecommender
 from vaccines.series_validator import SeriesHistoryValidator
+import logging
 
+logger = logging.getLogger(__name__)
 
 class VaccinationEngine:
     POLICY_VERSION = 'series-policy-v1'
@@ -34,7 +36,8 @@ class VaccinationEngine:
         self.age_days = (self.evaluation_date - self.child.dob).days
         self.age_months = self.age_days / 30.44
         self.age_years = self.age_days / 365.25
-        self.records = list(self.child.vaccination_records.all().order_by('date_given'))
+        self.records = list(self.child.vaccination_records.all())
+        self.records.sort(key=lambda r: r.date_given)
         self.history = HistoryNormalizer(self.child, self.records)
         self.records = self.history.records
         self.policy_loader = PolicyLoader()
@@ -47,6 +50,7 @@ class VaccinationEngine:
         self.dependencies = DependencyEvaluator(
             series_history_cache=self.series_history_cache,
             dependency_rule_key_builder=self._dependency_rule_key,
+            evaluation_date=self.evaluation_date,
         )
         self.global_constraints = LiveVaccineConstraintService(
             global_live_rule_key=self.GLOBAL_LIVE_RULE_KEY,
@@ -67,6 +71,7 @@ class VaccinationEngine:
             state_to_upcoming_item=self._state_to_upcoming_item,
             state_to_blocked_item=self._state_to_blocked_item,
         )
+        self._live_spacing_days_value = None
 
     def evaluate(self) -> Dict[str, Any]:
         self._reset_validation_state()
@@ -170,13 +175,11 @@ class VaccinationEngine:
 
     def _reset_validation_state(self):
         self.invalid_history = []
-        self.child.vaccination_records.all().update(
-            invalid_flag=False,
-            invalid_reason=None,
-            notes=None
-        )
-        # Re-fetch and re-normalize records to ensure engine is working with fresh clean data
-        self.records = list(self.child.vaccination_records.all().order_by('date_given'))
+        for r in self.records:
+            r.invalid_flag = False
+            r.invalid_reason = None
+            r.notes = None
+        # RE-normalize records after setting memory-state to ensure clean history
         self.history = HistoryNormalizer(self.child, self.records)
         self.records = self.history.records
 
@@ -251,8 +254,12 @@ class VaccinationEngine:
             item['unavailable'] = True
         return item
 
+    _global_live_spacing_cache = None
+
     def _live_spacing_days(self) -> int:
-        return GlobalConstraintRule.get_live_spacing_days(self.policy_version)
+        if VaccinationEngine._global_live_spacing_cache is None:
+            VaccinationEngine._global_live_spacing_cache = GlobalConstraintRule.get_live_spacing_days(self.policy_version)
+        return VaccinationEngine._global_live_spacing_cache
 
     def _build_live_deferral_item(self, item: Dict[str, Any], safe_date: date, recent_live_doses: List[VaccinationRecord]) -> Dict[str, Any]:
         reasons = [record.vaccine.name for record in recent_live_doses]
@@ -285,10 +292,10 @@ class VaccinationEngine:
         product: Optional[Product] = None,
         slot_number: Optional[int] = None,
     ):
+        logger.debug(f"Flagged Invalid: {record.vaccine.name} (ID: {record.id}). Reason: {reason_code} - {message} [Target Series: {series.name if series else 'Global'}]")
         record.invalid_flag = True
         record.invalid_reason = reason_code
         record.notes = message
-        record.save()
 
         self.invalid_history.append({
             'record_id': record.id,

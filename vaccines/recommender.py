@@ -1,8 +1,11 @@
 from datetime import timedelta
 from typing import List, Optional
+import logging
 
 from patients.models import VaccinationRecord
 from vaccines.models import Series
+
+logger = logging.getLogger(__name__)
 
 
 class TransitionCandidate:
@@ -59,6 +62,7 @@ class SeriesRecommender:
         self.state_to_blocked_item = state_to_blocked_item
 
     def recommend(self, series: Series):
+        logger.debug(f">> Generating recommendations for series: {series.name}")
         result = {
             'due_today': [],
             'due_but_unavailable': [],
@@ -147,10 +151,10 @@ class SeriesRecommender:
         if not expired:
             return []
 
-        transition_rules = list(
-            series.transition_rules.filter(active=True)
-            .select_related('from_product__vaccine', 'to_product__vaccine')
-        )
+        transition_rules = [
+            tr for tr in series.transition_rules.all()
+            if tr.active
+        ]
         candidates = []
         seen_products = set()
         for rule in expired:
@@ -200,9 +204,10 @@ class SeriesRecommender:
         if not valid_records:
             return filtered
 
-        transition_rules = list(
-            series.transition_rules.filter(active=True).select_related('from_product__vaccine', 'to_product__vaccine')
-        )
+        transition_rules = [
+            tr for tr in series.transition_rules.all()
+            if tr.active
+        ]
         if transition_rules:
             return [
                 rule for rule in filtered

@@ -2,9 +2,10 @@ from datetime import timedelta
 
 
 class DependencyEvaluator:
-    def __init__(self, *, series_history_cache, dependency_rule_key_builder):
+    def __init__(self, *, series_history_cache, dependency_rule_key_builder, evaluation_date):
         self.series_history_cache = series_history_cache
         self.dependency_rule_key_builder = dependency_rule_key_builder
+        self.evaluation_date = evaluation_date
 
     def apply(self, series, slot_number, target_date, product=None):
         blocking_constraints = []
@@ -28,23 +29,21 @@ class DependencyEvaluator:
                 nonlocal recommendation_target
                 required_date = anc_record.date_given + timedelta(days=dependency.min_offset_days)
                 recommendation_target = max(recommendation_target, required_date)
-                
-                if target_date < required_date:
-                    detail = {
+                # The anchor dose EXISTS — only push the target date forward.
+                # This makes the dose Upcoming at the correct eligibility date.
+                # We never block when the anchor is present; blocking is only for missing anchors.
+                if target_date < required_date and dependency.is_coadmin:
+                    warning_constraints.append({
                         'rule_key': self.dependency_rule_key_builder(dependency, slot_number),
                         'reason_code': 'dependency_interval_conflict',
                         'message': f"Insufficient gap from {dependency.anchor_series.name} (need to wait until {required_date}).",
-                    }
-                    if dependency.is_coadmin or not dependency.block_if_anchor_missing:
-                        warning_constraints.append(detail)
-                    else:
-                        blocking_constraints.append(detail)
+                    })
 
             if dependency.anchor_slot_number == 0:
                 # Check ALL doses in the anchor series history
                 for anchor_record in anchor_history:
-                    # safety: skip anchor doses given AFTER the current record being evaluated
-                    if anchor_record.date_given > target_date:
+                    # Skip anchor doses given strictly in the future (after target_date)
+                    if anchor_record.date_given > self.evaluation_date:
                         continue
                     
                     if dependency.anchor_product_id:

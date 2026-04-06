@@ -6,7 +6,7 @@ from vaccines.engine import VaccinationEngine
 from datetime import date
 
 def dashboard(request):
-    children = Child.objects.all()
+    children = Child.objects.prefetch_related('vaccination_records__vaccine').exclude(id__startswith='__scenario_').all()
     # For MVP, we'll just evaluate everyone. In production, we'd optimize this.
     due_today_list = []
     upcoming_list = []
@@ -57,6 +57,10 @@ def dashboard(request):
 def register(request):
     if request.method == 'POST':
         child_id = request.POST.get('id')
+        if not child_id:
+            messages.error(request, "ID is required.")
+            return render(request, 'patients/register.html')
+            
         name = request.POST.get('name')
         sex = request.POST.get('sex')
         dob = request.POST.get('dob')

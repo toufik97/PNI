@@ -18,15 +18,16 @@ class ScenarioRunner:
     def run(scenario):
         """
         Execute a scenario and return a structured result dict.
-        Uses a savepoint so all temp records are rolled back.
+        Uses a savepoint inside an atomic block so all temp records are rolled back.
         """
-        sid = transaction.savepoint()
-        try:
-            result = ScenarioRunner._execute(scenario)
-        finally:
-            transaction.savepoint_rollback(sid)
+        with transaction.atomic():
+            sid = transaction.savepoint()
+            try:
+                result = ScenarioRunner._execute(scenario)
+            finally:
+                transaction.savepoint_rollback(sid)
 
-        # Update the scenario record
+        # Update the scenario record (outside the rolled-back savepoint)
         scenario.last_status = 'pass' if result['passed'] else 'fail'
         scenario.last_result = result
         scenario.last_run_at = timezone.now()
@@ -124,6 +125,11 @@ class ScenarioRunner:
 
         # Check INVALID doses
         if scenario.expected_invalid:
+            # Build a lookup from record ID to invalid info from the engine result
+            invalid_by_record_id = {
+                entry['record_id']: entry
+                for entry in engine_result.get('invalid_history', [])
+            }
             for inv_spec in scenario.expected_invalid:
                 idx = inv_spec.get('index', -1)
                 expected_reason = inv_spec.get('reason', '')
@@ -131,15 +137,15 @@ class ScenarioRunner:
 
                 if 0 <= idx < len(history_records):
                     rec = history_records[idx]
-                    rec.refresh_from_db()
                     reason_map = {
                         'short_interval': VaccinationRecord.REASON_INTERVAL,
                         'too_early': VaccinationRecord.REASON_TOO_EARLY,
                         'too_late': VaccinationRecord.REASON_TOO_LATE,
                         'wrong_vaccine': VaccinationRecord.REASON_WRONG_VACCINE,
                     }
-                    actual_invalid = rec.invalid_flag
-                    actual_reason = rec.invalid_reason
+                    inv_entry = invalid_by_record_id.get(rec.id)
+                    actual_invalid = inv_entry is not None
+                    actual_reason = inv_entry['reason_code'] if inv_entry else None
                     expected_code = reason_map.get(expected_reason, expected_reason)
 
                     flag_match = actual_invalid is True
@@ -162,6 +168,7 @@ class ScenarioRunner:
                         'extra': [],
                         'missing_from_actual': ['Record not found'],
                     })
+
 
         overall = all(c['passed'] for c in checks) if checks else True
 

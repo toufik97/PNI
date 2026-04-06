@@ -2,6 +2,9 @@ from typing import Dict, List
 
 from patients.models import VaccinationRecord
 from vaccines.models import Series
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class SeriesHistoryValidator:
@@ -11,6 +14,7 @@ class SeriesHistoryValidator:
 
     def validate(self, series: Series) -> List[VaccinationRecord]:
         from patients.models import VaccinationRecord as VR
+        logger.debug(f">> Validating history for series: {series.name}")
 
         series_vaccine_ids = {link.product.vaccine_id for link in series.series_products.all()}
         if not series_vaccine_ids:
@@ -19,10 +23,11 @@ class SeriesHistoryValidator:
         series_records = []
         for vaccine_id in series_vaccine_ids:
             if vaccine_id in self.history_by_vaccine:
-                series_records.extend([
-                    record for record in self.history_by_vaccine[vaccine_id]
-                    if not record.invalid_flag
-                ])
+                for record in self.history_by_vaccine[vaccine_id]:
+                    if not record.invalid_flag:
+                        series_records.append(record)
+                    else:
+                        logger.debug(f"Ignoring record {record.id} ({record.vaccine.name}) in {series.name} validation because it's marked invalid globally.")
         series_records.sort(key=lambda record: record.date_given)
 
         valid_records = []
@@ -83,7 +88,7 @@ class SeriesHistoryValidator:
                     )
                     continue
 
-                slot_rules = series.rules.filter(slot_number=slot_number)
+                slot_rules = [r for r in series.rules.all() if r.slot_number == slot_number]
                 too_late_rules = [rule for rule in slot_rules if rule.max_age_days is not None and age_at_dose > rule.max_age_days]
                 if too_late_rules:
                     age_months = round(age_at_dose / 30.44, 1)
